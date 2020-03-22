@@ -1,0 +1,25 @@
+{
+  "name": "unfinished_project_219",
+  "version": "1.0.0",
+  "description": "Another unfinished project",
+  "main": "main.js",
+  "scripts": {
+    "testParameters": "mocha ./testDrive/explicitMocha.js --timeout 15000 --reporter mochawesome --reporter-options reportDir=results,reportFilename=result",
+    "start": "node ./testDrive/main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Borlen/unfinished_project_219.git"
+  },
+  "author": "John Borlen",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/Borlen/unfinished_project_219/issues"
+  },
+  "homepage": "https://github.com/Borlen/unfinished_project_219#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "formidable": "^1.2.2",
+    "socket.io": "^2.3.0"
+  }
+}

@@ -1,0 +1,4 @@
+#ignore reports
+node_modules/
+debug.log
+.vscode/launch.json
