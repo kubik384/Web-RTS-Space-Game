@@ -4,8 +4,7 @@
   "description": "Another unfinished project",
   "main": "main.js",
   "scripts": {
-    "testParameters": "mocha ./testDrive/explicitMocha.js --timeout 15000 --reporter mochawesome --reporter-options reportDir=results,reportFilename=result",
-    "start": "node ./testDrive/main.js"
+    "start": "node ./server_main.js"
   },
   "repository": {
     "type": "git",
