@@ -13,18 +13,22 @@ function request_data() {
 	socket.emit('new_player');
 }
 
-socket.on('Message', data => {
-	console.log(data);
-});
-
-socket.on('pong', function(ms) {
-	//console.log(ms);
-});
-
 function start() {
-	request_data();
-	terminal = new Terminal(document.getElementById("command_line"));
+	terminal = new Terminal(document.getElementById("command_line"), document.getElementById("logs"));
 	game = new Game();
+
+	socket.on('Message', data => {
+		terminal.log_message(data, false);
+	});
+	
+	socket.on('pong', function(ms) {
+		//console.log(ms);
+	});
+
+	terminal.log_message('Connecting to the server...', false);
+	request_data();
+
+
 	
 	document.addEventListener("keydown", e => {
 		if (!preventInput) {

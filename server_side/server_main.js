@@ -7,9 +7,9 @@ var path = require('path');
 var server = http.Server(app);
 var io = require('socket.io')(server, {pingInterval: 1500});
 app.set('port', 8080);
-app.use('/client_side', express.static(__dirname + '/client_side'));// Routing
+app.use('/client_side', express.static(__dirname + '/../' + '/client_side'));// Routing
 app.get('/', function(request, response) {
-  response.sendFile(path.join(__dirname + '/client_side', 'index.html'));
+  response.sendFile(path.join(__dirname + '/../' + '/client_side', 'index.html'));
 });
 
 // Starts the server
@@ -20,10 +20,14 @@ server.listen(8080, function() {
 // Add the WebSocket handlers
 io.on('connection', socket => {
 	socket.on('new_player', () => {
-		socket.emit('Message', 'Connected');
+		socket.emit('Message', 'Connection established');
 	}); 
 
 	socket.on('disconnect', () => {
 		
 	});
 });
+
+var Game = require('./modules/s_game.js');
+
+var game = new Game();

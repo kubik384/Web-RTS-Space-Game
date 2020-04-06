@@ -12,11 +12,14 @@ body {
 	word-break: break-word;
 }
 
+#command_line, #logs {
+	font-size: 24px;
+}
+
 #command_line {
 	display: inline-block;
 	color: white;
 	vertical-align: top;
-	font-size: 24px;
 	white-space: pre-wrap;
 }
 
@@ -33,6 +36,12 @@ body {
 
 #logs {
 	min-height: calc(100vh - 30px);
+	color: white;
+}
+
+.inline_log {
+	display: inline-block;
+	padding-right: 30px;
 }
 
 @keyframes cursor_blink {
