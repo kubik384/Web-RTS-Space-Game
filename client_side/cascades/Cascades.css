@@ -44,6 +44,10 @@ body {
 	padding-right: 30px;
 }
 
+.server_message {
+	color: rgb(120,240,216);
+}
+
 @keyframes cursor_blink {
 	49.99%   {background-color: green;}
 	50%, 99.99%  {background-color: black;}

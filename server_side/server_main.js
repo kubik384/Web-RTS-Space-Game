@@ -20,11 +20,17 @@ server.listen(8080, function() {
 // Add the WebSocket handlers
 io.on('connection', socket => {
 	socket.on('new_player', () => {
-		socket.emit('Message', 'Connection established');
+		socket.emit('Message', 'Connection established...');
+		game.add_player(socket.id);
+		socket.emit('Message', 'Number of players: ' + game.get_player_number());
 	}); 
 
+	socket.on('command', command => {
+		socket.emit('Message', game.process_command(command));
+	})
+
 	socket.on('disconnect', () => {
-		
+		game.remove_player(socket.id);
 	});
 });
 

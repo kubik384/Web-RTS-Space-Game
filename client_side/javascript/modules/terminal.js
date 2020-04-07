@@ -39,26 +39,25 @@ class Terminal {
         }
     }
 
-    send_command() {
+    process_command_line() {
         var command = this.text;
         this.text = '';
         this.command_line.innerHTML = this.text + this.blink_cursor;
-        this.log_message(command);
+        this.log_message(command, true, false);
+        return command;
     }
 
-    log_message(message, single_line = true, type_out = false) {
+    log_message(message, single_line = true, server_message = true) {
         var log = document.createElement("p");
         if (!single_line) {
-            log.className = 'inline_log';
+            log.className += ' inline_log';
+        }
+        if (server_message) {
+            log.className += ' server_message';
         }
         var message_content = document.createTextNode(message);
-        if (!type_out) {
-            log.appendChild(message_content);
-            this.logs.appendChild(log);
-        } else {
-            log.appendChild(message_content);
-            this.logs.appendChild(log);
-        }
+        log.appendChild(message_content);
+        this.logs.appendChild(log);
     }
 }
 
