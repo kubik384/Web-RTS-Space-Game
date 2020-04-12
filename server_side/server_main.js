@@ -26,7 +26,7 @@ io.on('connection', socket => {
 	}); 
 
 	socket.on('command', command => {
-		socket.emit('Message', game.process_command(command));
+		socket.emit('Message', game.process_command(command), socket.id);
 	})
 
 	socket.on('disconnect', () => {

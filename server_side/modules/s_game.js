@@ -17,11 +17,20 @@ class Game {
         return this.players.length;
     }
 
-    process_command(command) {
-        if (command === "help") {
-            return ('Fuck you');
+    process_command(command, player) {
+        if (command.length > 1) {
+            var command_keywords = str.split(" ");  
+            var expect = '';
+            switch(command_keywoards) {
+                case 'build':
+                    expect = 'building';
+                    break;
+                case 'demolish':
+                    expect = 'building';
+                    break;
+            }
         } else {
-            return ('Unrecognized command, type help for the list of available commands');
+            return 'Command not recognized';
         }
     }
 }
