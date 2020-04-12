@@ -2,6 +2,7 @@
 
 var express = require('express');
 var app = express();
+var mysql = require('mysql');
 var http = require('http');
 var path = require('path');
 var server = http.Server(app);
@@ -11,6 +12,29 @@ app.use('/client_side', express.static(__dirname + '/../' + '/client_side'));// 
 app.get('/', function(request, response) {
   response.sendFile(path.join(__dirname + '/../' + '/client_side', 'index.html'));
 });
+
+
+//Connects to the database server
+var con = mysql.createConnection({
+  host: "localhost",
+  user: "root",
+  password: null,
+  port: 3308
+});
+
+con.connect(function(err) {
+	if (err) {
+		console.log('Connecting to MySQL database has failed. Error code: ' + err.code + ', Fatal: ' + err.fatal);
+		throw err;
+	}
+	console.log("Connected to MySQL database server!");
+
+	con.query(sql, function (err, result) {
+		if (err) throw err;
+		console.log("Result: " + result);
+	});
+});
+
 
 // Starts the server
 server.listen(8080, function() {
