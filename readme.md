@@ -12,3 +12,10 @@ MySQL will most likely require a certain databse with set tables, etc.
 
 
 Was trying to use MariaDB, but found out it way too complicated for me to establish a connection with the db server alone. Searching for any type of general advice or already answered similar/same issue proved futile. The database does not seem to be very popular among/friendly to amateurs/beginner programmers
+
+
+
+
+
+TODO:
+Make sql tables, test altering/adding/deleting data

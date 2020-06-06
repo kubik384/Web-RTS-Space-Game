@@ -6,35 +6,49 @@ var mysql = require('mysql');
 var http = require('http');
 var path = require('path');
 var server = http.Server(app);
+var bodyParser = require('body-parser');
+var bcrypt = require('bcrypt');
 var io = require('socket.io')(server, {pingInterval: 1500});
+
 app.set('port', 8080);
 app.use('/client_side', express.static(__dirname + '/../' + '/client_side'));// Routing
 app.get('/', function(request, response) {
-  response.sendFile(path.join(__dirname + '/../' + '/client_side', 'index.html'));
+	response.sendFile(path.join(__dirname + '/../' + '/client_side', 'pages/index.html'));
 });
 
-
-//Connects to the database server
+//Credentials for connecting to the db 
 var con = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: null,
-  port: 3308
+	host: "localhost",
+	user: "root",
+	password: null,
+	port: 3308,
+	database: "improvisationalDB"
 });
+con.connect( err => { if (err) throw err; });
 
-con.connect(function(err) {
-	if (err) {
-		console.log('Connecting to MySQL database has failed. Error code: ' + err.code + ', Fatal: ' + err.fatal);
-		throw err;
-	}
-	console.log("Connected to MySQL database server!");
+app.use(bodyParser.urlencoded({ extended: false }));
+app.post('/game', function(req,res) {
+	var username = req.body.uName;
+	var password = req.body.psw;
 
-	con.query(sql, function (err, result) {
-		if (err) throw err;
-		console.log("Result: " + result);
-	});
+	var sql = "SELECT password FROM players WHERE Username = '" + username + "'";
+	con.query(sql, function (err, results) {
+		if (err) {
+			throw err;
+		}
+		bcrypt.compare(password, results[0].password, function(err, passwordsMatch) {
+			if (err) {
+				throw err;
+			}
+			if (passwordsMatch) {
+				res.sendFile(path.join(__dirname + '/../' + '/client_side', 'pages/game.html'));
+			} else {
+				console.log('Passwords do not match');
+				//send error message to be displayed to the client
+			}
+		});
+	});	
 });
-
 
 // Starts the server
 server.listen(8080, function() {
