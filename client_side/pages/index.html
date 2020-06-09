@@ -12,21 +12,53 @@
 		<link rel="stylesheet" type="text/css" href="client_side/cascades/login.css">
 	</head>
 	<body>
-		<form id='loginForm' action = "/game", method = "POST">
-			<h1>Log in</h1>
+		<form action = "/game", method = "POST">
+			<div id='containerTitle'>
+				<img id='backArrow' src='client_side/images/backArrow.png' style='display:none' onclick = toggleLog();></img>
+				<h2 id='formTitle'>Log in</h2>
+			</div>
 			<div class="container">
 				<label for="uName"><b>Username</b></label>
 				<input type="text" placeholder="Enter Username" name="uName" required>
 
 				<label for="psw"><b>Password</b></label>
 				<input type="password" placeholder="Enter Password" name="psw" required>
+
+				<div id='repeatPassword' style='display:none'>
+					<label for="rptPsw"><b>Repeat password</b></label>
+					<input type="password" placeholder="Confirm Password" name="rptPsw" required>
+				</div>
 					
-				<button type="submit">Login</button>
+				<button type="Submit" id='submitBtn'>Login</button>
 				<label>
 			</div>
 			<div id='regContainer'>
-				<span class="reg">Don't have an account? <span class='link'>Register</span></span>
+				<span class="reg" id='toggleText'>Don't have an account? <span class='link' id='toggleLink' onclick=toggleReg();>Register</span></span>
 			</div>
 		</form>
 	</body>
+	<script>
+		const logTitle = document.getElementById('formTitle').innerHTML;
+		const logText = document.getElementById('toggleText').innerHTML;
+		const logBtnText = document.getElementById('submitBtn').innerHTML;
+		const regBtnText = 'Register';
+		const regTitle = 'Register account';
+		const regText = "Already have an account? <span class='link' id='toggleLink' onclick=toggleLog();>Log in</span>";
+
+		function toggleReg() {
+			document.getElementById('formTitle').innerHTML = regTitle;
+			document.getElementById('toggleText').innerHTML = regText;
+			document.getElementById('submitBtn').innerHTML = regBtnText;
+			document.getElementById('backArrow').style.display = 'inline-block';
+			document.getElementById('repeatPassword').style.display = 'block';
+		}
+
+		function toggleLog() {
+			document.getElementById('formTitle').innerHTML = logTitle;
+			document.getElementById('toggleText').innerHTML = logText;
+			document.getElementById('submitBtn').innerHTML = logBtnText;
+			document.getElementById('backArrow').style.display = 'none';
+			document.getElementById('repeatPassword').style.display = 'none';
+		}
+	</script>
 </html>

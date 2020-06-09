@@ -1,14 +1,28 @@
-h1 {
-    text-align: center;
+* {
+    margin:0px;
+    padding:0px;
 }
 
-#loginForm {
+div {
+    font-size:0px;
+}
+
+#formTitle {
+    text-align: center;
+    margin: 0;
+    padding: 10px 0 10px 0;
+    background-color: rgba(14, 68, 168, 0.65);
+    font-size: 28px;
+}
+
+form {
     position: fixed;
     border: 3px solid #f1f1f1;
     background-color: white;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+    width: 400px;
 }
 
 input[type=text], input[type=password] {
@@ -57,4 +71,16 @@ span.reg {
     cursor:pointer;
     color: #000099;
     text-decoration:underline;
+}
+
+#backArrow {
+    float: left;
+    background-color: black;
+    width: 60px;
+    height: 32px;
+    padding: 10px 0 10px 0;
+}
+
+#backArrow:hover {
+    cursor: pointer;
 }

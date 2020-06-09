@@ -18,4 +18,5 @@ Was trying to use MariaDB, but found out it way too complicated for me to establ
 
 
 TODO:
-Make sql tables, test altering/adding/deleting data
+Implement an error message upon failed authentication//registration
+Implement registration

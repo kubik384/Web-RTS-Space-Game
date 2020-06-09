@@ -12,9 +12,6 @@ var io = require('socket.io')(server, {pingInterval: 1500});
 
 app.set('port', 8080);
 app.use('/client_side', express.static(__dirname + '/../' + '/client_side'));// Routing
-app.get('/', function(request, response) {
-	response.sendFile(path.join(__dirname + '/../' + '/client_side', 'pages/index.html'));
-});
 
 //Credentials for connecting to the db 
 var con = mysql.createConnection({
@@ -27,9 +24,15 @@ var con = mysql.createConnection({
 con.connect( err => { if (err) throw err; });
 
 app.use(bodyParser.urlencoded({ extended: false }));
+
+app.get('/', function(request, response) {
+	response.sendFile(path.join(__dirname + '/../' + '/client_side', 'pages/index.html'));
+});
+
 app.post('/game', function(req,res) {
 	var username = req.body.uName;
 	var password = req.body.psw;
+	
 
 	var sql = "SELECT password FROM players WHERE Username = '" + username + "'";
 	con.query(sql, function (err, results) {
