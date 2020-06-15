@@ -25,8 +25,16 @@ con.connect( err => { if (err) throw err; });
 
 app.use(bodyParser.urlencoded({ extended: false }));
 
-app.get('/', function(request, response) {
-	response.sendFile(path.join(__dirname + '/../' + '/client_side', 'pages/index.html'));
+app.get('/', function(req, res) {
+	res.sendFile(path.join(__dirname + '/../' + '/client_side', 'pages/index.html'));
+});
+
+app.post('/register', function(req, res) {
+	res.send('test');
+});
+
+app.post('/login', function(req, res) {
+	res.send('test');
 });
 
 app.post('/game', function(req,res) {
@@ -39,17 +47,19 @@ app.post('/game', function(req,res) {
 		if (err) {
 			throw err;
 		}
-		bcrypt.compare(password, results[0].password, function(err, passwordsMatch) {
-			if (err) {
-				throw err;
-			}
-			if (passwordsMatch) {
-				res.sendFile(path.join(__dirname + '/../' + '/client_side', 'pages/game.html'));
-			} else {
-				console.log('Passwords do not match');
-				//send error message to be displayed to the client
-			}
-		});
+		if (results.length == 1) {
+			bcrypt.compare(password, results[0].password, function(err, passwordsMatch) {
+				if (err) {
+					throw err;
+				}
+				if (passwordsMatch) {
+					res.sendFile(path.join(__dirname + '/../' + '/client_side', 'pages/game.html'));
+				} else {
+					console.log('Passwords do not match');
+					//send error message to be displayed to the client
+				}
+			});
+		}
 	});	
 });
 

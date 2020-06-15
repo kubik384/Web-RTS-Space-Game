@@ -88,3 +88,8 @@ span.reg {
 #backArrow:hover {
     cursor: pointer;
 }
+
+#repeatPassword {
+    transition: all .45s ease-out;
+    overflow: hidden;
+}
