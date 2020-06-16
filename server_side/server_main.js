@@ -30,14 +30,10 @@ app.get('/', function(req, res) {
 });
 
 app.post('/register', function(req, res) {
-	res.send('test');
+	res.send('testReg');
 });
 
 app.post('/login', function(req, res) {
-	res.send('test');
-});
-
-app.post('/game', function(req,res) {
 	var username = req.body.uName;
 	var password = req.body.psw;
 	
@@ -53,14 +49,19 @@ app.post('/game', function(req,res) {
 					throw err;
 				}
 				if (passwordsMatch) {
-					res.sendFile(path.join(__dirname + '/../' + '/client_side', 'pages/game.html'));
+					//authorize the client
 				} else {
 					console.log('Passwords do not match');
 					//send error message to be displayed to the client
 				}
 			});
 		}
-	});	
+	});
+});
+
+app.get('/game', function(req,res) {
+	//if authorized, send: 
+	res.sendFile(path.join(__dirname + '/../' + '/client_side', 'pages/game.html'));
 });
 
 // Starts the server

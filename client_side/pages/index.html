@@ -66,5 +66,28 @@
 			document.getElementById('rptPsw').required = false;
 			document.forms[0].action = logFormAction;
 		}
+		
+		document.forms[0].addEventListener('submit', e => {
+			e.preventDefault();
+			var xhttp = new XMLHttpRequest();
+			var formData = "username=" + document.getElementById('username').value + "&password=" + document.getElementById('password');
+			if (e.target.action == regFormAction) {
+				xhttp.onreadystatechange = function() {
+					if (this.readyState == 4 && this.status == 200) {
+						document.write(this.responseText);
+					}
+				};
+				formData += "&rptPsw=" + document.getElementById('rptPsw');
+			} else {
+				xhttp.onreadystatechange = function() {
+					if (this.readyState == 4 && this.status == 200) {
+						window.location.href = window.location.href + logFormAction;
+					}
+				};
+			}
+			xhttp.open("POST", document.forms[0].action, true);
+			xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+			xhttp.send(formData);
+		})
 	</script>
 </html>
