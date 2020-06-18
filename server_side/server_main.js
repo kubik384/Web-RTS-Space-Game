@@ -1,5 +1,8 @@
 "use strict"
 
+const saltRounds = 10;
+const gameURL = '/game';
+
 var express = require('express');
 var app = express();
 var mysql = require('mysql');
@@ -30,15 +33,41 @@ app.get('/', function(req, res) {
 });
 
 app.post('/register', function(req, res) {
-	res.send('testReg');
+	var username = req.body.username;
+	var password = req.body.password;
+	var repeatPassword = req.body.rptPsw;
+	if (password == repeatPassword && password != '' && username != '') {
+		var sql = "SELECT password FROM players WHERE username = '" + username + "'";
+		con.query(sql, function (err, results) {
+			if (err) {
+				throw err;
+			}
+			if (results.length == 1) {
+				//send error to the client
+			} else {
+				bcrypt.hash(password, saltRounds, function(err, hash) {
+					if (err) {
+						throw err;
+					}
+					var sql = `INSERT INTO players (username, password) VALUES ('${username}', '${hash}')`;
+					con.query(sql, function (err, results) {
+						if (err) {
+							throw err;
+						}
+						res.send(200);
+					});
+				});
+			}
+		});
+	}
 });
 
 app.post('/login', function(req, res) {
-	var username = req.body.uName;
-	var password = req.body.psw;
+	var username = req.body.username;
+	var password = req.body.password;
 	
 
-	var sql = "SELECT password FROM players WHERE Username = '" + username + "'";
+	var sql = "SELECT password FROM players WHERE username = '" + username + "'";
 	con.query(sql, function (err, results) {
 		if (err) {
 			throw err;
@@ -50,6 +79,7 @@ app.post('/login', function(req, res) {
 				}
 				if (passwordsMatch) {
 					//authorize the client
+					res.send(req.protocol + '://' + req.get('host') + gameURL);
 				} else {
 					console.log('Passwords do not match');
 					//send error message to be displayed to the client
@@ -59,7 +89,7 @@ app.post('/login', function(req, res) {
 	});
 });
 
-app.get('/game', function(req,res) {
+app.get(gameURL, function(req,res) {
 	//if authorized, send: 
 	res.sendFile(path.join(__dirname + '/../' + '/client_side', 'pages/game.html'));
 });

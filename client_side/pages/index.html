@@ -45,7 +45,8 @@
 		const regBtnText = 'Register';
 		const regTitle = 'Register account';
 		const regText = "Already have an account? <span class='link' id='toggleLink' onclick=toggleLog();>Log in</span>";
-		const regFormAction = "Register"
+		const regFormAction = "Register";
+		var register = false;
 
 		function toggleReg() {
 			document.getElementById('formTitle').innerHTML = regTitle;
@@ -55,6 +56,7 @@
 			document.getElementById('repeatPassword').style = 'width: 100%; height: 81px';
 			document.getElementById('rptPsw').required = true;
 			document.forms[0].action = "/register";
+			register = true;
 		}
 
 		function toggleLog() {
@@ -65,23 +67,25 @@
 			document.getElementById('repeatPassword').style = 'width: 0; height: 0';
 			document.getElementById('rptPsw').required = false;
 			document.forms[0].action = logFormAction;
+			register = false;
 		}
 		
 		document.forms[0].addEventListener('submit', e => {
 			e.preventDefault();
 			var xhttp = new XMLHttpRequest();
-			var formData = "username=" + document.getElementById('username').value + "&password=" + document.getElementById('password');
-			if (e.target.action == regFormAction) {
+			var formData = "username=" + document.getElementById('username').value + "&password=" + document.getElementById('password').value;
+			if (register) {
 				xhttp.onreadystatechange = function() {
 					if (this.readyState == 4 && this.status == 200) {
-						document.write(this.responseText);
+						console.log(this.responseText);
 					}
 				};
-				formData += "&rptPsw=" + document.getElementById('rptPsw');
+				formData += "&rptPsw=" + document.getElementById('rptPsw').value;
 			} else {
 				xhttp.onreadystatechange = function() {
 					if (this.readyState == 4 && this.status == 200) {
-						window.location.href = window.location.href + logFormAction;
+						console.log(this);
+						window.location.href = this.responseText;
 					}
 				};
 			}
