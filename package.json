@@ -4,7 +4,7 @@
   "description": "Another unfinished project",
   "main": "main.js",
   "scripts": {
-    "start": "node server_side/server_main.js"
+    "start": "node server_main.js"
   },
   "repository": {
     "type": "git",

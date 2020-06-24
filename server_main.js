@@ -14,7 +14,7 @@ var bcrypt = require('bcrypt');
 var io = require('socket.io')(server, {pingInterval: 1500});
 
 app.set('port', 8080);
-app.use('/client_side', express.static(__dirname + '/../' + '/client_side'));// Routing
+app.use('/client_side', express.static(__dirname + '/client_side'));// Routing
 
 //Credentials for connecting to the db 
 var con = mysql.createConnection({
@@ -29,21 +29,20 @@ con.connect( err => { if (err) throw err; });
 app.use(bodyParser.urlencoded({ extended: false }));
 
 app.get('/', function(req, res) {
-	res.sendFile(path.join(__dirname + '/../' + '/client_side', 'pages/index.html'));
+	res.sendFile(path.join(__dirname + '/client_side', 'pages/index.html'));
 });
 
 app.post('/register', function(req, res) {
 	var username = req.body.username;
 	var password = req.body.password;
-	var repeatPassword = req.body.rptPsw;
-	if (password == repeatPassword && password != '' && username != '') {
+	if (password != '' && username != '') {
 		var sql = "SELECT password FROM players WHERE username = '" + username + "'";
 		con.query(sql, function (err, results) {
 			if (err) {
 				throw err;
 			}
 			if (results.length == 1) {
-				//send error to the client
+				res.sendStatus(401);
 			} else {
 				bcrypt.hash(password, saltRounds, function(err, hash) {
 					if (err) {
@@ -54,7 +53,7 @@ app.post('/register', function(req, res) {
 						if (err) {
 							throw err;
 						}
-						res.send(200);
+						res.sendStatus(200);
 					});
 				});
 			}
@@ -81,8 +80,7 @@ app.post('/login', function(req, res) {
 					//authorize the client
 					res.send(req.protocol + '://' + req.get('host') + gameURL);
 				} else {
-					console.log('Passwords do not match');
-					//send error message to be displayed to the client
+					res.sendStatus(401);
 				}
 			});
 		}
@@ -91,7 +89,7 @@ app.post('/login', function(req, res) {
 
 app.get(gameURL, function(req,res) {
 	//if authorized, send: 
-	res.sendFile(path.join(__dirname + '/../' + '/client_side', 'pages/game.html'));
+	res.sendFile(path.join(__dirname + '/client_side', 'pages/game.html'));
 });
 
 // Starts the server
@@ -109,13 +107,13 @@ io.on('connection', socket => {
 
 	socket.on('command', command => {
 		socket.emit('Message', game.process_command(command), socket.id);
-	})
+	});
 
 	socket.on('disconnect', () => {
 		game.remove_player(socket.id);
 	});
 });
 
-var Game = require('./modules/s_game.js');
+var Game = require('./server_modules/s_game.js');
 
 var game = new Game();

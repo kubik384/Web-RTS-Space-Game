@@ -77,15 +77,27 @@
 			if (register) {
 				xhttp.onreadystatechange = function() {
 					if (this.readyState == 4 && this.status == 200) {
-						console.log(this.responseText);
+						//Display message - registered, swap to login screen, clear all fields
+						alert("You've been successfully registered");
+					} else if (this.readyState == 4 && this.status == 401) {
+						//display error message username already exists - make check to not allow user to send password diff from repeatPassword
+						alert("Entered username already exists, please select a different username");
+					} else if (this.readyState == 4 && this.status == 500) {
+						//display error message - server error, please try again later
+						alert("A server error has been encountered, please try again later");
 					}
 				};
 				formData += "&rptPsw=" + document.getElementById('rptPsw').value;
 			} else {
 				xhttp.onreadystatechange = function() {
 					if (this.readyState == 4 && this.status == 200) {
-						console.log(this);
 						window.location.href = this.responseText;
+					} else if (this.readyState == 4 && this.status == 401) {
+						//display error message - wrong login crendentials
+						alert("Wrong username or password");
+					} else if (this.readyState == 4 && this.status == 500) {
+						//display error message - server error, please try again later
+						alert("A server error has been encountered, please try again later");
 					}
 				};
 			}

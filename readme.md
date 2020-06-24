@@ -18,6 +18,13 @@ Was trying to use MariaDB, but found out it way too complicated for me to establ
 
 
 TODO:
-Implement AJAX
-Implement an error message upon failed authentication//registration
-Implement registration
+Implement an error message upon failed authentication//registration or successfull registration
+
+
+
+
+
+
+
+
+*Server currently lacks any means of security and enables all sorts of attacks. It's intended use is for localhost testing purposes only
