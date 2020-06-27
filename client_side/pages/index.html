@@ -73,7 +73,8 @@
 		document.forms[0].addEventListener('submit', e => {
 			e.preventDefault();
 			var xhttp = new XMLHttpRequest();
-			var formData = "username=" + document.getElementById('username').value + "&password=" + document.getElementById('password').value;
+			var username = document.getElementById('username').value;
+			var formData = "username=" + username + "&password=" + document.getElementById('password').value;
 			if (register) {
 				xhttp.onreadystatechange = function() {
 					if (this.readyState == 4 && this.status == 200) {
@@ -86,7 +87,7 @@
 						//display error message - server error, please try again later
 						alert("A server error has been encountered, please try again later");
 					}
-				};
+				}; 
 				formData += "&rptPsw=" + document.getElementById('rptPsw').value;
 			} else {
 				xhttp.onreadystatechange = function() {
