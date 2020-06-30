@@ -82,7 +82,7 @@ app.post('/login', function(req, res) {
 				if (passwordsMatch) {
 					//Client saves username as token, which is then sent from client to the server to authorize actions sent through socket for every action. If players object does not have attribute equal to token, then action is not executed and user is redirected back to login page instead
 					players[username] = true;
-					res.cookie('token', username, { maxAge: 900000, httpOnly: true })
+					res.cookie('token', username, { maxAge: 900000, httpOnly: false });
 					//Would use redirect, however according to answers from stack overflow, when using ajax, express redirect does not work and has to be created from client's side instead
 					res.send(req.protocol + '://' + req.get('host') + gameURL);
 				} else {
@@ -105,7 +105,6 @@ app.get(gameURL, function(req,res) {
 	} else {
 		res.redirect(303, '/');
 	}
-	
 });
 
 // Starts the server
@@ -116,17 +115,31 @@ server.listen(8080, function() {
 // Add the WebSocket handlers
 io.on('connection', socket => {
 	socket.on('login_player', token => {
-		socket.emit('Message', 'Connection established, number of players: ' + game.get_player_number());
 		//game.add_player(socket.id);
+		var sql = 'SELECT credit FROM players WHERE username = ?';
+		con.query(sql, [token], function (err, result) {
+			if (err) {
+				throw err;
+			} else {
+				socket.emit('starter_datapack', result[0].credit);
+			}
+		});
 	});
 
-	socket.on('command', (command, token) => {
-		socket.emit('Message', game.process_command(command), socket.id);
+	socket.on('add_credits', (amount, token) => {
+		var sql = `UPDATE players SET credit = credit + ? WHERE username = ?`;
+		con.query(sql, [amount, token], function (err, result) {
+			if (err) {
+				throw err;
+			} else {
+				socket.emit('added_credits', amount);
+			}
+		});
 	});
 
-	socket.on('disconnect', token => {
+	socket.on('disconnect', () => {
 		game.remove_player(socket.id);
-		delete players[token];
+		//delete players[token];
 	});
 });
 
