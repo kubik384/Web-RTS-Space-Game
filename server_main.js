@@ -83,7 +83,7 @@ app.post('/login', function(req, res) {
 				if (passwordsMatch) {
 					//Client saves username as token, which is then sent from client to the server to authorize actions sent through socket for every action. If players object does not have attribute equal to token, then action is not executed and user is redirected back to login page instead
 					tokens.push(username);
-					res.cookie('token', username, { maxAge: 900000, httpOnly: false });
+					res.cookie('token', username, { maxAge: 900000 });
 					//Would use redirect, however according to answers from stack overflow, when using ajax, express redirect does not work and has to be created from client's side instead
 					res.send(req.protocol + '://' + req.get('host') + gameURL);
 				} else {
@@ -148,3 +148,5 @@ io.on('connection', socket => {
 		delete socketTable[socket.id];
 	});
 });
+
+import { dbManager } from './server_side/dbManager.js';
