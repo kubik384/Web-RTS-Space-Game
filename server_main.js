@@ -131,6 +131,8 @@ io.on('connection', socket => {
 
 	socket.on('add_credits', amount => {
 		var token = socketTable[socket.id];
+		//TODO: create credits/hour generation. When credits are upated/selected, always update credits first with the gen*(currTimestamp - lastTimestamp), then update/return value
+
 		var sql = `UPDATE players SET credit = credit + ? WHERE username = ?`;
 		con.query(sql, [amount, token], function (err, result) {
 			if (err) {
