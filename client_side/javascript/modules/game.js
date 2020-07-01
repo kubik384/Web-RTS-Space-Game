@@ -17,17 +17,17 @@ class Game {
     }
 
     async display_data(data) {
-        document.getElementById('coins').innerHTML = data;
+        document.getElementById('credit').innerHTML = 'Credits: ' + data;
         this.credits = data;
     }
 
     async add_credits(amount) {
-        document.getElementById('coins').innerHTML = this.credits + amount;
+        document.getElementById('credit').innerHTML = 'Credits: ' + (this.credits + amount);
         this.credits += amount;
     }
 
     async add_resources(event) {
-        this.socket.emit('add_credits', 10, this.token);
+        this.socket.emit('add_credits', 10);
     }
 }
 

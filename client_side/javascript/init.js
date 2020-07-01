@@ -12,7 +12,7 @@ async function start() {
 
 	//Document listeners
 	document.removeEventListener('DOMContentLoaded', start);
-	document.getElementById('get_coins').addEventListener('click', game.add_resources.bind(game));
+	document.getElementById('get_credit').addEventListener('click', game.add_resources.bind(game));
 
 	//socket events
 	socket.on('message', game.process_incoming_message);

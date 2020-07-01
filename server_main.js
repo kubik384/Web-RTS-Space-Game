@@ -2,7 +2,8 @@
 
 const saltRounds = 10;
 const gameURL = '/game';
-var players = {};
+var tokens = [];
+var socketTable = {};
 
 var express = require('express');
 var app = express();
@@ -81,7 +82,7 @@ app.post('/login', function(req, res) {
 				}
 				if (passwordsMatch) {
 					//Client saves username as token, which is then sent from client to the server to authorize actions sent through socket for every action. If players object does not have attribute equal to token, then action is not executed and user is redirected back to login page instead
-					players[username] = true;
+					tokens.push(username);
 					res.cookie('token', username, { maxAge: 900000, httpOnly: false });
 					//Would use redirect, however according to answers from stack overflow, when using ajax, express redirect does not work and has to be created from client's side instead
 					res.send(req.protocol + '://' + req.get('host') + gameURL);
@@ -97,10 +98,11 @@ app.post('/login', function(req, res) {
 
 app.get(gameURL, function(req,res) {
 	if (req.cookies.token !== undefined) {
-		if (players[req.cookies.token]) {
+		if (tokens.findIndex(token => token = req.cookies.token) != -1) {
 			res.sendFile(path.join(__dirname + '/client_side', 'pages/game.html'));
 		} else {
 			res.clearCookie('token');
+			res.redirect(303, '/');
 		}
 	} else {
 		res.redirect(303, '/');
@@ -115,7 +117,8 @@ server.listen(8080, function() {
 // Add the WebSocket handlers
 io.on('connection', socket => {
 	socket.on('login_player', token => {
-		//game.add_player(socket.id);
+		tokens.push(token);
+		socketTable[socket.id] = token;
 		var sql = 'SELECT credit FROM players WHERE username = ?';
 		con.query(sql, [token], function (err, result) {
 			if (err) {
@@ -126,7 +129,8 @@ io.on('connection', socket => {
 		});
 	});
 
-	socket.on('add_credits', (amount, token) => {
+	socket.on('add_credits', amount => {
+		var token = socketTable[socket.id];
 		var sql = `UPDATE players SET credit = credit + ? WHERE username = ?`;
 		con.query(sql, [amount, token], function (err, result) {
 			if (err) {
@@ -138,11 +142,7 @@ io.on('connection', socket => {
 	});
 
 	socket.on('disconnect', () => {
-		game.remove_player(socket.id);
-		//delete players[token];
+		tokens.slice(tokens.findIndex(token => token = socketTable[socket.id]), 1);
+		delete socketTable[socket.id];
 	});
 });
-
-var Game = require('./server_modules/s_game.js');
-
-var game = new Game();
