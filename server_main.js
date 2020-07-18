@@ -1,9 +1,14 @@
 "use strict"
 
+import { DbManager } from './server_side/dbManager.js';
+
 const saltRounds = 10;
 const gameURL = '/game';
+const dbManager = new DbManager();
+const root = path.resolve(__dirname, '/..');
 var tokens = [];
 var socketTable = {};
+
 
 var express = require('express');
 var app = express();
@@ -17,7 +22,7 @@ var bcrypt = require('bcrypt');
 var io = require('socket.io')(server, {pingInterval: 1500});
 
 app.set('port', 8080);
-app.use('/client_side', express.static(__dirname + '/client_side'));// Routing
+app.use('/client_side', express.static(root + '/client_side'));// Routing
 
 //Credentials for connecting to the db 
 var con = mysql.createConnection({
@@ -34,7 +39,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 
 app.get('/', function(req, res) {
-	res.sendFile(path.join(__dirname + '/client_side', 'pages/index.html'));
+	res.sendFile(path.join(root + '/client_side', 'pages/index.html'));
 });
 
 app.post('/register', function(req, res) {
@@ -99,7 +104,7 @@ app.post('/login', function(req, res) {
 app.get(gameURL, function(req,res) {
 	if (req.cookies.token !== undefined) {
 		if (tokens.findIndex(token => token = req.cookies.token) != -1) {
-			res.sendFile(path.join(__dirname + '/client_side', 'pages/game.html'));
+			res.sendFile(path.join(root + '/client_side', 'pages/game.html'));
 		} else {
 			res.clearCookie('token');
 			res.redirect(303, '/');
@@ -120,27 +125,23 @@ io.on('connection', socket => {
 		tokens.push(token);
 		socketTable[socket.id] = token;
 		var sql = 'SELECT credit FROM players WHERE username = ?';
+
+		//TEST - update to return resources in [{resource, amount}, {resource, amount}, ...] format (parse to JSON and then from JSON on the client side?)
 		con.query(sql, [token], function (err, result) {
 			if (err) {
 				throw err;
 			} else {
-				socket.emit('starter_datapack', result[0].credit);
+				socket.emit('starter_datapack', JSON.stringify(result[0].credit));
 			}
 		});
 	});
 
-	socket.on('add_credits', amount => {
+	socket.on('update_resource', resource, amount => {
 		var token = socketTable[socket.id];
-		//TODO: create credits/hour generation. When credits are upated/selected, always update credits first with the gen*(currTimestamp - lastTimestamp), then update/return value
+		//TODO: create credits/hour generation. When credits are updated/selected, always update credits first with the gen*(currTimestamp - lastTimestamp), then update/return value
 
-		var sql = `UPDATE players SET credit = credit + ? WHERE username = ?`;
-		con.query(sql, [amount, token], function (err, result) {
-			if (err) {
-				throw err;
-			} else {
-				socket.emit('added_credits', amount);
-			}
-		});
+		//TEST - callback function works
+		dbManager.update_resource(token, resource, amount, socket.emit);
 	});
 
 	socket.on('disconnect', () => {
@@ -148,5 +149,3 @@ io.on('connection', socket => {
 		delete socketTable[socket.id];
 	});
 });
-
-import { dbManager } from './server_side/dbManager.js';

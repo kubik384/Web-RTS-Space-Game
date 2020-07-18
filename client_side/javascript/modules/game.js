@@ -5,7 +5,7 @@ class Game {
         this.socket = socket;
         this.preventInput = false;
         this.token = document.cookie.split('token=')[1];
-        this.credits;
+        this.resources = [];
     }
 
     async process_incoming_message(message) {
@@ -17,17 +17,23 @@ class Game {
     }
 
     async display_data(data) {
-        document.getElementById('credit').innerHTML = 'Credits: ' + data;
-        this.credits = data;
+        JSON.parse(data);
+        for (var i = 0; i < data.length; i++) {
+            var resource = data[i].resource;
+            var amount = data[i].amount;
+            document.getElementById(resource).innerHTML = resource + ': ' + amount;
+            this.resources[resource] = amount;
+        }
     }
 
-    async add_credits(amount) {
-        document.getElementById('credit').innerHTML = 'Credits: ' + (this.credits + amount);
-        this.credits += amount;
+    async update_resource(resource, amount) {
+        document.getElementById(resource).innerHTML = resource + ': ' + (this.resources[resource] + amount);
+        this.resources[resource] += amount;
     }
 
-    async add_resources(event) {
-        this.socket.emit('add_credits', 10);
+    async send_res_update(event) {
+        //TEST - figure out how to get id of the element that's been clicked through event
+        this.socket.emit('update_resource', event.element.id.split('_')[1], 10);
     }
 }
 

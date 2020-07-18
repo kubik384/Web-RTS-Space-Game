@@ -12,12 +12,12 @@ async function start() {
 
 	//Document listeners
 	document.removeEventListener('DOMContentLoaded', start);
-	document.getElementById('get_credit').addEventListener('click', game.add_resources.bind(game));
+	document.getElementsByName('button').addEventListener('click', game.send_res_update.bind(game));
 
 	//socket events
 	socket.on('message', game.process_incoming_message);
 	socket.on('starter_datapack', game.display_data);
-	socket.on('added_credits', game.add_credits);
+	socket.on('updated_resource', game.update_resource);
 
 	game.request_data();
 }
