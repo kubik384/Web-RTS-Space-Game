@@ -1,6 +1,6 @@
 "use strict"
 
-import { DbManager } from './server_side/dbManager.js';
+import { DbManager } from './modules/dbManager.js';
 
 const saltRounds = 10;
 const gameURL = '/game';
@@ -124,28 +124,27 @@ io.on('connection', socket => {
 	socket.on('login_player', token => {
 		tokens.push(token);
 		socketTable[socket.id] = token;
-		var sql = 'SELECT credit FROM players WHERE username = ?';
-
-		//TEST - update to return resources in [{resource, amount}, {resource, amount}, ...] format (parse to JSON and then from JSON on the client side?)
-		con.query(sql, [token], function (err, result) {
-			if (err) {
-				throw err;
-			} else {
-				socket.emit('starter_datapack', JSON.stringify(result[0].credit));
-			}
+		dbManager.get_resource(token, 'all', true).then(res_result => {
+			dbManager.get_building(token, 'all', true).then(build_result => {
+				var result = res_result.join(build_result);
+				socket.emit('starter_datapack', JSON.stringify(result));
+			});
 		});
 	});
 
-	socket.on('update_resource', resource, amount => {
+	socket.on('update_resource', data => {
+		var data = data.parse();
 		var token = socketTable[socket.id];
-		//TODO: create credits/hour generation. When credits are updated/selected, always update credits first with the gen*(currTimestamp - lastTimestamp), then update/return value
+		dbManager.update_resource(token, data.resource, data.amount);
+	});
 
-		//TEST - callback function works
-		dbManager.update_resource(token, resource, amount, socket.emit);
+	socket.on('upgrade_building', building => {
+		var token = socketTable[socket.id];
+		dbManager.upgrade_building(token, building);
 	});
 
 	socket.on('disconnect', () => {
-		tokens.slice(tokens.findIndex(token => token = socketTable[socket.id]), 1);
+		tokens.slice(tokens.findIndex(token => token == socketTable[socket.id]), 1);
 		delete socketTable[socket.id];
 	});
 });

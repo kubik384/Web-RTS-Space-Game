@@ -26,14 +26,18 @@ class Game {
         }
     }
 
-    async update_resource(resource, amount) {
-        document.getElementById(resource).innerHTML = resource + ': ' + (this.resources[resource] + amount);
-        this.resources[resource] += amount;
+    async update_resource(event) {
+        //TEST - figure out how to get id of the element that's been clicked through event
+        var resource = event.element.id.split('_')[1];
+        var amount = 10;
+        this.socket.emit('update_resource', JSON.stringify({resource: resource, amount: amount}));
+        document.getElementById(resource).innerHTML = resource + ': ' + (this.resources[resource] += amount);
     }
 
-    async send_res_update(event) {
+    async upgrade_building(event) {
         //TEST - figure out how to get id of the element that's been clicked through event
-        this.socket.emit('update_resource', event.element.id.split('_')[1], 10);
+        var building = event.element.id.split('_')[1];
+        this.socket.emit('upgrade_building', building);
     }
 }
 

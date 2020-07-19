@@ -8,7 +8,7 @@ MySQL will most likely require a certain databse with set tables, etc.
 
 TODO:
 Add token generator for authentication. Redirect anyone trying to access /game without valid token. Start saving user progress - building buildings, getting resources, etc.
-
+start adding JSDOC (documentation)
 
 
 
