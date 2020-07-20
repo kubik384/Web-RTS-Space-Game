@@ -45,4 +45,4 @@ class DbManager {
     }
 }
 
-export { dbManager };
+module.exports = DbManager;

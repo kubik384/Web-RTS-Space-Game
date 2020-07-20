@@ -1,15 +1,5 @@
 "use strict"
 
-import { DbManager } from './modules/dbManager.js';
-
-const saltRounds = 10;
-const gameURL = '/game';
-const dbManager = new DbManager();
-const root = path.resolve(__dirname, '/..');
-var tokens = [];
-var socketTable = {};
-
-
 var express = require('express');
 var app = express();
 var mysql = require('mysql');
@@ -17,9 +7,18 @@ var http = require('http');
 var path = require('path');
 var server = http.Server(app);
 var bodyParser = require('body-parser');
-var cookieParser = require('cookie-parser')
+var cookieParser = require('cookie-parser');
 var bcrypt = require('bcrypt');
 var io = require('socket.io')(server, {pingInterval: 1500});
+
+const DbManager = require ('./modules/dbManager.js');
+
+const saltRounds = 10;
+const gameURL = '/game';
+const dbManager = new DbManager();
+const root = path.resolve(__dirname, '..');
+var tokens = [];
+var socketTable = {};
 
 app.set('port', 8080);
 app.use('/client_side', express.static(root + '/client_side'));// Routing
