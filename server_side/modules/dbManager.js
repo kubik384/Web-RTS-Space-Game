@@ -33,6 +33,10 @@ class DbManager {
 		});
     }
 
+    /**
+     * @param {string} username
+     * @param {string} building TODO: Need to figure out how to limit accepted values - load them from database? File? Probably want this to be synced with server without having to update both
+     */
     async upgrade_building(username, building) {
         //get cost, update on the client side
         this.update_resource(username, resource, cost);

@@ -121,7 +121,6 @@ server.listen(8080, function() {
 // Add the WebSocket handlers
 io.on('connection', socket => {
 	socket.on('login_player', token => {
-		tokens.push(token);
 		socketTable[socket.id] = token;
 		dbManager.get_resource(token, 'all', true).then(res_result => {
 			dbManager.get_building(token, 'all', true).then(build_result => {
