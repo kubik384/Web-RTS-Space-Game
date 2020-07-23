@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<!-- Original author of the page style and layout is tomlacko (source: http://itb-lacko.4fan.cz/2D-Engine/documentation.html) -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<title>Documentation - Unfinished_project_219</title>
+		
+		<style>
+			* {
+				margin:0px;
+				padding:0px;
+			}
+
+			html {
+				font-family:Roboto, Sans-serif;
+			}
+
+			body {
+				background-color:#333;
+			}
+
+			#header {
+				display:block;
+				text-align:center;
+				position:fixed;
+				background-color:#555;
+				width:100%;
+				height:70px;
+				box-shadow:0px 1px 15px rgba(50, 50, 50, 1);
+			}
+
+			#title {
+				color:#FFF;
+				margin-top:18px;
+				text-shadow:0px 0px 8px #000;
+			}
+
+			#goUp {
+				position:absolute;
+				bottom:10px;
+				right:10px;
+				color:#FFF;
+				background-color:#777;
+				border:4px solid #FFF;
+				padding:5px;
+			}
+
+			#goUp:hover {
+				background-color:#AAA;
+			}
+
+			#menu {
+				background-color:#BBB;
+				width:250px;
+				margin-top:80px;
+				float:left;
+				border-top-right-radius:10px;
+				border-bottom-right-radius:10px;
+				margin-bottom:10px;
+				padding:5px;
+			}
+
+			.category {
+				font-weight:bold;
+				display:block;
+				margin-top:10px;
+				color:#000;
+			}
+
+			.subcategory {
+				display:block;
+				margin-left:10px;
+				color:#333;
+			}
+
+			.section {
+				background-color:#EEE;
+				float:right;
+				border-radius:3px;
+				margin-top:10px;
+				margin-right:10px;
+				margin-left:10px;
+				display:block;
+				width:calc(100% - 290px);
+				min-height:20px;
+				padding:5px;
+			}
+
+			.section:first-child {
+				margin-top:80px;
+			}
+
+			.section:last-child {
+				margin-bottom:10px;
+			}
+
+			.subsection {
+				display:block;
+				margin-left:15px;
+				padding-left:8px;
+				margin-top:10px;
+				margin-bottom:25px;
+			}
+
+			.subsection h3 {
+				margin-bottom:5px;
+				text-decoration:underline;
+			}
+
+			li > ul, li > ol {
+				padding-left:20px;
+			}
+
+			h4 {
+				padding: 5px 0;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="header">
+			<h1 id="title">Documentation - Unfinished_project_219</h1>
+		</div>
+		<div id="menu">			
+			<p class="category">Server side</p>
+			<a href="#socket_io_server" class="subcategory">Socket.io endpoints</a>
+			<p class="category">Client side</p>
+			<a href="#socket_io_client" class="subcategory">Socket.io endpoints</a>
+			<p class="category">Game functionality</p>
+			<a href="#login_func" class="subcategory">Player account functionality</a>
+			<a href="#input_func" class="subcategory">Game input processing</a>
+		</div>
+		<div id="page">
+			<div class="section">
+				<h2>Server side</h2>
+				<div class="subsection" id="socket_io_server">
+					<h3>Socket.io endpoints</h3>
+					<ul>
+						<li>
+							<h4 id="login_player">login_player</h4>
+							<ul>
+								<li>Expects client's token. Sends back starter_datapack to user in following form: TODO.</li>
+							</ul>
+						</li>
+						<li>
+							<h4 id="update_resource">update_resource</h4>
+							<ul>
+								<li>Expects data in following form: {resource, amount}</li>
+							</ul>
+						</li>
+						<li>
+							<h4 id="upgrade_building">upgrade_building</h4>
+							<ul>
+								<li>Expects valid building name</li>
+							</ul>
+						</li>
+						<li>
+							<h4 id="disconnect">disconnect</h4>
+							<ul>
+								<li>
+									Does not expect any data
+								</li>
+							</ul>
+						</li>
+					</ul>
+				</div>
+			</div>
+			<div class="section">
+				<h2>Client side</h2>
+				<div class="subsection" id="socket_io_client">
+					<h3>Socket.io endpoints</h3>
+					<ul>
+						<li>
+							<strong>Message</strong>
+							<ul>
+								<li>Anything, prints out in console</li>
+							</ul>
+						</li>
+						<li>
+							<strong>Starter_datapack</strong> - JSON
+							<ul>
+								<li>Expects JSON in following form: {resources: [{resource, amount}, ..], buildings: [{bulding, level}, ..]}</li>
+							</ul>
+						</li>
+					</ul>
+				</div>
+			</div>
+			<div class="section">
+				<h2>Game functionality</h2>
+				<div class="subsection" id="login_func">
+					<h3>Player account functionality</h3>
+					<ul>
+						<li>
+							<h4>Registering/Logging in</h4>
+							<ul>
+								<li>User can create account by registering</li>
+								<li>Successfully logging in causes server to create a unique token - which is currently implemented as username, that's then added to tokens array and sent to the client, who saves it as a cookie</li>
+							</ul>
+						</li>
+					</ul>
+					<ul>
+						<li>
+							<h4>Accessing /game</h4>
+							<ul>
+								<li>When a client requests /game, server checks 'token' cookie stored on the client side. If the token does not match any token stored in tokens array on the server, user's redirected to login page</li>
+								<li>Once the client loads the page and socket connection has been established, client sends it's token to server endpoint <a href="#login_player">login_player</a>. Server creates a new socketTable entry, where it assigns sender's socket.id to the sent token for future reference. Since the token is currently player's username, server doesn't have to assign token to a username during login, which is required for sending BE requests to db.
+								Server then responds by sending all the specified data (that are needed to properly display "game homepage") to client using client endpoint <a href="#starter_datapack">starter_datapack</a> (after updating them - resources by time passed x resource production, checking and updating building upgrade time/upgrading buildings)</li>
+							</ul>
+						</li>
+					</ul>
+					<ul>
+						<li>
+							<h4>Disconnecting/logging out</h4>
+							<ul>
+								<li>When the user disconnects/closes connection, user's token is deleted from tokens and socketTable arrays</li>
+							</ul>
+						</li>
+					</ul>
+				</div>
+				<div class="subsection" id="input_func">
+					<h3>Game input processing</h3>
+					<ul>
+						<li>
+							<h4>Updating resources</h4>
+							<ul>
+								<li>
+									Currently implemented that when a user clicks button, data in {resource, amount} form are sent to update_resource server endpoint. Server then updates the resource by time passed * resource production and adds the selected amount of resources.
+								</li>
+							</ul>
+							<h4>Upgrading building</h4>
+							<ul>
+								<li>
+									Currently implemented that when a user clicks button, selected building's name is sent to upgrade_building server endpoint. Server then checks if building is already being built - has build time assigned, that has not surpassed current time. If so, nothing happens, else build time is assigned. When the time reaches current time, building is upgraded and assigned timestamp is removed
+								</li>
+							</ul>
+						</li>
+					</ul>
+				</div>
+			</div>
+		</div>
+	
+		<script>
+			function loaded() {
+				if(window.location.hash) setTimeout(function() {document.body.scrollTop-=80;}, 0);
+				var elements = document.getElementsByTagName("a"); 
+				for(var i=0; i<elements.length; i++){
+					if(elements[i].className==="subcategory") { 
+						elements[i].onclick = function() { 
+							setTimeout(function() {
+								document.body.scrollTop-=80;
+							}, 0); 
+						}
+					} 
+				}
+			}
+			if(document.readyState==="complete" || document.readyState==="loaded") loaded();
+			else document.addEventListener("DOMContentLoaded", loaded);
+		</script>
+	</body>
+</html>
