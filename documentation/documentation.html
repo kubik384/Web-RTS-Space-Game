@@ -56,6 +56,7 @@
 				border-bottom-right-radius:10px;
 				margin-bottom:10px;
 				padding:5px;
+				position: fixed;
 			}
 
 			.category {
@@ -126,6 +127,8 @@
 			<p class="category">Game functionality</p>
 			<a href="#login_func" class="subcategory">Player account functionality</a>
 			<a href="#input_func" class="subcategory">Game input processing</a>
+			<a href="#db_schema" class="subcategory">Database schema - Tables</a>
+			<p class="category"><a href="#todo" class="category">TODO</a></p>
 		</div>
 		<div id="page">
 			<div class="section">
@@ -136,7 +139,7 @@
 						<li>
 							<h4 id="login_player">login_player</h4>
 							<ul>
-								<li>Expects client's token. Sends back starter_datapack to user in following form: TODO.</li>
+								<li>Expects client's token. Sends back starter_datapack to user in following form: {resources: [{resource, amount}, ..], buildings: [{building, level, buildTime, startedBuildTime}]}.</li>
 							</ul>
 						</li>
 						<li>
@@ -233,6 +236,58 @@
 						</li>
 					</ul>
 				</div>
+				<div class="subsection" id="db_schema">
+					<h3>Database schema - Tables</h3>
+					<ul>
+						<li>
+							<h4>players</h4>
+							<ul>
+								<li>
+									player_id - pk, auto_increment
+								</li>
+								<li>
+									username - unique
+								</li>
+								<li>
+									password
+								</li>
+								<li>
+									resources (wood, dirt, iron and pop) - TODO: Load resources from database into all_resource_types to prevent duplicates and also desync
+								</li>
+							</ul>
+							<h4>player_buildings</h4>
+							<ul>
+								<li>
+									player_id - pk with building_id
+								</li>
+								<li>
+									building_id - pk with player_id - Currently have array buildingTable as translator from name to id, where index = building_id. Probably should be moved into database and loaded from the database together with names (to prevent moving or switching ids)
+								</li>
+								<li>
+									level - selected building level
+								</li>
+								<li>
+									upgradeStart - If defined, upon reaching the timestamp, next get should update the building level by 1 and set upgradeStart to null
+								</li>
+							</ul>
+						</li>
+					</ul>
+				</div>
+			</div>
+			<div class="section">
+				<div class="subsection" id="todo">
+					<h3>TODO</h3>
+					<ul>
+						<li>
+							Add prod values for resources into database
+						</li>
+						<li>
+							Update starter_datapack to return both resources and buildings after calculating them
+						</li>
+						<li>
+							Update client side to calculate resources and building upgrade timers on it's own
+						</li>
+					</ul>
 			</div>
 		</div>
 	
