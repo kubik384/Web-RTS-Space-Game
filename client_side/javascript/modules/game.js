@@ -17,6 +17,7 @@ class Game {
     }
 
     async display_data(data) {
+        console.log(data);
         JSON.parse(data);
         for (var i = 0; i < data.length; i++) {
             var resource = data[i].resource;
@@ -28,7 +29,7 @@ class Game {
 
     async update_resource(event) {
         //TEST - figure out how to get id of the element that's been clicked through event
-        var resource = event.element.id.split('_')[1];
+        var resource = event.target.id.split('_')[1];
         var amount = 10;
         this.socket.emit('update_resource', JSON.stringify({resource: resource, amount: amount}));
         document.getElementById(resource).innerHTML = resource + ': ' + (this.resources[resource] += amount);
@@ -36,7 +37,7 @@ class Game {
 
     async upgrade_building(event) {
         //TEST - figure out how to get id of the element that's been clicked through event
-        var building = event.element.id.split('_')[1];
+        var building = event.target.id.split('_')[1];
         this.socket.emit('upgrade_building', building);
     }
 }

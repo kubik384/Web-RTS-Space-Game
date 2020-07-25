@@ -2,7 +2,6 @@
 
 var express = require('express');
 var app = express();
-var mysql = require('mysql');
 var http = require('http');
 var path = require('path');
 var server = http.Server(app);
@@ -23,16 +22,6 @@ var socketTable = {};
 app.set('port', 8080);
 app.use('/client_side', express.static(root + '/client_side'));// Routing
 
-//Credentials for connecting to the db 
-var con = mysql.createConnection({
-	host: "localhost",
-	user: "root",
-	password: null,
-	port: 3308,
-	database: "improvisationalDB"
-});
-con.connect( err => { if (err) throw err; });
-
 app.use(bodyParser.urlencoded({ extended: false }));
 
 app.use(cookieParser());
@@ -45,11 +34,8 @@ app.post('/register', function(req, res) {
 	var { username, password } = req.body;
 	
 	if (password != '' && username != '') {
-		var sql = "SELECT password FROM players WHERE username = '" + username + "'";
-		con.query(sql, function (err, results) {
-			if (err) {
-				throw err;
-			}
+		var query = "SELECT password FROM players WHERE username = ?";
+		dbManager.execute_query(query, [username]).then(results => {
 			if (results.length == 1) {
 				res.sendStatus(401);
 			} else {
@@ -66,6 +52,8 @@ app.post('/register', function(req, res) {
 					});
 				});
 			}
+		}).catch(err => {
+			console.log(err);
 		});
 	}
 });
@@ -73,12 +61,8 @@ app.post('/register', function(req, res) {
 app.post('/login', function(req, res) {
 	var { username, password } = req.body;
 	
-
-	var sql = "SELECT password FROM players WHERE username = '" + username + "'";
-	con.query(sql, function (err, results) {
-		if (err) {
-			throw err;
-		}
+	var query = "SELECT password FROM players WHERE username = ?";
+	dbManager.execute_query(query, [username]).then(results => {
 		if (results.length == 1) {
 			bcrypt.compare(password, results[0].password, function(err, passwordsMatch) {
 				if (err) {
@@ -97,6 +81,8 @@ app.post('/login', function(req, res) {
 		} else {
 			res.sendStatus(401);
 		}
+	}).catch(err => {
+		console.log(err);
 	});
 });
 
