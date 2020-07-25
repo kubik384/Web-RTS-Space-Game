@@ -25,7 +25,7 @@ async function start() {
 
 	//socket events
 	socket.on('message', game.process_incoming_message);
-	socket.on('starter_datapack', game.display_data);
+	socket.on('starter_datapack', game.display_starter_datapack);
 
 	game.request_data();
 }

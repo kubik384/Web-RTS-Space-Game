@@ -40,6 +40,19 @@ class Game {
         var building = event.target.id.split('_')[1];
         this.socket.emit('upgrade_building', building);
     }
+
+    async display_starter_datapack(p_starter_datapack) {
+        var starter_datapack = JSON.parse(p_starter_datapack);
+        var resources = starter_datapack.resources[0];
+        var buildings = starter_datapack.buildings;
+        for (var resource in resources) {
+            document.getElementById(resource).innerHTML = resources[resource];
+        }
+        
+        for (var i = 0; i < buildings.length; i++) {
+            document.getElementById(buildings[i].name).innerHTML = buildings[i].name + ' ' + buildings[i].level;
+        }
+    }
 }
 
 export { Game };

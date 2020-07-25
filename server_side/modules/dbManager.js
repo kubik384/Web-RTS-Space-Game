@@ -3,7 +3,7 @@
 var mysql = require('mysql');
 
 const all_resource_types = 'wood, dirt, iron, pop';
-//const resourceTable = all_resource_types.split(', ');
+const resourceTable = all_resource_types.split(', ');
 const all_building_types = 'walls, towncenter, resgen';
 const buildingTable = all_building_types.split(', ');
 
@@ -53,6 +53,11 @@ class DbManager {
             this.con.query(query, [username], function (err, results) {
                 if (err) {
                     reject(err);
+                }
+                if (p_resource = 'all') {
+                    for (var i = 0; i < resourceTable.length; i++) {
+                        results[0][resourceTable[i]] = Math.floor(results[0][resourceTable[i]]);
+                    }
                 }
                 resolve(results);
             });
