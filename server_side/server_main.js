@@ -88,7 +88,7 @@ app.post('/login', function(req, res) {
 
 app.get(gameURL, function(req,res) {
 	if (req.cookies.token !== undefined) {
-		if (tokens.findIndex(token => token = req.cookies.token) != -1) {
+		if (tokens.findIndex(token => token == req.cookies.token) != -1) {
 			res.sendFile(path.join(root + '/client_side', 'pages/game.html'));
 		} else {
 			res.clearCookie('token');
@@ -115,7 +115,7 @@ io.on('connection', socket => {
 	});
 
 	socket.on('update_resource', data => {
-		var data = data.parse();
+		var data = JSON.parse(data);
 		var token = socketTable[socket.id];
 		dbManager.update_resource(token, data.resource, data.amount);
 	});

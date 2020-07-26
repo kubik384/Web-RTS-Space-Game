@@ -15,13 +15,36 @@
 	</head>
 	<body>
 		<div id='resource_ui'>
-			<p id='wood'>wood</p>
-			<p id='dirt'>dirt</p>
-			<p id='iron'>iron</p>
-			<p id='pop'>pop</p>
-			<p id='walls'>walls: 0</p>
-			<p id='towncenter'>towncenter: 0</p>
-			<p id='resgen'>resgen: 0</p>
+			<table>
+				<tr>
+					<td><img src="client_side/images/resources/wood.png" height="16px"></img></td>
+					<td><p id='wood' class="resource">wood</p></td>
+				</tr>
+				<tr>
+					<td><img src="client_side/images/resources/dirt.svg" height="16px"></img></td>
+					<td><p id='dirt' class="resource">dirt</p></td>
+				</tr>
+				<tr>
+					<td><img src="client_side/images/resources/iron.svg" height="18px"></img></td>
+					<td><p id='iron' class="resource">iron</p></td>
+				</tr>
+				<tr>
+					<td><img src="client_side/images/resources/pop.png" height="20px"></img></td>
+					<td><p id='pop' class="resource">pop</p></td>
+				</tr>
+				<tr>
+					<td><img src="client_side/images/buildings/walls.jpg" height="20px"></img></td>
+					<td id='walls'></td>
+				</tr>
+				<tr>
+					<td><img src="client_side/images/buildings/towncenter.jpg" height="20px"></img></td>
+					<td id='towncenter'></td>
+				</tr>
+				<tr>
+					<td><img src="client_side/images/buildings/resgen.jpg" height="20px"></img></td>
+					<td id='resgen'></td>
+				</tr>
+			</table>
 		</div>
 		<div id='button_menu'>
 			<button id='get_wood' class='resource_btn'>Get wood</button>
@@ -29,8 +52,8 @@
 			<button id='get_iron' class='resource_btn'>Get iron</button>
 			<button id='get_pop' class='resource_btn'>Get pop</button>
 			<br>
-			<button id='upgrade_towncenter' class='building_btn'>Upgrade town center</button>
 			<button id='upgrade_walls' class='building_btn'>Upgrade walls</button>
+			<button id='upgrade_towncenter' class='building_btn'>Upgrade town center</button>
 			<button id='upgrade_resgen' class='building_btn'>Upgrade resource generator</button>
 		</div>
 	</body>
