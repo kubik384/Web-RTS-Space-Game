@@ -108,10 +108,7 @@ server.listen(8080, function() {
 io.on('connection', socket => {
 	socket.on('login_player', token => {
 		socketTable[socket.id] = token;
-		Promise.all([dbManager.get_resource(token, 'all', true), dbManager.get_building(token, 'all', true)]).then(values => {
-			var result = {resources: values[0], buildings: values[1]};
-			socket.emit('starter_datapack', JSON.stringify(result));
-		});
+		dbManager.get_starter_datapack(token, result => { socket.emit('starter_datapack', JSON.stringify(result)) });
 	});
 
 	socket.on('update_resource', data => {

@@ -55,11 +55,6 @@ class DbManager {
                 if (err) {
                     reject(err);
                 }
-                if (p_resource = 'all') {
-                    for (var i = 0; i < resourceTable.length; i++) {
-                        results[0][resourceTable[i]] = Math.floor(results[0][resourceTable[i]]);
-                    }
-                }
                 resolve(results);
             });
         });
@@ -145,6 +140,20 @@ class DbManager {
                 resolve(results);
             });
         });
+    }
+
+    get_starter_datapack(username, callback) {
+        var resource_prods = '';
+        for (var i = 0; i < resourceTable.length; i++) {
+            resource_prods += resourceTable[i] + '_prod AS ' + resourceTable[i] + ', ';
+        }
+        resource_prods = resource_prods.slice(0, resource_prods.length - 2);
+
+        var query = 'SELECT ' + resource_prods + ' FROM players WHERE username = ?';
+
+        Promise.all([this.execute_query(query, [username]), this.get_resource(username, 'all', true), this.get_building(username, 'all', true)]).then(values => {
+            callback({resource_prods: values[0], resources: values[1], buildings: values[2], building_times: building_time});
+        }).catch(err => { console.log(err) });
     }
 }
 

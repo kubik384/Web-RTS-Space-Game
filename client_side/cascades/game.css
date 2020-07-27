@@ -20,10 +20,10 @@ button {
 	margin-right: 10vw;
 }
 
-.resource {
-	display: inline-block;
-}
-
 table {
 	text-align: left;
+}
+
+tr > td:nth-child(2) {
+	padding-left: 40px;
 }
