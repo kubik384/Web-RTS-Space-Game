@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3308
--- Generation Time: Jul 28, 2020 at 06:51 AM
+-- Generation Time: Jul 28, 2020 at 11:08 AM
 -- Server version: 8.0.18
 -- PHP Version: 7.3.12
 
@@ -34,17 +34,30 @@ CREATE TABLE IF NOT EXISTS `players` (
   `username` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `password` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `wood` float NOT NULL DEFAULT '100',
-  `wood_prod` float NOT NULL DEFAULT '0.0028',
+  `wood_prod` float NOT NULL DEFAULT '0.028',
   `dirt` float NOT NULL DEFAULT '100',
-  `dirt_prod` float NOT NULL DEFAULT '0.0028',
+  `dirt_prod` float NOT NULL DEFAULT '0.028',
   `iron` float NOT NULL DEFAULT '100',
-  `iron_prod` float NOT NULL DEFAULT '0.0028',
+  `iron_prod` float NOT NULL DEFAULT '0.028',
   `pop` float NOT NULL DEFAULT '100',
-  `pop_prod` float NOT NULL DEFAULT '0.0028',
+  `pop_prod` float NOT NULL DEFAULT '0.028',
   `res_gen_ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`player_id`),
   UNIQUE KEY `username` (`username`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Triggers `players`
+--
+DROP TRIGGER IF EXISTS `Create_buildings`;
+DELIMITER $$
+CREATE TRIGGER `Create_buildings` AFTER INSERT ON `players` FOR EACH ROW BEGIN
+    INSERT INTO `player_buildings` (`player_id`, `building_id`, `level`, `upgradeStart`) VALUES (new.player_id, '1', '1', NULL);
+    INSERT INTO `player_buildings` (`player_id`, `building_id`, `level`, `upgradeStart`) VALUES (new.player_id, '2', '1', NULL);
+    INSERT INTO `player_buildings` (`player_id`, `building_id`, `level`, `upgradeStart`) VALUES (new.player_id, '3', '1', NULL);
+END
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 

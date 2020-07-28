@@ -55,8 +55,10 @@ class Game {
         var currTime = Math.floor(Date.now()/1000);
         var timePassed = currTime - this.lastUpdateTime;
         for (var resource_prod in this.resource_prods) {
-            this.update_resource_ui(resource_prod, Math.floor(this.resources[resource_prod] + this.resource_prods[resource_prod] * timePassed));
+            this.resources[resource_prod] += this.resource_prods[resource_prod] * timePassed;
+            this.update_resource_ui(resource_prod, Math.floor(this.resources[resource_prod]));
         }
+        
         for (var i = 0; i < this.buildings.length; i++) {
             if (this.buildings[i].timeLeft != 0) {
                 if (this.buildings[i].timeLeft - timePassed <= 0) {

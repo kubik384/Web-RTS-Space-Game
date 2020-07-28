@@ -43,13 +43,10 @@ app.post('/register', function(req, res) {
 					if (err) {
 						throw err;
 					}
-					var sql = `INSERT INTO players (username, password) VALUES ('${username}', '${hash}')`;
-					con.query(sql, function (err, results) {
-						if (err) {
-							throw err;
-						}
+					query = "INSERT INTO players (username, password) VALUES ( ? , ? )";
+					dbManager.execute_query(query, [username, hash]).then(() => {
 						res.sendStatus(200);
-					});
+					}).catch(err => { console.log(err) });
 				});
 			}
 		}).catch(err => {
