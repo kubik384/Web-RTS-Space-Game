@@ -88,7 +88,7 @@ app.post('/login', function(req, res) {
 
 app.get(gameURL, function(req,res) {
 	if (req.cookies.token !== undefined) {
-		if (tokens.findIndex(token => token == req.cookies.token) != -1) {
+		if (tokens.findIndex(token => { if (token == req.cookies.token) { return true; } }) != -1) {
 			res.sendFile(path.join(root + '/client_side', 'pages/game.html'));
 		} else {
 			res.clearCookie('token');
@@ -123,7 +123,7 @@ io.on('connection', socket => {
 	});
 
 	socket.on('disconnect', () => {
-		tokens.slice(tokens.findIndex(token => token == socketTable[socket.id]), 1);
+		tokens.slice(tokens.findIndex(token => { if (token == socketTable[socket.id]) { return true; } }), 1);
 		delete socketTable[socket.id];
 	});
 });

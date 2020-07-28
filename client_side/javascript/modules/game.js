@@ -26,10 +26,11 @@ class Game {
         
     }
 
-    async upgrade_building(building) {
-        this.socket.emit('upgrade_building', building);
-        this.buildings[building].timeLeft = this.building_times;
-        this.update_buildings_ui(building, this.buildings[building].level, this.buildings[building].timeLeft);
+    async upgrade_building(p_building) {
+        this.socket.emit('upgrade_building', p_building);
+        var building_index = this.buildings.findIndex(building => { if (building.name == p_building) { return true; } });
+        this.buildings[building_index].timeLeft = this.building_times;
+        this.update_building_ui(p_building, this.buildings[building_index].level, this.buildings[building_index].timeLeft);
     }
 
     async display_starter_datapack(p_starter_datapack) {
@@ -56,18 +57,17 @@ class Game {
         for (var resource_prod in this.resource_prods) {
             this.update_resource_ui(resource_prod, Math.floor(this.resources[resource_prod] + this.resource_prods[resource_prod] * timePassed));
         }
-        for (var building in this.buildings) {
-            if (this.buildings[building].timeLeft != 0) {
-                if (this.buildings[building].timeLeft - timePassed <= 0) {
-                    this.buildings[building].level++;
-                    this.buildings[building].timeLeft = 0;
+        for (var i = 0; i < this.buildings.length; i++) {
+            if (this.buildings[i].timeLeft != 0) {
+                if (this.buildings[i].timeLeft - timePassed <= 0) {
+                    this.buildings[i].level++;
+                    this.buildings[i].timeLeft = 0;
                 } else {
-                    this.buildings[building].timeLeft -= timePassed;
+                    this.buildings[i].timeLeft -= timePassed;
                 }
-            }
-            this.update_building_ui(this.buildings[building].name, this.buildings[building].level, this.buildings[building].timeLeft);
+                this.update_building_ui(this.buildings[i].name, this.buildings[i].level, this.buildings[i].timeLeft);
+            } 
         }
-        //calc resources + buildings seconds
         this.lastUpdateTime = currTime;
     }
 
