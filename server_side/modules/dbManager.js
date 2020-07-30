@@ -6,7 +6,6 @@ const all_resource_types = 'wood, dirt, iron, pop';
 const resourceTable = all_resource_types.split(', ');
 const all_building_types = 'walls, towncenter, resgen';
 const buildingTable = all_building_types.split(', ');
-const building_time = 3600; //1 hour for all buildings for now
 
 class DbManager {
     constructor() {
@@ -50,7 +49,6 @@ class DbManager {
 
             var query = 'SELECT ' + resource + ' FROM players WHERE username = ?';
 
-            //Update to return resources in [{resource, amount}, {resource, amount}, ...] format
             this.con.query(query, [username], function (err, results) {
                 if (err) {
                     reject(err);
@@ -60,14 +58,28 @@ class DbManager {
         });
     }
 
-    /**
-     * @param {string} username
-     * @param {string} building TODO: Need to figure out how to limit accepted values - load them from database? File? Probably want this to be synced with server without having to update both
-     */
-    upgrade_building(username, p_building) {
+    upgrade_building(username, building) {
         return new Promise((resolve,reject) => {
-            var query = `UPDATE player_buildings pb INNER JOIN players p ON p.player_id = pb.player_id
-                        SET pb.level = IF(NOW() - (pb.upgradeStart + ${building_time}) > 0, pb.level + 1, pb.level), pb.upgradeStart = NOW() 
+            var query = `UPDATE player_buildings pb 
+            INNER JOIN players p ON p.player_id = pb.player_id 
+            INNER JOIN b ON b.building_id = pb.building_id AND b.level = pb.level
+            SET pb.level = IF(NOW() - (pb.upgradeStart + b.upgrade_time) > 0, pb.level + 1, pb.level),
+            IF(pb.upgradeStart != NULL AND p.wood - b.wood_cost > 0 AND p.dirt - b.dirt_cost > 0 AND p.iron - b.iron_cost > 0 AND p.pop - b.pop_cost > 0, 
+                pb.upgradeStart = NOW(),
+                p.wood = p.wood - b.wood_cost,
+                p.dirt = p.dirt - b.dirt_cost,
+                p.iron = p.iron - b.iron_cost,
+                p.pop = p.pop - b.pop_cost
+            )
+            WHERE p.username = ? AND b.name = ?`;
+            this.con.query(query, [username, building], function (err) {
+                if (err) {
+                    reject(err);
+                }
+            });
+
+            var query = `SELECT player_buildings pb INNER JOIN players p ON p.player_id = pb.player_id INNER JOIN b ON b.building_id = pb.building_id
+                        SET pb.level = IF(NOW() - (pb.upgradeStart + ${building_time}) > 0, pb.level + 1, pb.level), pb.upgradeStart = NOW()
                         WHERE p.username = ? AND pb.building_id = ?`;
             this.con.query(query, [username, buildingTable.findIndex(building => building == p_building) + 1], function (err) {
                 if (err) {
