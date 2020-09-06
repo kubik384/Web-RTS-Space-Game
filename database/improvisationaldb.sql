@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3308
--- Generation Time: Sep 04, 2020 at 02:56 PM
+-- Generation Time: Sep 06, 2020 at 09:25 AM
 -- Server version: 8.0.18
 -- PHP Version: 7.3.12
 
@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS `players` (
   `player_id` mediumint(9) UNSIGNED NOT NULL AUTO_INCREMENT,
   `username` varchar(32) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
   `password` varchar(128) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
-  `res_last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `res_last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `wood` float NOT NULL DEFAULT '100',
   `wood_prod` float NOT NULL DEFAULT '0.0028',
   `dirt` float NOT NULL DEFAULT '100',
@@ -81,8 +81,8 @@ CREATE TABLE IF NOT EXISTS `players` (
 -- Dumping data for table `players`
 --
 
-INSERT INTO `players` (`player_id`, `username`, `password`, `res_last_update`, `wood`, `wood_prod`, `dirt`, `dirt_prod`, `iron`, `iron_prod`, `pop`, `pop_prod`) VALUES
-(17, 'Newstory', '$2b$10$f7I6ge.NFp/ojqzQjw0DvOLEXpE79xwBxxsyrdzI303xS8PKPqeei', '2020-09-04 14:55:53', 100, 0.0028, 100, 0.0028, 100, 0.0028, 100, 0.0028);
+INSERT INTO `players` (`player_id`, `username`, `password`, `wood`, `wood_prod`, `dirt`, `dirt_prod`, `iron`, `iron_prod`, `pop`, `pop_prod`) VALUES
+(17, 'Newstory', '$2b$10$f7I6ge.NFp/ojqzQjw0DvOLEXpE79xwBxxsyrdzI303xS8PKPqeei', 17081.7, 0.0028, 17081.7, 0.0028, 17081.7, 0.0028, 17081.7, 0.0028);
 
 --
 -- Triggers `players`

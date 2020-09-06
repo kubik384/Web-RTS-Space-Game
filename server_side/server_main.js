@@ -10,7 +10,7 @@ var cookieParser = require('cookie-parser');
 var bcrypt = require('bcrypt');
 var io = require('socket.io')(server, {pingInterval: 1500});
 
-const DbManager = require ('./modules/dbManager.js');
+const DbManager = require('./modules/dbManager.js');
 
 const saltRounds = 10;
 const gameURL = '/game';
