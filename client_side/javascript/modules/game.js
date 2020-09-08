@@ -35,6 +35,7 @@ class Game {
 
     async display_starter_datapack(p_starter_datapack) {
         var starter_datapack = JSON.parse(p_starter_datapack);
+        console.log(starter_datapack);
         this.resources = starter_datapack.resources[0];
         this.buildings = starter_datapack.buildings;
         for (var resource in this.resources) {
@@ -42,7 +43,7 @@ class Game {
         }
         
         for (var i = 0; i < this.buildings.length; i++) {
-            this.update_building_ui(this.buildings[i].name, this.buildings[i].level, this.buildings[i].timeLeft);
+            this.update_building_ui(this.buildings[i].name, this.buildings[i].level, this.buildings.wood_cost, this.buildings.dirt_cost, this.buildings.iron_cost, this.buildings.pop_cost, this.buildings.upgrade_time, this.buildings[i].timeLeft);
         }
 
         this.resource_prods = starter_datapack.resource_prods[0];

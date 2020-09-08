@@ -184,11 +184,12 @@ class DbManager {
         return new Promise((resolve,reject) => {
             var query_fragment = '';
             for (var i = 0; i < buildings.length; i++) {
-                query_fragment += `( building_id = '${buildings[i].id}' AND level = ${buildings[i].level + 1} ) OR `
+                query_fragment += `( building_id = '${buildings[i].building_id}' AND level = ${buildings[i].level + 1} ) OR `
             }
             query_fragment = query_fragment.slice(0, query_fragment.length - 4);
 
             var query = `SELECT upgrade_time, wood_cost, dirt_cost, iron_cost, pop_cost FROM buildings WHERE ${query_fragment}`;
+            console.log(query);
             this.con.query(query, function (err, results) {
                 if (err) reject(err);
                 resolve(results);
@@ -207,7 +208,7 @@ class DbManager {
 
     get_starter_datapack(username, callback) {
         Promise.all([this.get_resource_prod(username, 'all'), this.get_resource(username, 'all', true), this.get_building(username, 'all', true)]).then(values => {
-            this.get_building_details(values[2]).then(building_details => callback({resource_prods: values[0], resources: values[1], buildings: values[2], building_details: building_details}));
+            this.get_building_details(values[2]).then(results => callback({resource_prods: values[0], resources: values[1], buildings: values[2], building_details: results}));
         }).catch(err => { console.log(err) });
     }
 }
