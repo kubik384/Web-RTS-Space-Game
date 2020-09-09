@@ -78,8 +78,9 @@ class Game {
         document.getElementById(resource).innerHTML = amount;
     }
 
-    async update_building_ui(name, level, building_time) {
-        var innerHTML = level + (building_time != 0 ? ', Upgrading: ' + building_time + 's' : '');
+    async update_building_ui(name, level, wood_cost, dirt_cost, iron_cost, pop_cost, upgrade_time, building_time) {
+        var innerHTML = level + (building_time != 0 ? (', Upgrading: ' + building_time + 's, Cost: Wood: ' + wood_cost + ' Dirt: ' + dirt_cost + ' Iron: ' + iron_cost + ' Pop: ' + pop_cost + 'Upgrade time: ' + upgrade_time) : '');
+        console.log(innerHTML);
         document.getElementById(name).innerHTML = innerHTML;
     }
 }

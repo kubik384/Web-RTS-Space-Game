@@ -189,7 +189,6 @@ class DbManager {
             query_fragment = query_fragment.slice(0, query_fragment.length - 4);
 
             var query = `SELECT upgrade_time, wood_cost, dirt_cost, iron_cost, pop_cost FROM buildings WHERE ${query_fragment}`;
-            console.log(query);
             this.con.query(query, function (err, results) {
                 if (err) reject(err);
                 resolve(results);
