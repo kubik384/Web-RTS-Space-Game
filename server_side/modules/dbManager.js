@@ -184,7 +184,7 @@ class DbManager {
         return new Promise((resolve,reject) => {
             var query_fragment = '';
             for (var i = 0; i < buildings.length; i++) {
-                query_fragment += `( building_id = '${buildings[i].building_id}' AND level = ${buildings[i].level + 1} ) OR `
+                query_fragment += `( building_id = '${buildings[i].building_id}' AND level = ` + (buildings[i].level + (buildings[i].timeLeft === null ? 1 : 2)) + ' ) OR ';
             }
             query_fragment = query_fragment.slice(0, query_fragment.length - 4);
 
