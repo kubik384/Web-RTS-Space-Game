@@ -19,7 +19,7 @@ async function start() {
 	
 	buttons = document.getElementsByClassName('building_btn');
 	for(var i = 0; i < buttons.length; i++) {
-		buttons[i].addEventListener('click', event => { game.upgrade_building(event.target.id.split('_')[1]) });
+		buttons[i].addEventListener('click', event => { game.upgrade_building(event.target.id.split('-')[1]) });
 	}
 
 	//socket events
