@@ -99,7 +99,7 @@ class DbManager {
 
     upgrade_building(username, p_building) {
         return new Promise((resolve,reject) => {
-            this.update_resource(username, 'all').then(() => {
+            this.update_resource(username, 'all').then(function() {
                 var query = `SELECT p.player_id, b.building_id, p.wood, p.dirt, p.iron, p.pop, b.wood_cost, b.dirt_cost, b.iron_cost, b.pop_cost, pb.upgrade_start
                 FROM buildings b
                 INNER JOIN player_buildings pb ON b.level = pb.level + 1 AND b.building_id = pb.building_id
@@ -109,7 +109,7 @@ class DbManager {
                     if (err) reject(err);
                     if (results.length > 0) {
                         if (results[0].upgrade_start === null && results[0].wood > results[0].wood_cost && results[0].dirt > results[0].dirt_cost && results[0].iron > results[0].iron_cost && results[0].pop > results[0].pop_cost) {
-                            var query = `UPDATE player_buildings pb 
+                            query = `UPDATE player_buildings pb 
                             INNER JOIN players p ON p.player_id = pb.player_id 
                             INNER JOIN buildings b ON b.building_id = pb.building_id AND b.level = pb.level + 1
                             SET 
@@ -125,8 +125,8 @@ class DbManager {
                             });
                         }
                     }
-                });
-            });
+                }.bind(this));
+            }.bind(this));
         });
     }
 
