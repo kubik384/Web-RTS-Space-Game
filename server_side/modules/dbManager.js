@@ -111,13 +111,13 @@ class DbManager {
                         if (results[0].upgrade_start === null && results[0].wood > results[0].wood_cost && results[0].dirt > results[0].dirt_cost && results[0].iron > results[0].iron_cost && results[0].pop > results[0].pop_cost) {
                             query = `UPDATE player_buildings pb 
                             INNER JOIN players p ON p.player_id = pb.player_id 
-                            INNER JOIN buildings b ON b.building_id = pb.building_id AND b.level = pb.level + 1
+                            INNER JOIN buildings b ON b.building_id = pb.building_id AND b.level = pb.level
                             SET 
-                                pb.upgrade_start = NOW(), 
                                 p.wood = p.wood - b.wood_cost,
                                 p.dirt = p.dirt - b.dirt_cost,
                                 p.iron = p.iron - b.iron_cost,
-                                p.pop = p.pop - b.pop_cost
+                                p.pop = p.pop - b.pop_cost,
+                                pb.upgrade_start = NOW()
                             WHERE p.player_id = ? AND b.building_id = ?`;
                             this.con.query(query, [results[0].player_id, results[0].building_id], function (err) {
                                 if (err) reject(err);

@@ -19,12 +19,11 @@ class Game {
 
         for (var i = 0; i < starter_datapack.buildings.length; i++) {
             this.buildings[i].upgrade_start = starter_datapack.buildings.find(b => b.building_id == this.buildings[i].building_id).upgrade_start;
+            this.buildings[i].upgrade_cost = {wood: this.buildings[i].wood_cost, dirt: this.buildings[i].dirt_cost, iron: this.buildings[i].iron_cost, pop: this.buildings[i].pop_cost}
         }
-        for (var resource_type in this.resources) {
-            this.update_resource_ui(resource_type, Math.floor(this.resources[resource_type]) + ' (' + this.resource_prods[resource_type] + '/s)');
-        }
+        this.update_resource_ui();
         for (var i = 0; i < this.buildings.length; i++) {
-            this.update_building_ui(this.buildings[i].name, this.buildings[i].level, this.buildings[i].upgrade_time, this.buildings[i].upgrade_start);
+            this.update_building_ui(this.buildings[i].name, this.buildings[i].level, this.buildings[i].upgrade_time, this.buildings[i].upgrade_start, this.buildings[i].upgrade_cost);
         }
 
         this.lastUpdateTime = Math.floor(Date.now()/1000);
@@ -36,16 +35,16 @@ class Game {
         var timePassed = currTime - this.lastUpdateTime;
         for (var resource_type in this.resource_prods) {
             this.resources[resource_type] += this.resource_prods[resource_type] * timePassed;
-            this.update_resource_ui(resource_type, Math.floor(this.resources[resource_type]) + ' (' + this.resource_prods[resource_type] + '/s)');
+            this.update_resource_ui();
         }
         
         for (var i = 0; i < this.buildings.length; i++) {
             if (this.buildings[i].upgrade_start !== null) {
-                if (this.buildings[i].upgrade_start + this.buildings[i].building_time - Date.now() <= 0) {
+                if (this.buildings[i].upgrade_start + this.buildings[i].building_time - Math.floor(Date.now() / 1000) <= 0) {
                     this.buildings[i].level++;
                     this.buildings[i].upgrade_start = null;
                 }
-                this.update_building_ui(this.buildings[i].name, this.buildings[i].level, this.buildings[i].upgrade_time, this.buildings[i].upgrade_start);
+                this.update_building_ui(this.buildings[i].name, this.buildings[i].level, this.buildings[i].upgrade_time, this.buildings[i].upgrade_start, this.buildings[i].upgrade_cost);
             }
         }
         this.lastUpdateTime = currTime;
@@ -62,24 +61,57 @@ class Game {
     async update_resource(resource, amount) {
         this.socket.emit('update_resource', JSON.stringify({resource: resource, amount: amount}));
         this.resources[resource] += amount;
-        this.update_resource_ui(resource, Math.floor(this.resources[resource]));
+        this.update_resource_ui();
         
     }
 
     async upgrade_building(p_building) {
-        this.socket.emit('upgrade_building', p_building);
         var building_index = this.buildings.findIndex(building => { if (building.name == p_building) { return true; } });
-        this.update_building_ui(p_building, this.buildings[building_index].level, this.buildings[building_index].timeLeft);
+        if (this.buildings[building_index].upgrade_start === null && this.buildings[building_index].upgrade_time != 0) {
+            this.socket.emit('upgrade_building', p_building);
+            var changed_resources = {};
+            var sufficient_resources = true;
+            for (var resource_type in this.buildings[building_index].upgrade_cost) {
+                if (this.resources[resource_type] - this.buildings[building_index].upgrade_cost[resource_type] >= 0) {
+                    changed_resources[resource_type] = this.resources[resource_type] - this.buildings[building_index].upgrade_cost[resource_type];
+                } else {
+                    sufficient_resources = false;
+                    break;
+                }
+            }
+            if (sufficient_resources) {
+                this.resources = changed_resources;
+                this.update_resource_ui();
+                this.buildings[building_index].upgrade_start = Math.floor(Date.now() / 1000);
+                this.update_building_ui(p_building, this.buildings[building_index].level, this.buildings[building_index].upgrade_time, this.buildings[building_index].upgrade_start, this.buildings[building_index].upgrade_cost);
+            }
+        }
     }
 
-    async update_resource_ui(id, innerHTML) {
-        document.getElementById(id).innerHTML = innerHTML;
+    async update_resource_ui() {
+        for (var resource_type in this.resources) {
+            document.getElementById(resource_type).innerHTML = Math.floor(this.resources[resource_type]) + ' (' + this.resource_prods[resource_type]*3600 + '/h)';
+        }
+        
     }
 
-    async update_building_ui(name, level, upgrade_time, upgrade_start) {
-        var building_time = (upgrade_start !== null ? (upgrade_start + upgrade_time - Math.floor(Date.now() / 1000)) : 0);
-        var innerHTML = level + (building_time != 0 ? (', Upgrading: ' + building_time + 's') : '');
+    async update_building_ui(name, level, upgrade_time, upgrade_start, upgrade_cost) {
+        var innerHTML = level;
+        if (upgrade_start !== null) {
+            var building_time = upgrade_start + upgrade_time - Math.floor(Date.now() / 1000);
+            innerHTML += ', Upgrading: ' + building_time + 's';
+        }
         document.getElementById(name).innerHTML = innerHTML;
+        if (upgrade_time != 0) {
+            document.getElementById('upgrade-' + name).innerHTML = document.getElementById('upgrade-' + name).innerHTML.split('(')[0] + '(' 
+            + upgrade_cost.wood + '<img src="client_side/images/resources/wood.png" height="16px" class=\'button_image\'></img>'
+            + upgrade_cost.dirt + '<img src="client_side/images/resources/dirt.svg" height="16px" class=\'button_image\'></img>' 
+            + upgrade_cost.iron + '<img src="client_side/images/resources/iron.svg" height="16px" class=\'button_image\'></img>' 
+            + upgrade_cost.pop + '<img src="client_side/images/resources/pop.png" height="16px" class=\'button_image\'></img>'
+            + upgrade_time + 's)';
+        } else {
+            document.getElementById('upgrade-' + name).innerHTML = document.getElementById('upgrade-' + name).innerHTML.split('(')[0] + '(MAXED OUT)';
+        }
     }
 }
 
