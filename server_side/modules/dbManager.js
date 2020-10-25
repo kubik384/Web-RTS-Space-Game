@@ -1,12 +1,12 @@
 "use strict"
 
 var mysql = require('mysql');
-const PropertiesReader = require('properties-reader');
 var path = require('path');
 const { ER_INVALID_JSON_PATH_ARRAY_CELL } = require('mysql/lib/protocol/constants/errors');
 
 const all_resource_types = 'wood, dirt, iron, pop';
 const resourceTable = all_resource_types.split(', ');
+const game_properties_path = './../game_properties';
 
 class DbManager {
     constructor() {
@@ -20,7 +20,8 @@ class DbManager {
         });
         this.con.connect( err => { if (err) throw err; });
 
-        this.buildings =  new PropertiesReader(path.join(__dirname, '../game_properties/buildings.properties'));
+        var walls = require(game_properties_path + '/buildings/walls.json');
+        console.log(walls.building_id + walls.levels);
     }
 
     /**
@@ -102,6 +103,7 @@ class DbManager {
 
     upgrade_building(username, p_building) {
         return new Promise((resolve,reject) => {
+            //var building_id = this.propReader.path(path.join(building_properties, p_building + '.properties')).id;
             this.update_resource(username, 'all').then(function() {
                 var query = `SELECT p.player_id, b.building_id, p.wood, p.dirt, p.iron, p.pop, b.wood_cost, b.dirt_cost, b.iron_cost, b.pop_cost, pb.upgrade_start
                 FROM buildings b
