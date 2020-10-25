@@ -1,6 +1,8 @@
 "use strict"
 
 var mysql = require('mysql');
+const PropertiesReader = require('properties-reader');
+var path = require('path');
 const { ER_INVALID_JSON_PATH_ARRAY_CELL } = require('mysql/lib/protocol/constants/errors');
 
 const all_resource_types = 'wood, dirt, iron, pop';
@@ -16,8 +18,9 @@ class DbManager {
             port: 3308,
             database: "improvisationalDB"
         });
-
         this.con.connect( err => { if (err) throw err; });
+
+        this.buildings =  new PropertiesReader(path.join(__dirname, '../game_properties/buildings.properties'));
     }
 
     /**
