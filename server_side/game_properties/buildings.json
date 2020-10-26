@@ -5,7 +5,7 @@
         "level_details": [
             {
                 "level": 1,
-                "cost": {
+                "upgrade_cost": {
                     "wood": 1,
                     "dirt": 1,
                     "iron": 1,
@@ -15,7 +15,7 @@
             },
             {
                 "level": 2,
-                "cost": {
+                "upgrade_cost": {
                     "wood": 200,
                     "dirt": 50,
                     "iron": 20,
@@ -25,7 +25,7 @@
             },
             {
                 "level": 3,
-                "cost": {
+                "upgrade_cost": {
                     "wood": 1,
                     "dirt": 1,
                     "iron": 1,
@@ -35,7 +35,7 @@
             },
             {
                 "level": 4,
-                "cost": {
+                "upgrade_cost": {
                     "wood": 1,
                     "dirt": 1,
                     "iron": 1,
@@ -51,7 +51,7 @@
         "level_details": [
             {
                 "level": 1,
-                "cost": {
+                "upgrade_cost": {
                     "wood": 1,
                     "dirt": 1,
                     "iron": 1,
@@ -61,7 +61,7 @@
             },
             {
                 "level": 2,
-                "cost": {
+                "upgrade_cost": {
                     "wood": 200,
                     "dirt": 50,
                     "iron": 20,
@@ -71,7 +71,7 @@
             },
             {
                 "level": 3,
-                "cost": {
+                "upgrade_cost": {
                     "level": 3,
                     "wood": 1,
                     "dirt": 1,
@@ -82,7 +82,7 @@
             },
             {
                 "level": 4,
-                "cost": {
+                "upgrade_cost": {
                     "level": 4,
                     "wood": 1,
                     "dirt": 1,
@@ -99,7 +99,7 @@
         "level_details": [
             {
                 "level": 1,
-                "cost": {
+                "upgrade_cost": {
                     "level": 1,
                     "wood": 1,
                     "dirt": 1,
@@ -110,7 +110,7 @@
             },
             {
                 "level": 2,
-                "cost": {
+                "upgrade_cost": {
                     "level": 2,
                     "wood": 200,
                     "dirt": 50,
@@ -121,7 +121,7 @@
             },
             {
                 "level": 3,
-                "cost": {
+                "upgrade_cost": {
                     "level": 3,
                     "wood": 1,
                     "dirt": 1,
@@ -132,7 +132,7 @@
             },
             {
                 "level": 4,
-                "cost": {
+                "upgrade_cost": {
                     "level": 4,
                     "wood": 1,
                     "dirt": 1,

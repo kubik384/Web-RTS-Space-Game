@@ -198,6 +198,8 @@ class DbManager {
                 } else {
                     var l_index = buildings[b_index].level_details.findIndex(level_detail => { return level_detail.level == p_buildings[i].level});
                     building_details.push(buildings[b_index].level_details[l_index]);
+                    building_details[i].building_id = buildings[b_index].building_id;
+                    building_details[i].name = buildings[b_index].name;
                 }
             }
             if (p_buildings.length != building_details.length) {

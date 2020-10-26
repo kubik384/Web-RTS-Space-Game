@@ -19,7 +19,6 @@ class Game {
 
         for (var i = 0; i < starter_datapack.buildings.length; i++) {
             this.buildings[i].upgrade_start = starter_datapack.buildings.find(b => b.building_id == this.buildings[i].building_id).upgrade_start;
-            this.buildings[i].upgrade_cost = {wood: this.buildings[i].wood_cost, dirt: this.buildings[i].dirt_cost, iron: this.buildings[i].iron_cost, pop: this.buildings[i].pop_cost}
         }
         this.update_resource_ui();
         for (var i = 0; i < this.buildings.length; i++) {
