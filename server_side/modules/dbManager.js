@@ -6,7 +6,7 @@ const { ER_INVALID_JSON_PATH_ARRAY_CELL } = require('mysql/lib/protocol/constant
 
 const all_resource_types = 'wood, dirt, iron, pop';
 const resourceTable = all_resource_types.split(', ');
-const game_properties_path = './../game_properties';
+var buildings = require('./../game_properties/buildings.json');
 
 class DbManager {
     constructor() {
@@ -19,9 +19,6 @@ class DbManager {
             database: "improvisationalDB"
         });
         this.con.connect( err => { if (err) throw err; });
-
-        var walls = require(game_properties_path + '/buildings/walls.json');
-        console.log(walls.building_id + walls.levels);
     }
 
     /**
@@ -182,21 +179,31 @@ class DbManager {
 
     /**
      * Returns results in following format [{name, level, upgrade_time, wood_cost, dirt_cost, iron_cost, pop_cost}, ..]
-     * @param {Array} buildings in format [{building_id, level}]
-     * @param {Boolean} upByLevel Default value is false. If true, next level of 
+     * @param {Array} p_buildings in format [{building_id, level}]
      */
-    get_building_details(buildings) {
+    get_building_details(p_buildings) {
         return new Promise((resolve,reject) => {
-            var query_fragment = '';
-            for (var i = 0; i < buildings.length; i++) {
-                query_fragment += `( building_id = ${buildings[i].building_id} AND level = ${buildings[i].level} ) OR `;
+            var building_details = [];
+            var b_index = -1;
+            for (var i = 0; i < p_buildings.length; i++) {
+                //Buildings are stored in an array. If they are stored storted by building_id, then building with id 1 should be stored at the index 0, id 2 at the index 1, ..
+                if (buildings[p_buildings[i].building_id - 1].building_id == p_buildings[i].building_id) {
+                    b_index = p_buildings[i].building_id - 1;
+                } else {
+                    b_index = buildings.findIndex(building => { return building.building_id == p_buildings[i].building_id});
+                }
+                //Building levels are stored in an array. If they are stored sorted by levels, then level 1 should be stored at the index 0, level 2 at the index 1, ..
+                if (buildings[b_index].level_details[p_buildings[i].level - 1] == p_buildings[i].level) {
+                    building_details.push(buildings[b_index].level_details[p_buildings[i].level - 1]);
+                } else {
+                    var l_index = buildings[b_index].level_details.findIndex(level_detail => { return level_detail.level == p_buildings[i].level});
+                    building_details.push(buildings[b_index].level_details[l_index]);
+                }
             }
-            query_fragment = query_fragment.slice(0, query_fragment.length - 4);
-            var query = `SELECT building_id, name, level, upgrade_time, wood_cost, dirt_cost, iron_cost, pop_cost FROM buildings WHERE ${query_fragment}`;
-            this.con.query(query, function (err, results) {
-                if (err) reject(err);
-                resolve(results);
-            });
+            if (p_buildings.length != building_details.length) {
+                reject('Yo, something went wrong. Not all building details requested could be fetched. List of buildings requested: ' + JSON.stringify(p_buildings) + 'List of building details fetched: ' + JSON.stringify(building_details));
+            }
+            resolve(building_details);
         });
     }
 
