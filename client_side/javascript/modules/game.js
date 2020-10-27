@@ -39,7 +39,7 @@ class Game {
         
         for (var i = 0; i < this.buildings.length; i++) {
             if (this.buildings[i].upgrade_start !== null) {
-                if (this.buildings[i].upgrade_start + this.buildings[i].building_time - Math.floor(Date.now() / 1000) <= 0) {
+                if (this.buildings[i].upgrade_start + this.buildings[i].upgrade_time - Math.floor(Date.now() / 1000) <= 0) {
                     this.buildings[i].level++;
                     this.buildings[i].upgrade_start = null;
                 }
@@ -67,7 +67,6 @@ class Game {
     async upgrade_building(p_building) {
         var building_index = this.buildings.findIndex(building => { if (building.name == p_building) { return true; } });
         if (this.buildings[building_index].upgrade_start === null && this.buildings[building_index].upgrade_time != 0) {
-            this.socket.emit('upgrade_building', p_building);
             var changed_resources = {};
             var sufficient_resources = true;
             for (var resource_type in this.buildings[building_index].upgrade_cost) {
@@ -79,6 +78,7 @@ class Game {
                 }
             }
             if (sufficient_resources) {
+                this.socket.emit('upgrade_building', p_building);
                 this.resources = changed_resources;
                 this.update_resource_ui();
                 this.buildings[building_index].upgrade_start = Math.floor(Date.now() / 1000);
@@ -96,6 +96,7 @@ class Game {
 
     async update_building_ui(name, level, upgrade_time, upgrade_start, upgrade_cost) {
         var innerHTML = level;
+        console.log(upgrade_start);
         if (upgrade_start !== null) {
             var building_time = upgrade_start + upgrade_time - Math.floor(Date.now() / 1000);
             innerHTML += ', Upgrading: ' + building_time + 's';
