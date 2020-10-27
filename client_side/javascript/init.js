@@ -25,6 +25,7 @@ async function start() {
 	//socket events
 	socket.on('message', game.process_incoming_message);
 	socket.on('starter_datapack', game.display_starter_datapack.bind(game));
+	socket.on('building_fetch_result', game.save_fetched_building.bind(game));
 
 	game.request_data();
 }

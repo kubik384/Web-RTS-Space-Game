@@ -119,6 +119,12 @@ io.on('connection', socket => {
 		dbManager.upgrade_building(token, building);
 	});
 
+	socket.on('fetch_building_details', data => {
+		dbManager.get_building_details([{building_id: data.building_id, level: data.level}]).then((results) => {
+			socket.emit('building_fetch_result', results[0]);
+		});
+	})
+
 	socket.on('disconnect', () => {
 		tokens.slice(tokens.findIndex(token => { if (token == socketTable[socket.id]) { return true; } }), 1);
 		delete socketTable[socket.id];
