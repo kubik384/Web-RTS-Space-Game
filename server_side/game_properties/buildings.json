@@ -41,7 +41,7 @@
                     "iron": 1,
                     "pop": 1
                 },
-                "upgrade_time": 10
+                "upgrade_time": 0
             }
         ]
     },
@@ -87,7 +87,7 @@
                     "iron": 1,
                     "pop": 1
                 },
-                "upgrade_time": 10
+                "upgrade_time": 0
             }
         ]
     }, 
@@ -133,7 +133,7 @@
                     "iron": 1,
                     "pop": 1
                 },
-                "upgrade_time": 10
+                "upgrade_time": 0
             }
         ]
     }
