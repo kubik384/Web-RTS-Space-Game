@@ -40,6 +40,7 @@ class Game {
         
         for (var i = 0; i < this.buildings.length; i++) {
             if (this.buildings[i].upgrade_start !== null) {
+                this.update_building_ui(this.buildings[i].name, this.buildings[i].level, this.buildings[i].upgrade_time, this.buildings[i].upgrade_start, this.buildings[i].upgrade_cost);
                 var timeLeft = this.buildings[i].upgrade_start + this.buildings[i].upgrade_time - Math.floor(Date.now() / 1000);
                 if (timeLeft <= 0) {
                     this.update_building(this.buildings[i].building_id);
@@ -47,7 +48,6 @@ class Game {
                     this.fetch_building_details(this.buildings[i].building_id, this.buildings[i].level + 1);
                 }
             }
-            this.update_building_ui(this.buildings[i].name, this.buildings[i].level, this.buildings[i].upgrade_time, this.buildings[i].upgrade_start, this.buildings[i].upgrade_cost);
         }
         this.lastUpdateTime = currTime;
     }
@@ -80,7 +80,7 @@ class Game {
                     break;
                 }
             }
-            if (sufficient_resources) {
+            if (sufficient_resources && this.buildings[building_index].upgrade_time > 0) {
                 this.socket.emit('upgrade_building', p_building);
                 this.resources = changed_resources;
                 this.update_resource_ui();
@@ -100,7 +100,7 @@ class Game {
         var innerHTML = level;
         if (upgrade_start !== null) {
             var building_time = upgrade_start + upgrade_time - Math.floor(Date.now() / 1000);
-            innerHTML += ', Upgrading: ' + building_time + 's';
+            innerHTML += ', Upgrading: ' + building_time + 's' + '<img src="client_side/images/ui/red_cross.png" class="cancel"></img>';
         }
         document.getElementById(name).innerHTML = innerHTML;
         if (upgrade_time != 0) {
@@ -133,6 +133,7 @@ class Game {
         if (this.fetched_buildings[building_id] !== undefined && this.fetched_buildings[building_id].name !== undefined) {
             this.buildings[b_index] = this.fetched_buildings[building_id];
             this.buildings[b_index].upgrade_start = null;
+            this.update_building_ui(this.buildings[b_index].name, this.buildings[b_index].level, this.buildings[b_index].upgrade_time, this.buildings[b_index].upgrade_start, this.buildings[b_index].upgrade_cost);
             delete this.fetched_buildings[building_id];
         } else if (this.fetched_buildings[building_id] === undefined) {
             this.fetch_building_details(building_id, this.buildings[b_index].level + 1);
