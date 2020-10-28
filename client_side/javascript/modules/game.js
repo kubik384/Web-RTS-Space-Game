@@ -19,11 +19,11 @@ class Game {
         this.resource_prods = starter_datapack.resource_prods[0];
 
         for (var i = 0; i < starter_datapack.buildings.length; i++) {
-            this.buildings[i].upgrade_start = starter_datapack.buildings.find(b => b.building_id == this.buildings[i].building_id).upgrade_start;
+            this.buildings[i].update_start = starter_datapack.buildings.find(b => b.building_id == this.buildings[i].building_id).update_start;
         }
         this.update_resource_ui();
         for (var i = 0; i < this.buildings.length; i++) {
-            this.update_building_ui(this.buildings[i].name, this.buildings[i].level, this.buildings[i].upgrade_time, this.buildings[i].upgrade_start, this.buildings[i].upgrade_cost);
+            this.update_building_ui(this.buildings[i].name, this.buildings[i].level, this.buildings[i].upgrade_time, this.buildings[i].update_start, this.buildings[i].upgrade_cost);
         }
 
         this.lastUpdateTime = Math.floor(Date.now()/1000);
@@ -39,9 +39,9 @@ class Game {
         }
         
         for (var i = 0; i < this.buildings.length; i++) {
-            if (this.buildings[i].upgrade_start !== null) {
-                this.update_building_ui(this.buildings[i].name, this.buildings[i].level, this.buildings[i].upgrade_time, this.buildings[i].upgrade_start, this.buildings[i].upgrade_cost);
-                var timeLeft = this.buildings[i].upgrade_start + this.buildings[i].upgrade_time - Math.floor(Date.now() / 1000);
+            if (this.buildings[i].update_start !== null) {
+                this.update_building_ui(this.buildings[i].name, this.buildings[i].level, this.buildings[i].upgrade_time, this.buildings[i].update_start, this.buildings[i].upgrade_cost);
+                var timeLeft = this.buildings[i].update_start + this.buildings[i].upgrade_time - Math.floor(Date.now() / 1000);
                 if (timeLeft <= 0) {
                     this.update_building(this.buildings[i].building_id);
                 } else if (timeLeft <= 10) {
@@ -69,7 +69,7 @@ class Game {
 
     async upgrade_building(p_building) {
         var building_index = this.buildings.findIndex(building => { if (building.name == p_building) { return true; } });
-        if (this.buildings[building_index].upgrade_start === null && this.buildings[building_index].upgrade_time != 0) {
+        if (this.buildings[building_index].update_start === null && this.buildings[building_index].upgrade_time != 0) {
             var changed_resources = {};
             var sufficient_resources = true;
             for (var resource_type in this.buildings[building_index].upgrade_cost) {
@@ -84,8 +84,8 @@ class Game {
                 this.socket.emit('upgrade_building', p_building);
                 this.resources = changed_resources;
                 this.update_resource_ui();
-                this.buildings[building_index].upgrade_start = Math.floor(Date.now() / 1000);
-                this.update_building_ui(p_building, this.buildings[building_index].level, this.buildings[building_index].upgrade_time, this.buildings[building_index].upgrade_start, this.buildings[building_index].upgrade_cost);
+                this.buildings[building_index].update_start = Math.floor(Date.now() / 1000);
+                this.update_building_ui(p_building, this.buildings[building_index].level, this.buildings[building_index].upgrade_time, this.buildings[building_index].update_start, this.buildings[building_index].upgrade_cost);
             }
         }
     }
@@ -96,10 +96,10 @@ class Game {
         }
     }
 
-    async update_building_ui(name, level, upgrade_time, upgrade_start, upgrade_cost) {
+    async update_building_ui(name, level, upgrade_time, update_start, upgrade_cost) {
         var innerHTML = level;
-        if (upgrade_start !== null) {
-            var building_time = upgrade_start + upgrade_time - Math.floor(Date.now() / 1000);
+        if (update_start !== null) {
+            var building_time = update_start + upgrade_time - Math.floor(Date.now() / 1000);
             innerHTML += ', Upgrading: ' + building_time + 's' + '<img src="client_side/images/ui/red_cross.png" class="cancel" data-building="' + name + '"></img>';
         }
         document.getElementById(name).innerHTML = innerHTML;
@@ -131,8 +131,8 @@ class Game {
         }
         if (this.fetched_buildings[building_id] !== undefined && this.fetched_buildings[building_id].name !== undefined) {
             this.buildings[b_index] = this.fetched_buildings[building_id];
-            this.buildings[b_index].upgrade_start = null;
-            this.update_building_ui(this.buildings[b_index].name, this.buildings[b_index].level, this.buildings[b_index].upgrade_time, this.buildings[b_index].upgrade_start, this.buildings[b_index].upgrade_cost);
+            this.buildings[b_index].update_start = null;
+            this.update_building_ui(this.buildings[b_index].name, this.buildings[b_index].level, this.buildings[b_index].upgrade_time, this.buildings[b_index].update_start, this.buildings[b_index].upgrade_cost);
             delete this.fetched_buildings[building_id];
         } else if (this.fetched_buildings[building_id] === undefined) {
             this.fetch_building_details(building_id, this.buildings[b_index].level + 1);
@@ -145,8 +145,8 @@ class Game {
 
     async cancel_building_upgrade(p_building) {
         var building_index = this.buildings.findIndex(building => { if (building.name == p_building) { return true; } });
-        if (this.buildings[building_index].upgrade_start !== null) {
-            this.buildings[building_index].upgrade_start = null;
+        if (this.buildings[building_index].update_start !== null) {
+            this.buildings[building_index].update_start = null;
             var changed_resources = {};
             for (var resource_type in this.buildings[building_index].upgrade_cost) {
                     changed_resources[resource_type] = this.resources[resource_type] + this.buildings[building_index].upgrade_cost[resource_type];
@@ -154,8 +154,16 @@ class Game {
             this.socket.emit('cancel_building_upgrade', p_building);
             this.resources = changed_resources;
             this.update_resource_ui();
-            this.update_building_ui(p_building, this.buildings[building_index].level, this.buildings[building_index].upgrade_time, this.buildings[building_index].upgrade_start, this.buildings[building_index].upgrade_cost);
+            this.update_building_ui(p_building, this.buildings[building_index].level, this.buildings[building_index].upgrade_time, this.buildings[building_index].update_start, this.buildings[building_index].upgrade_cost);
         }
+    }
+
+    async downgrade_building(p_building) {
+        console.log(p_building);
+    }
+
+    async cancel_building_downgrade(p_building) {
+        console.log(p_building);
     }
 }
 

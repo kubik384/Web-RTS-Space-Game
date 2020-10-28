@@ -123,12 +123,22 @@ io.on('connection', socket => {
 		dbManager.get_building_details([{building_id: data.building_id, level: data.level}]).then((results) => {
 			socket.emit('building_fetch_result', results[0]);
 		});
-	})
+	});
 
 	socket.on('cancel_building_upgrade', building => {
 		var token = socketTable[socket.id];
 		dbManager.cancel_building_upgrade(token, building);
-	})
+	});
+
+	socket.on('downgrade_building', building => {
+		var token = socketTable[socket.id];
+		dbManager.downgrade_building(token, building);
+	});
+
+	socket.on('cancel_building_downgrade', building => {
+		var token = socketTable[socket.id];
+		dbManager.cancel_building_downgrade(token, building);
+	});
 
 	socket.on('disconnect', () => {
 		tokens.slice(tokens.findIndex(token => { if (token == socketTable[socket.id]) { return true; } }), 1);

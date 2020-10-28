@@ -22,6 +22,11 @@ async function start() {
 		buttons[i].addEventListener('click', event => { game.upgrade_building(event.currentTarget.id.split('-')[1]) });
 	}
 
+	buttons = document.getElementsByClassName('downgrade_btn');
+	for(var i = 0; i < buttons.length; i++) {
+		buttons[i].addEventListener('click', event => { game.downgrade_building(event.currentTarget.id.split('-')[1]) });
+	}
+
 	document.addEventListener('click',function(e) {
 		if(e.target && e.target.getAttribute('class') == 'cancel'){
 			game.cancel_building_upgrade(e.target.dataset.building);
