@@ -125,6 +125,11 @@ io.on('connection', socket => {
 		});
 	})
 
+	socket.on('cancel_building_upgrade', building => {
+		var token = socketTable[socket.id];
+		dbManager.cancel_building_upgrade(token, building);
+	})
+
 	socket.on('disconnect', () => {
 		tokens.slice(tokens.findIndex(token => { if (token == socketTable[socket.id]) { return true; } }), 1);
 		delete socketTable[socket.id];

@@ -100,7 +100,7 @@ class Game {
         var innerHTML = level;
         if (upgrade_start !== null) {
             var building_time = upgrade_start + upgrade_time - Math.floor(Date.now() / 1000);
-            innerHTML += ', Upgrading: ' + building_time + 's' + '<img src="client_side/images/ui/red_cross.png" class="cancel"></img>';
+            innerHTML += ', Upgrading: ' + building_time + 's' + '<img src="client_side/images/ui/red_cross.png" class="cancel" data-building="' + name + '"></img>';
         }
         document.getElementById(name).innerHTML = innerHTML;
         if (upgrade_time != 0) {
@@ -129,7 +129,6 @@ class Game {
         } else {
             b_index = this.buildings.findIndex(building => {return building.building_id == building_id});
         }
-        console.log(this.fetched_buildings[building_id]);
         if (this.fetched_buildings[building_id] !== undefined && this.fetched_buildings[building_id].name !== undefined) {
             this.buildings[b_index] = this.fetched_buildings[building_id];
             this.buildings[b_index].upgrade_start = null;
@@ -142,6 +141,21 @@ class Game {
 
     async save_fetched_building(building) {
         this.fetched_buildings[building.building_id] = building;
+    }
+
+    async cancel_building_upgrade(p_building) {
+        var building_index = this.buildings.findIndex(building => { if (building.name == p_building) { return true; } });
+        if (this.buildings[building_index].upgrade_start !== null) {
+            this.buildings[building_index].upgrade_start = null;
+            var changed_resources = {};
+            for (var resource_type in this.buildings[building_index].upgrade_cost) {
+                    changed_resources[resource_type] = this.resources[resource_type] + this.buildings[building_index].upgrade_cost[resource_type];
+            }
+            this.socket.emit('cancel_building_upgrade', p_building);
+            this.resources = changed_resources;
+            this.update_resource_ui();
+            this.update_building_ui(p_building, this.buildings[building_index].level, this.buildings[building_index].upgrade_time, this.buildings[building_index].upgrade_start, this.buildings[building_index].upgrade_cost);
+        }
     }
 }
 

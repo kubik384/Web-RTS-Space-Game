@@ -22,6 +22,12 @@ async function start() {
 		buttons[i].addEventListener('click', event => { game.upgrade_building(event.currentTarget.id.split('-')[1]) });
 	}
 
+	document.addEventListener('click',function(e) {
+		if(e.target && e.target.getAttribute('class') == 'cancel'){
+			game.cancel_building_upgrade(e.target.dataset.building);
+		}
+	});
+
 	//socket events
 	socket.on('message', game.process_incoming_message);
 	socket.on('starter_datapack', game.display_starter_datapack.bind(game));
