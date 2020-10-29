@@ -120,7 +120,7 @@ io.on('connection', socket => {
 	});
 
 	socket.on('fetch_building_details', data => {
-		dbManager.get_building_details([{building_id: data.building_id, level: data.level}]).then((results) => {
+		dbManager.get_building_details(data).then((results) => {
 			socket.emit('building_fetch_result', results[0]);
 		});
 	});

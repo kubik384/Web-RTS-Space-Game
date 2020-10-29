@@ -14,7 +14,7 @@ async function start() {
 	document.removeEventListener('DOMContentLoaded', start);
 	var buttons = document.getElementsByClassName('resource_btn');
 	for(var i = 0; i < buttons.length; i++) {
-		buttons[i].addEventListener('click', event => { game.update_resource(event.currentTarget.id.split('_')[1], 10) });
+		buttons[i].addEventListener('click', event => { game.update_resource(event.currentTarget.id.split('_')[1], 100) });
 	}
 	
 	buttons = document.getElementsByClassName('building_btn');

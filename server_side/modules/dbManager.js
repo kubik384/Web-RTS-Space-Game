@@ -111,8 +111,8 @@ class DbManager {
                         if (err) reject(err);
                         if (results.length > 0) {
                             var l_index;
-                            if (buildings[b_index].level_details[results[0].level - 1] == results[0].level) {
-                                l_index = results[0].level - 1;
+                            if (buildings[b_index].level_details[results[0].level] == results[0].level) {
+                                l_index = results[0].level;
                             } else {
                                 l_index = buildings[b_index].level_details.findIndex(level_detail => { return level_detail.level == results[0].level})
                             }
@@ -163,8 +163,8 @@ class DbManager {
                                 });
                             } else {
                                 var l_index;
-                                if (buildings[b_index].level_details[results[0].level - 1] == results[0].level) {
-                                    l_index = results[0].level - 1;
+                                if (buildings[b_index].level_details[results[0].level] == results[0].level) {
+                                    l_index = results[0].level;
                                 } else {
                                     l_index = buildings[b_index].level_details.findIndex(level_detail => { return level_detail.level == results[0].level})
                                 }
@@ -212,11 +212,11 @@ class DbManager {
      * @param {String} username Username of the player
      * @param {String} p_building Building name 'all' can be used to get all buildings from the player
      */
-    get_user_building_details(username, p_building, hidePlayerId = false) {
+    get_user_building_details(username, p_building, hide_player_id = false) {
         return new Promise((resolve,reject) => {
             this.update_building_level(username, p_building).then(function () {
                 var building_id;
-                var query = hidePlayerId ? 'SELECT ' : 'SELECT pb.player_id, '
+                var query = hide_player_id ? 'SELECT ' : 'SELECT pb.player_id, '
                 query += `pb.building_id, pb.level, pb.downgrade,
                 UNIX_TIMESTAMP(pb.update_start) AS update_start
                 FROM player_buildings pb
@@ -264,8 +264,8 @@ class DbManager {
                             b_index = buildings.findIndex(building => { return building.building_id == results[i].building_id});
                         }
 
-                        if (buildings[b_index].level_details[results[i].level - 1] == results[i].level) {
-                            l_index = results[i].level - 1;
+                        if (buildings[b_index].level_details[results[i].level] == results[i].level) {
+                            l_index = results[i].level;
                         } else {
                             l_index = buildings[b_index].level_details.findIndex(level_detail => { return level_detail.level == results[i].level})
                         }
@@ -289,32 +289,32 @@ class DbManager {
     }
 
     /**
-     * Returns results in following format [{name, level, upgrade_time, wood_cost, dirt_cost, iron_cost, pop_cost}, ..]
-     * @param {Array} p_buildings in format [{building_id, level}]
+     * Returns results in following format [{building_id, name, level_details: [{level, upgrade_time, wood_cost, dirt_cost, iron_cost, pop_cost}]}, ..]
+     * @param {Array} p_buildings in format [{building_id, level}] Level can be an array of levels
      */
     get_building_details(p_buildings) {
-        return new Promise((resolve,reject) => {
+        return new Promise((resolve) => {
             var building_details = [];
             var b_index = -1;
             for (var i = 0; i < p_buildings.length; i++) {
+                if (!Array.isArray(p_buildings.level)) {
+                    p_buildings.level = [p_buildings.level];
+                }
+
                 //Buildings are stored in an array. If they are stored storted by building_id, then building with id 1 should be stored at the index 0, id 2 at the index 1, ..
                 if (buildings[p_buildings[i].building_id - 1].building_id == p_buildings[i].building_id) {
                     b_index = p_buildings[i].building_id - 1;
                 } else {
                     b_index = buildings.findIndex(building => { return building.building_id == p_buildings[i].building_id});
                 }
-                //Building levels are stored in an array. If they are stored sorted by levels, then level 1 should be stored at the index 0, level 2 at the index 1, ..
-                if (buildings[b_index].level_details[p_buildings[i].level - 1] == p_buildings[i].level) {
-                    building_details.push(buildings[b_index].level_details[p_buildings[i].level - 1]);
-                } else {
-                    var l_index = buildings[b_index].level_details.findIndex(level_detail => { return level_detail.level == p_buildings[i].level});
-                    building_details.push(buildings[b_index].level_details[l_index]);
-                    building_details[i].building_id = buildings[b_index].building_id;
-                    building_details[i].name = buildings[b_index].name;
+                building_details.push({building_id: buildings[b_index].building_id, name: buildings[b_index].name, level_details: []});
+
+                for (var j = 0; j < p_buildings[i].level.length; j++) {
+                    var l_index = buildings[b_index].level_details.findIndex(level_detail => { return level_detail.level == p_buildings[i].level[j]});
+                    if (l_index != -1) {
+                        building_details[i].level_details.push(buildings[b_index].level_details[l_index]);
+                    }
                 }
-            }
-            if (p_buildings.length != building_details.length) {
-                reject('Yo, something went wrong. Not all building details requested could be fetched. List of buildings requested: ' + JSON.stringify(p_buildings) + 'List of building details fetched: ' + JSON.stringify(building_details));
             }
             resolve(building_details);
         });
@@ -330,11 +330,14 @@ class DbManager {
     }
 
     get_starter_datapack(username, callback) {
-        //remake this into a single query - then update the ui part
         return new Promise((resolve,reject) => {
             this.update_resource(username, 'all').then(function() {
                 this.update_building_level(username, 'all').then(function() {
                     Promise.all([this.get_resource_prod(username, 'all'), this.get_resource(username, 'all', true), this.get_user_building_details(username, 'all', true)]).then(values => {
+                        for (var i = 0; i < values[2].length; i++) {
+                            values[2][i].curr_level = values[2][i].level;
+                            values[2][i].level = [values[2][i].level - 1, values[2][i].level, values[2][i].level + 1];
+                        }
                         this.get_building_details(values[2]).then(results => callback({resource_prods: values[0], resources: values[1], buildings: values[2], building_details: results}));
                     }).catch(err => { console.log(err) });
                 }.bind(this));
