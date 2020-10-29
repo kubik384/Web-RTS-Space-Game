@@ -20,10 +20,11 @@ class Game {
 
         for (var i = 0; i < starter_datapack.buildings.length; i++) {
             this.buildings[i].update_start = starter_datapack.buildings.find(b => b.building_id == this.buildings[i].building_id).update_start;
+            this.buildings[i].downgrade = starter_datapack.buildings.find(b => b.building_id == this.buildings[i].building_id).downgrade
         }
         this.update_resource_ui();
         for (var i = 0; i < this.buildings.length; i++) {
-            this.update_building_ui(this.buildings[i].name, this.buildings[i].level, this.buildings[i].upgrade_time, this.buildings[i].update_start, this.buildings[i].upgrade_cost);
+            this.update_building_ui(this.buildings[i].name, this.buildings[i].level, this.buildings[i].upgrade_time, this.buildings[i].update_start, this.buildings[i].upgrade_cost, this.buildings[i].downgrade);
         }
 
         this.lastUpdateTime = Math.floor(Date.now()/1000);
@@ -40,12 +41,12 @@ class Game {
         
         for (var i = 0; i < this.buildings.length; i++) {
             if (this.buildings[i].update_start !== null) {
-                this.update_building_ui(this.buildings[i].name, this.buildings[i].level, this.buildings[i].upgrade_time, this.buildings[i].update_start, this.buildings[i].upgrade_cost);
+                this.update_building_ui(this.buildings[i].name, this.buildings[i].level, this.buildings[i].upgrade_time, this.buildings[i].update_start, this.buildings[i].upgrade_cost, this.buildings[i].downgrade);
                 var timeLeft = this.buildings[i].update_start + this.buildings[i].upgrade_time - Math.floor(Date.now() / 1000);
                 if (timeLeft <= 0) {
                     this.update_building(this.buildings[i].building_id);
                 } else if (timeLeft <= 10) {
-                    this.fetch_building_details(this.buildings[i].building_id, this.buildings[i].level + 1);
+                    this.fetch_building_details(this.buildings[i].building_id, this.buildings[i].level + (this.buildings[i].downgrade ? -1 : 1));
                 }
             }
         }
@@ -85,7 +86,7 @@ class Game {
                 this.resources = changed_resources;
                 this.update_resource_ui();
                 this.buildings[building_index].update_start = Math.floor(Date.now() / 1000);
-                this.update_building_ui(p_building, this.buildings[building_index].level, this.buildings[building_index].upgrade_time, this.buildings[building_index].update_start, this.buildings[building_index].upgrade_cost);
+                this.update_building_ui(p_building, this.buildings[building_index].level, this.buildings[building_index].upgrade_time, this.buildings[building_index].update_start, this.buildings[building_index].upgrade_cost, this.buildings[building_index].downgrade);
             }
         }
     }
@@ -96,11 +97,12 @@ class Game {
         }
     }
 
-    async update_building_ui(name, level, upgrade_time, update_start, upgrade_cost) {
+    async update_building_ui(name, level, upgrade_time, update_start, upgrade_cost, downgrade) {
         var innerHTML = level;
         if (update_start !== null) {
             var building_time = update_start + upgrade_time - Math.floor(Date.now() / 1000);
-            innerHTML += ', Upgrading: ' + building_time + 's' + '<img src="client_side/images/ui/red_cross.png" class="cancel" data-building="' + name + '"></img>';
+            innerHTML += downgrade ? ', Downgrading: ' : ', Ugrading: ';
+            innerHTML += building_time + 's' + '<img src="client_side/images/ui/red_cross.png" class="cancel" data-building="' + name + '"></img>';
         }
         document.getElementById(name).innerHTML = innerHTML;
         if (upgrade_time != 0) {
@@ -132,10 +134,11 @@ class Game {
         if (this.fetched_buildings[building_id] !== undefined && this.fetched_buildings[building_id].name !== undefined) {
             this.buildings[b_index] = this.fetched_buildings[building_id];
             this.buildings[b_index].update_start = null;
-            this.update_building_ui(this.buildings[b_index].name, this.buildings[b_index].level, this.buildings[b_index].upgrade_time, this.buildings[b_index].update_start, this.buildings[b_index].upgrade_cost);
+            this.buildings[b_index].downgrade = 0;
+            this.update_building_ui(this.buildings[b_index].name, this.buildings[b_index].level, this.buildings[b_index].upgrade_time, this.buildings[b_index].update_start, this.buildings[b_index].upgrade_cost, this.buildings[b_index].downgrade);
             delete this.fetched_buildings[building_id];
         } else if (this.fetched_buildings[building_id] === undefined) {
-            this.fetch_building_details(building_id, this.buildings[b_index].level + 1);
+            this.fetch_building_details(building_id, this.buildings[b_index].level + (this.buildings[b_index].downgrade ? -1 : 1));
         }
     }
 
@@ -143,27 +146,34 @@ class Game {
         this.fetched_buildings[building.building_id] = building;
     }
 
-    async cancel_building_upgrade(p_building) {
+    async cancel_building_update(p_building) {
         var building_index = this.buildings.findIndex(building => { if (building.name == p_building) { return true; } });
         if (this.buildings[building_index].update_start !== null) {
             this.buildings[building_index].update_start = null;
-            var changed_resources = {};
-            for (var resource_type in this.buildings[building_index].upgrade_cost) {
-                    changed_resources[resource_type] = this.resources[resource_type] + this.buildings[building_index].upgrade_cost[resource_type];
+            if (this.buildings[building_index].downgrade) {
+                this.buildings[building_index].downgrade = 0;
+            } else {
+                var changed_resources = {};
+                for (var resource_type in this.buildings[building_index].upgrade_cost) {
+                        changed_resources[resource_type] = this.resources[resource_type] + this.buildings[building_index].upgrade_cost[resource_type];
+                }
+                this.resources = changed_resources;
             }
-            this.socket.emit('cancel_building_upgrade', p_building);
-            this.resources = changed_resources;
+            this.socket.emit('cancel_building_update', p_building);
             this.update_resource_ui();
-            this.update_building_ui(p_building, this.buildings[building_index].level, this.buildings[building_index].upgrade_time, this.buildings[building_index].update_start, this.buildings[building_index].upgrade_cost);
+            this.update_building_ui(p_building, this.buildings[building_index].level, this.buildings[building_index].upgrade_time, this.buildings[building_index].update_start, this.buildings[building_index].upgrade_cost, this.buildings[building_index].downgrade);
+            delete this.fetched_buildings[this.buildings[building_index].building_id];
         }
     }
 
     async downgrade_building(p_building) {
-        console.log(p_building);
-    }
-
-    async cancel_building_downgrade(p_building) {
-        console.log(p_building);
+        var building_index = this.buildings.findIndex(building => { if (building.name == p_building) { return true; } });
+        if (this.buildings[building_index].update_start === null && this.buildings[building_index].level != 0) {
+                this.socket.emit('downgrade_building', p_building);
+                this.buildings[building_index].update_start = Math.floor(Date.now() / 1000);
+                this.buildings[building_index].downgrade = 1;
+                this.update_building_ui(p_building, this.buildings[building_index].level, this.buildings[building_index].upgrade_time, this.buildings[building_index].update_start, this.buildings[building_index].upgrade_cost, this.buildings[building_index].downgrade);
+        }
     }
 }
 

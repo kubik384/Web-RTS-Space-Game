@@ -29,7 +29,7 @@ async function start() {
 
 	document.addEventListener('click',function(e) {
 		if(e.target && e.target.getAttribute('class') == 'cancel'){
-			game.cancel_building_upgrade(e.target.dataset.building);
+			game.cancel_building_update(e.target.dataset.building);
 		}
 	});
 

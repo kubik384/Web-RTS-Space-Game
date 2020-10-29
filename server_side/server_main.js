@@ -125,19 +125,14 @@ io.on('connection', socket => {
 		});
 	});
 
-	socket.on('cancel_building_upgrade', building => {
+	socket.on('cancel_building_update', building => {
 		var token = socketTable[socket.id];
-		dbManager.cancel_building_upgrade(token, building);
+		dbManager.cancel_building_update(token, building);
 	});
 
 	socket.on('downgrade_building', building => {
 		var token = socketTable[socket.id];
 		dbManager.downgrade_building(token, building);
-	});
-
-	socket.on('cancel_building_downgrade', building => {
-		var token = socketTable[socket.id];
-		dbManager.cancel_building_downgrade(token, building);
 	});
 
 	socket.on('disconnect', () => {
