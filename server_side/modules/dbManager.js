@@ -102,7 +102,7 @@ class DbManager {
         return new Promise((resolve,reject) => {
             this.update_resource(username, 'all').then(function() {
                 this.update_building_level(username, p_building).then(function() {
-                    var b_index = buildings.findIndex(building => { return building.name == p_building});
+                    var b_index = buildings.findIndex(building => building.name == p_building);
                     var query = `SELECT p.player_id, p.wood, p.dirt, p.iron, p.pop, pb.update_start, pb.level
                     FROM player_buildings pb
                     INNER JOIN players p ON p.player_id = pb.player_id
@@ -114,7 +114,7 @@ class DbManager {
                             if (buildings[b_index].level_details[results[0].level] == results[0].level) {
                                 l_index = results[0].level;
                             } else {
-                                l_index = buildings[b_index].level_details.findIndex(level_detail => { return level_detail.level == results[0].level})
+                                l_index = buildings[b_index].level_details.findIndex(level_detail => level_detail.level == results[0].level)
                             }
                             if (results[0].update_start === null && results[0].wood > buildings[b_index].level_details[l_index].upgrade_cost.wood && results[0].dirt > buildings[b_index].level_details[l_index].upgrade_cost.dirt && results[0].iron > buildings[b_index].level_details[l_index].upgrade_cost.iron && results[0].pop > buildings[b_index].level_details[l_index].upgrade_cost.pop) {
                                 query = `UPDATE player_buildings pb 
@@ -141,7 +141,7 @@ class DbManager {
     cancel_building_update(username, p_building) {
         return new Promise((resolve,reject) => {
             this.update_building_level(username, p_building).then(function() {
-                var b_index = buildings.findIndex(building => { return building.name == p_building});
+                var b_index = buildings.findIndex(building => building.name == p_building);
                 var query = `SELECT p.player_id, pb.level, pb.update_start, pb.downgrade
                 FROM player_buildings pb
                 INNER JOIN players p ON p.player_id = pb.player_id
@@ -166,7 +166,7 @@ class DbManager {
                                 if (buildings[b_index].level_details[results[0].level] == results[0].level) {
                                     l_index = results[0].level;
                                 } else {
-                                    l_index = buildings[b_index].level_details.findIndex(level_detail => { return level_detail.level == results[0].level})
+                                    l_index = buildings[b_index].level_details.findIndex(level_detail => level_detail.level == results[0].level)
                                 }
                                 query = `UPDATE player_buildings pb 
                                 INNER JOIN players p ON p.player_id = pb.player_id
@@ -192,7 +192,7 @@ class DbManager {
     downgrade_building(username, p_building) {
         return new Promise((resolve,reject) => {
             this.update_building_level(username, p_building).then(function() {
-                var b_index = buildings.findIndex(building => { return building.name == p_building});
+                var b_index = buildings.findIndex(building => building.name == p_building);
                 var query = `UPDATE player_buildings pb 
                 INNER JOIN players p ON p.player_id = pb.player_id
                 SET 
@@ -223,7 +223,7 @@ class DbManager {
                 INNER JOIN players p ON p.player_id = pb.player_id
                 WHERE p.username = ?`;
                 if (p_building != 'all') {
-                    building_id = buildings.find(building => { return building.name == p_building}).building_id;
+                    building_id = buildings.find(building => building.name == p_building).building_id;
                     query += ' AND pb.building_id = ?';
                 }
                 this.con.query(query, [username, building_id], function (err, results) {
@@ -241,7 +241,7 @@ class DbManager {
                 INNER JOIN players p ON p.player_id = pb.player_id
                 WHERE p.username = ? AND pb.update_start IS NOT NULL`;
             if (p_building != 'all') {
-                var b_index = buildings.findIndex(building => { return building.name == p_building});
+                var b_index = buildings.findIndex(building => building.name == p_building);
                 query += ' AND pb.building_id = ' + (b_index + 1);
             }
             this.con.query(query, [username], function (err, results) {
@@ -261,13 +261,13 @@ class DbManager {
                         if (buildings[results[i].building_id - 1].building_id == results[i].building_id) {
                             b_index = results[i].building_id - 1;
                         } else {
-                            b_index = buildings.findIndex(building => { return building.building_id == results[i].building_id});
+                            b_index = buildings.findIndex(building => building.building_id == results[i].building_id);
                         }
 
-                        if (buildings[b_index].level_details[results[i].level] == results[i].level) {
+                        if (buildings[b_index].level_details[results[i].level] == (results[i].level - results[i].downgrade)) {
                             l_index = results[i].level;
                         } else {
-                            l_index = buildings[b_index].level_details.findIndex(level_detail => { return level_detail.level == results[i].level})
+                            l_index = buildings[b_index].level_details.findIndex(level_detail => level_detail.level == (results[i].level - results[i].downgrade));
                         }
                         if ((Math.floor(Date.now() / 1000) - results[i].update_start - buildings[b_index].level_details[l_index].upgrade_time) > 0) {
                             query += results[i].building_id + ',';
@@ -297,20 +297,19 @@ class DbManager {
             var building_details = [];
             var b_index = -1;
             for (var i = 0; i < p_buildings.length; i++) {
-                if (!Array.isArray(p_buildings.level)) {
-                    p_buildings.level = [p_buildings.level];
+                if (!Array.isArray(p_buildings[i].level)) {
+                    p_buildings[i].level = [p_buildings[i].level];
                 }
 
                 //Buildings are stored in an array. If they are stored storted by building_id, then building with id 1 should be stored at the index 0, id 2 at the index 1, ..
                 if (buildings[p_buildings[i].building_id - 1].building_id == p_buildings[i].building_id) {
                     b_index = p_buildings[i].building_id - 1;
                 } else {
-                    b_index = buildings.findIndex(building => { return building.building_id == p_buildings[i].building_id});
+                    b_index = buildings.findIndex(building => building.building_id == p_buildings[i].building_id);
                 }
                 building_details.push({building_id: buildings[b_index].building_id, name: buildings[b_index].name, level_details: []});
-
                 for (var j = 0; j < p_buildings[i].level.length; j++) {
-                    var l_index = buildings[b_index].level_details.findIndex(level_detail => { return level_detail.level == p_buildings[i].level[j]});
+                    var l_index = buildings[b_index].level_details.findIndex(level_detail => level_detail.level == p_buildings[i].level[j]);
                     if (l_index != -1) {
                         building_details[i].level_details.push(buildings[b_index].level_details[l_index]);
                     }
