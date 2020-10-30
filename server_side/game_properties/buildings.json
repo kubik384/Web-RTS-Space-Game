@@ -1,0 +1,140 @@
+[
+    {
+        "building_id": 1,
+        "name": "towncenter",
+        "level_details": [
+            {
+                "level": 0,
+                "upgrade_cost": {
+                    "wood": 1,
+                    "dirt": 1,
+                    "iron": 1,
+                    "pop": 1
+                },
+                "upgrade_time": 10
+            },
+            {
+                "level": 1,
+                "upgrade_cost": {
+                    "wood": 200,
+                    "dirt": 50,
+                    "iron": 20,
+                    "pop": 10
+                },
+                "upgrade_time": 10
+            },
+            {
+                "level": 2,
+                "upgrade_cost": {
+                    "wood": 1,
+                    "dirt": 1,
+                    "iron": 1,
+                    "pop": 1
+                },
+                "upgrade_time": 10
+            },
+            {
+                "level": 3,
+                "upgrade_cost": {
+                    "wood": 1,
+                    "dirt": 1,
+                    "iron": 1,
+                    "pop": 1
+                },
+                "upgrade_time": 0
+            }
+        ]
+    },
+    {
+        "building_id": 2,
+        "name": "resource_generator",
+        "level_details": [
+            {
+                "level": 0,
+                "upgrade_cost": {
+                    "wood": 1,
+                    "dirt": 1,
+                    "iron": 1,
+                    "pop": 1
+                },
+                "upgrade_time": 10
+            },
+            {
+                "level": 1,
+                "upgrade_cost": {
+                    "wood": 200,
+                    "dirt": 50,
+                    "iron": 20,
+                    "pop": 10
+                },
+                "upgrade_time": 10
+            },
+            {
+                "level": 2,
+                "upgrade_cost": {
+                    "wood": 1,
+                    "dirt": 1,
+                    "iron": 1,
+                    "pop": 1
+                },
+                "upgrade_time": 10
+            },
+            {
+                "level": 3,
+                "upgrade_cost": {
+                    "wood": 1,
+                    "dirt": 1,
+                    "iron": 1,
+                    "pop": 1
+                },
+                "upgrade_time": 0
+            }
+        ]
+    }, 
+    {
+        "building_id": 3,
+        "name": "walls",
+        "level_details": [
+            {
+                "level": 0,
+                "upgrade_cost": {
+                    "wood": 1,
+                    "dirt": 1,
+                    "iron": 1,
+                    "pop": 1
+                },
+                "upgrade_time": 10
+            },
+            {
+                "level": 1,
+                "upgrade_cost": {
+                    "wood": 200,
+                    "dirt": 50,
+                    "iron": 20,
+                    "pop": 10
+                },
+                "upgrade_time": 10
+            },
+            {
+                "level": 2,
+                "upgrade_cost": {
+                    "wood": 1,
+                    "dirt": 1,
+                    "iron": 1,
+                    "pop": 1
+                },
+                "upgrade_time": 10
+            },
+            {
+                "level": 3,
+                "upgrade_cost": {
+                    "wood": 1,
+                    "dirt": 1,
+                    "iron": 1,
+                    "pop": 1
+                },
+                "upgrade_time": 0
+            }
+        ]
+    }
+]

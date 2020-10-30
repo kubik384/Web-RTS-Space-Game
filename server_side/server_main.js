@@ -119,6 +119,22 @@ io.on('connection', socket => {
 		dbManager.upgrade_building(token, building);
 	});
 
+	socket.on('fetch_building_details', data => {
+		dbManager.get_building_details(data).then((results) => {
+			socket.emit('building_fetch_result', results[0]);
+		});
+	});
+
+	socket.on('cancel_building_update', building => {
+		var token = socketTable[socket.id];
+		dbManager.cancel_building_update(token, building);
+	});
+
+	socket.on('downgrade_building', building => {
+		var token = socketTable[socket.id];
+		dbManager.downgrade_building(token, building);
+	});
+
 	socket.on('disconnect', () => {
 		tokens.slice(tokens.findIndex(token => { if (token == socketTable[socket.id]) { return true; } }), 1);
 		delete socketTable[socket.id];

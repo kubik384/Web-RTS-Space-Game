@@ -1,10 +1,12 @@
 "use strict"
 
+const e = require('express');
 var mysql = require('mysql');
 const { ER_INVALID_JSON_PATH_ARRAY_CELL } = require('mysql/lib/protocol/constants/errors');
 
 const all_resource_types = 'wood, dirt, iron, pop';
 const resourceTable = all_resource_types.split(', ');
+var buildings = require('./../game_properties/buildings.json');
 
 class DbManager {
     constructor() {
@@ -16,7 +18,6 @@ class DbManager {
             port: 3308,
             database: "improvisationalDB"
         });
-
         this.con.connect( err => { if (err) throw err; });
     }
 
@@ -100,29 +101,87 @@ class DbManager {
     upgrade_building(username, p_building) {
         return new Promise((resolve,reject) => {
             this.update_resource(username, 'all').then(function() {
-                var query = `SELECT p.player_id, b.building_id, p.wood, p.dirt, p.iron, p.pop, b.wood_cost, b.dirt_cost, b.iron_cost, b.pop_cost, pb.upgrade_start
-                FROM buildings b
-                INNER JOIN player_buildings pb ON b.level = pb.level + 1 AND b.building_id = pb.building_id
+                this.update_building_level(username, p_building).then(function() {
+                    var b_index = buildings.findIndex(building => building.name == p_building);
+                    var query = `SELECT p.player_id, p.wood, p.dirt, p.iron, p.pop, pb.update_start, pb.level
+                    FROM player_buildings pb
+                    INNER JOIN players p ON p.player_id = pb.player_id
+                    WHERE p.username = ? AND pb.building_id = ?`;
+                    this.con.query(query, [username, buildings[b_index].building_id], function (err, results) {
+                        if (err) reject(err);
+                        if (results.length > 0) {
+                            var l_index;
+                            if (buildings[b_index].level_details[results[0].level] == results[0].level) {
+                                l_index = results[0].level;
+                            } else {
+                                l_index = buildings[b_index].level_details.findIndex(level_detail => level_detail.level == results[0].level)
+                            }
+                            if (results[0].update_start === null && results[0].wood > buildings[b_index].level_details[l_index].upgrade_cost.wood && results[0].dirt > buildings[b_index].level_details[l_index].upgrade_cost.dirt && results[0].iron > buildings[b_index].level_details[l_index].upgrade_cost.iron && results[0].pop > buildings[b_index].level_details[l_index].upgrade_cost.pop) {
+                                query = `UPDATE player_buildings pb 
+                                INNER JOIN players p ON p.player_id = pb.player_id
+                                SET 
+                                    p.wood = p.wood - ${buildings[b_index].level_details[l_index].upgrade_cost.wood},
+                                    p.dirt = p.dirt - ${buildings[b_index].level_details[l_index].upgrade_cost.dirt},
+                                    p.iron = p.iron - ${buildings[b_index].level_details[l_index].upgrade_cost.iron},
+                                    p.pop = p.pop - ${buildings[b_index].level_details[l_index].upgrade_cost.pop},
+                                    pb.update_start = NOW()
+                                WHERE p.player_id = ? AND pb.building_id = ? AND pb.update_start IS NULL`;
+                                this.con.query(query, [results[0].player_id, buildings[b_index].building_id], function (err) {
+                                    if (err) reject(err);
+                                    resolve();
+                                });
+                            }
+                        }
+                    }.bind(this));
+                }.bind(this));
+            }.bind(this));
+        });
+    }
+
+    cancel_building_update(username, p_building) {
+        return new Promise((resolve,reject) => {
+            this.update_building_level(username, p_building).then(function() {
+                var b_index = buildings.findIndex(building => building.name == p_building);
+                var query = `SELECT p.player_id, pb.level, pb.update_start, pb.downgrade
+                FROM player_buildings pb
                 INNER JOIN players p ON p.player_id = pb.player_id
-                WHERE p.username = ? AND b.name = ?`;
-                this.con.query(query, [username, p_building], function (err, results) {
+                WHERE p.username = ? AND pb.building_id = ?`;
+                this.con.query(query, [username, buildings[b_index].building_id], function (err, results) {
                     if (err) reject(err);
                     if (results.length > 0) {
-                        if (results[0].upgrade_start === null && results[0].wood > results[0].wood_cost && results[0].dirt > results[0].dirt_cost && results[0].iron > results[0].iron_cost && results[0].pop > results[0].pop_cost) {
-                            query = `UPDATE player_buildings pb 
-                            INNER JOIN players p ON p.player_id = pb.player_id 
-                            INNER JOIN buildings b ON b.building_id = pb.building_id AND b.level = pb.level
-                            SET 
-                                p.wood = p.wood - b.wood_cost,
-                                p.dirt = p.dirt - b.dirt_cost,
-                                p.iron = p.iron - b.iron_cost,
-                                p.pop = p.pop - b.pop_cost,
-                                pb.upgrade_start = NOW()
-                            WHERE p.player_id = ? AND b.building_id = ?`;
-                            this.con.query(query, [results[0].player_id, results[0].building_id], function (err) {
-                                if (err) reject(err);
-                                resolve();
-                            });
+                        if (results[0].update_start !== null) {
+                            if (results[0].downgrade) {
+                                query = `UPDATE player_buildings pb 
+                                INNER JOIN players p ON p.player_id = pb.player_id
+                                SET 
+                                    pb.update_start = NULL,
+                                    pb.downgrade = 0
+                                    WHERE p.player_id = ? AND pb.building_id = ? AND pb.level > 0 AND pb.update_start IS NOT NULL AND pb.downgrade = 1`;
+                                this.con.query(query, [results[0].player_id, buildings[b_index].building_id, results[0].level], function (err) {
+                                    if (err) reject(err);
+                                    resolve();
+                                });
+                            } else {
+                                var l_index;
+                                if (buildings[b_index].level_details[results[0].level] == results[0].level) {
+                                    l_index = results[0].level;
+                                } else {
+                                    l_index = buildings[b_index].level_details.findIndex(level_detail => level_detail.level == results[0].level)
+                                }
+                                query = `UPDATE player_buildings pb 
+                                INNER JOIN players p ON p.player_id = pb.player_id
+                                SET 
+                                    p.wood = p.wood + ${buildings[b_index].level_details[l_index].upgrade_cost.wood},
+                                    p.dirt = p.dirt + ${buildings[b_index].level_details[l_index].upgrade_cost.dirt},
+                                    p.iron = p.iron + ${buildings[b_index].level_details[l_index].upgrade_cost.iron},
+                                    p.pop = p.pop + ${buildings[b_index].level_details[l_index].upgrade_cost.pop},
+                                    pb.update_start = NULL
+                                WHERE p.player_id = ? AND pb.building_id = ? AND pb.level = ? AND pb.update_start IS NOT NULL`;
+                                this.con.query(query, [results[0].player_id, buildings[b_index].building_id, results[0].level], function (err) {
+                                    if (err) reject(err);
+                                    resolve();
+                                });
+                            }
                         }
                     }
                 }.bind(this));
@@ -130,26 +189,44 @@ class DbManager {
         });
     }
 
+    downgrade_building(username, p_building) {
+        return new Promise((resolve,reject) => {
+            this.update_building_level(username, p_building).then(function() {
+                var b_index = buildings.findIndex(building => building.name == p_building);
+                var query = `UPDATE player_buildings pb 
+                INNER JOIN players p ON p.player_id = pb.player_id
+                SET 
+                    pb.update_start = NOW(),
+                    pb.downgrade = 1
+                WHERE p.username = ? AND pb.building_id = ? AND pb.level > 0 AND pb.update_start IS NULL`;
+                this.con.query(query, [username, buildings[b_index].building_id], function (err) {
+                    if (err) reject(err);
+                    resolve();
+                });
+            }.bind(this));
+        });
+    }
+
     /**
-     * Returns result(s) in following format [{player_id, building_id, level, upgrade_start(in UNIX timestamp), upgrade_time}, ..]
+     * Returns result(s) in following format [{player_id, building_id, level, update_start(in UNIX timestamp), upgrade_time}, ..]
      * @param {String} username Username of the player
      * @param {String} p_building Building name 'all' can be used to get all buildings from the player
      */
-    get_user_building_details(username, p_building, hidePlayerId = false) {
+    get_user_building_details(username, p_building, hide_player_id = false) {
         return new Promise((resolve,reject) => {
             this.update_building_level(username, p_building).then(function () {
-                var query = hidePlayerId ? 'SELECT ' : 'SELECT pb.player_id, '
-                query += `pb.building_id, pb.level, 
-                UNIX_TIMESTAMP(pb.upgrade_start) AS upgrade_start
+                var building_id;
+                var query = hide_player_id ? 'SELECT ' : 'SELECT pb.player_id, '
+                query += `pb.building_id, pb.level, pb.downgrade,
+                UNIX_TIMESTAMP(pb.update_start) AS update_start
                 FROM player_buildings pb
                 INNER JOIN players p ON p.player_id = pb.player_id
-                INNER JOIN buildings b ON b.building_id = pb.building_id AND b.level = pb.level
                 WHERE p.username = ?`;
                 if (p_building != 'all') {
-                    query += ' AND b.name = ?';
+                    building_id = buildings.find(building => building.name == p_building).building_id;
+                    query += ' AND pb.building_id = ?';
                 }
-
-                this.con.query(query, [username, p_building], function (err, results) {
+                this.con.query(query, [username, building_id], function (err, results) {
                     if (err) reject(err);
                     resolve(results);
                 }.bind(this));
@@ -159,39 +236,86 @@ class DbManager {
 
     update_building_level(username, p_building) {
         return new Promise((resolve,reject) => {
-            var query = `UPDATE player_buildings pb
-            INNER JOIN players p ON p.player_id = pb.player_id
-            INNER JOIN buildings b ON pb.building_id = b.building_id
-                SET pb.level = IF (pb.upgrade_start IS NOT NULL AND (NOW() - cast(pb.upgrade_start as signed) - cast(b.upgrade_time as signed)) > 0, pb.level + 1, pb.level),
-                pb.upgrade_start = IF (pb.upgrade_start IS NOT NULL AND (NOW() - cast(pb.upgrade_start as signed) - cast(b.upgrade_time as signed)) > 0, NULL, pb.upgrade_start)
-            WHERE p.username = ? AND b.level = pb.level`;
+            var query = `SELECT p.player_id, UNIX_TIMESTAMP(pb.update_start) AS update_start, pb.level, pb.building_id, pb.downgrade
+                FROM player_buildings pb
+                INNER JOIN players p ON p.player_id = pb.player_id
+                WHERE p.username = ? AND pb.update_start IS NOT NULL`;
             if (p_building != 'all') {
-                query += ' AND b.name = ?';
+                var b_index = buildings.findIndex(building => building.name == p_building);
+                query += ' AND pb.building_id = ' + (b_index + 1);
             }
-            this.con.query(query, [username, p_building], function (err) {
+            this.con.query(query, [username], function (err, results) {
                 if (err) reject(err);
+                if (results.length > 0) {
+                    var execute_query = false;
+                    var query = `UPDATE player_buildings pb
+                    INNER JOIN players p ON p.player_id = pb.player_id
+                        SET 
+                        pb.level = IF (pb.downgrade = 0, pb.level + 1, pb.level - 1),
+                        pb.update_start = NULL,
+                        pb.downgrade = 0
+                    WHERE p.player_id = ? AND pb.building_id IN (`;
+                    for (var i = 0; i < results.length; i++) {
+                        var b_index;
+                        var l_index;
+                        if (buildings[results[i].building_id - 1].building_id == results[i].building_id) {
+                            b_index = results[i].building_id - 1;
+                        } else {
+                            b_index = buildings.findIndex(building => building.building_id == results[i].building_id);
+                        }
+
+                        if (buildings[b_index].level_details[results[i].level] == (results[i].level - results[i].downgrade)) {
+                            l_index = results[i].level;
+                        } else {
+                            l_index = buildings[b_index].level_details.findIndex(level_detail => level_detail.level == (results[i].level - results[i].downgrade));
+                        }
+                        if ((Math.floor(Date.now() / 1000) - results[i].update_start - buildings[b_index].level_details[l_index].upgrade_time) > 0) {
+                            query += results[i].building_id + ',';
+                            execute_query = true;
+                        }
+                    }
+                    if (execute_query) {
+                        query = query.slice(0, query.length - 1);
+                        query += ')';
+                        this.con.query(query, [results[0].player_id], function (err) {
+                            if (err) reject(err);
+                            resolve();
+                        });
+                    }
+                }
                 resolve();
-            });
+            }.bind(this));
         });
     }
 
     /**
-     * Returns results in following format [{name, level, upgrade_time, wood_cost, dirt_cost, iron_cost, pop_cost}, ..]
-     * @param {Array} buildings in format [{building_id, level}]
-     * @param {Boolean} upByLevel Default value is false. If true, next level of 
+     * Returns results in following format [{building_id, name, level_details: [{level, upgrade_time, wood_cost, dirt_cost, iron_cost, pop_cost}]}, ..]
+     * @param {Array} p_buildings in format [{building_id, level}] Level can be an array of levels
      */
-    get_building_details(buildings) {
-        return new Promise((resolve,reject) => {
-            var query_fragment = '';
-            for (var i = 0; i < buildings.length; i++) {
-                query_fragment += `( building_id = ${buildings[i].building_id} AND level = ${buildings[i].level} ) OR `;
+    get_building_details(p_buildings) {
+        return new Promise((resolve) => {
+            var building_details = [];
+            var b_index = -1;
+            for (var i = 0; i < p_buildings.length; i++) {
+                if (!Array.isArray(p_buildings[i].level)) {
+                    p_buildings[i].level = [p_buildings[i].level];
+                }
+
+                //Buildings are stored in an array. If they are stored storted by building_id, then building with id 1 should be stored at the index 0, id 2 at the index 1, ..
+                if (buildings[p_buildings[i].building_id - 1].building_id == p_buildings[i].building_id) {
+                    b_index = p_buildings[i].building_id - 1;
+                } else {
+                    b_index = buildings.findIndex(building => building.building_id == p_buildings[i].building_id);
+                }
+                building_details.push({building_id: buildings[b_index].building_id, name: buildings[b_index].name, level_details: []});
+                for (var j = 0; j < p_buildings[i].level.length; j++) {
+                    var l_index = buildings[b_index].level_details.findIndex(level_detail => level_detail.level == p_buildings[i].level[j]);
+                    if (l_index != -1) {
+                        building_details[i].level_details.push(buildings[b_index].level_details[l_index]);
+                    }
+                }
             }
-            query_fragment = query_fragment.slice(0, query_fragment.length - 4);
-            var query = `SELECT building_id, name, level, upgrade_time, wood_cost, dirt_cost, iron_cost, pop_cost FROM buildings WHERE ${query_fragment}`;
-            this.con.query(query, function (err, results) {
-                if (err) reject(err);
-                resolve(results);
-            });
+            resolve(building_details);
         });
     }
 
@@ -205,11 +329,14 @@ class DbManager {
     }
 
     get_starter_datapack(username, callback) {
-        //remake this into a single query - then update the ui part
         return new Promise((resolve,reject) => {
             this.update_resource(username, 'all').then(function() {
                 this.update_building_level(username, 'all').then(function() {
                     Promise.all([this.get_resource_prod(username, 'all'), this.get_resource(username, 'all', true), this.get_user_building_details(username, 'all', true)]).then(values => {
+                        for (var i = 0; i < values[2].length; i++) {
+                            values[2][i].curr_level = values[2][i].level;
+                            values[2][i].level = [values[2][i].level - 1, values[2][i].level, values[2][i].level + 1];
+                        }
                         this.get_building_details(values[2]).then(results => callback({resource_prods: values[0], resources: values[1], buildings: values[2], building_details: results}));
                     }).catch(err => { console.log(err) });
                 }.bind(this));
