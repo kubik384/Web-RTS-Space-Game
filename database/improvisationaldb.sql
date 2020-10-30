@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3308
--- Generation Time: Oct 28, 2020 at 09:34 PM
+-- Generation Time: Oct 30, 2020 at 07:53 PM
 -- Server version: 8.0.18
 -- PHP Version: 7.3.12
 
@@ -35,13 +35,9 @@ CREATE TABLE IF NOT EXISTS `players` (
   `password` varchar(128) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
   `res_last_update` timestamp NOT NULL,
   `wood` double(16,4) UNSIGNED NOT NULL DEFAULT '100.0000',
-  `wood_prod` double(16,4) UNSIGNED NOT NULL DEFAULT '0.0050',
   `dirt` double(16,4) UNSIGNED NOT NULL DEFAULT '100.0000',
-  `dirt_prod` double(16,4) UNSIGNED NOT NULL DEFAULT '0.0100',
   `iron` double(16,4) UNSIGNED NOT NULL DEFAULT '100.0000',
-  `iron_prod` double(16,4) UNSIGNED NOT NULL DEFAULT '0.0005',
   `pop` double(16,4) UNSIGNED NOT NULL DEFAULT '100.0000',
-  `pop_prod` double(16,4) UNSIGNED NOT NULL DEFAULT '0.0010',
   PRIMARY KEY (`player_id`),
   UNIQUE KEY `username` (`username`)
 ) ENGINE=MyISAM AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -50,8 +46,8 @@ CREATE TABLE IF NOT EXISTS `players` (
 -- Dumping data for table `players`
 --
 
-INSERT INTO `players` (`player_id`, `username`, `password`, `res_last_update`, `wood`, `wood_prod`, `dirt`, `dirt_prod`, `iron`, `iron_prod`, `pop`, `pop_prod`) VALUES
-(17, 'Newstory', '$2b$10$f7I6ge.NFp/ojqzQjw0DvOLEXpE79xwBxxsyrdzI303xS8PKPqeei', '2020-10-28 21:32:59', 7298.9250, 0.0050, 20041.8700, 0.0100, 18565.4955, 0.0005, 19594.9860, 0.0010);
+INSERT INTO `players` (`player_id`, `username`, `password`, `res_last_update`, `wood`, `dirt`, `iron`, `pop`) VALUES
+(17, 'Newstory', '$2b$10$f7I6ge.NFp/ojqzQjw0DvOLEXpE79xwBxxsyrdzI303xS8PKPqeei', '2020-10-30 19:23:53', 5892.9426, 21064.3920, 18596.9859, 19840.2170);
 
 --
 -- Triggers `players`
@@ -94,9 +90,9 @@ CREATE TABLE IF NOT EXISTS `player_buildings` (
 --
 
 INSERT INTO `player_buildings` (`player_id`, `building_id`, `level`, `update_start`, `downgrade`) VALUES
-(17, 3, 1, NULL, 0),
-(17, 2, 0, NULL, 0),
-(17, 1, 0, NULL, 0);
+(17, 3, 3, NULL, 0),
+(17, 2, 3, '2020-10-30 19:24:06', 1),
+(17, 1, 1, NULL, 0);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

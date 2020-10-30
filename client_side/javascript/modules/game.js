@@ -16,7 +16,6 @@ class Game {
         console.log(starter_datapack);
         this.resources = starter_datapack.resources[0];
         this.buildings = starter_datapack.building_details;
-        this.resource_prods = starter_datapack.resource_prods[0];
 
         for (var i = 0; i < starter_datapack.buildings.length; i++) {
             var building = starter_datapack.buildings.find(b => b.building_id == this.buildings[i].building_id);
@@ -24,6 +23,9 @@ class Game {
             this.buildings[i].downgrade = building.downgrade;
             this.buildings[i].level = building.curr_level;
         }
+        var resource_generator = this.buildings.find(building => building.name == 'resource_generator');
+        this.resource_prods = resource_generator.level_details.find(ld => ld.level == resource_generator.level).production;
+
         this.update_resource_ui();
         for (var i = 0; i < this.buildings.length; i++) {
             this.update_building_ui(i);
@@ -61,7 +63,7 @@ class Game {
     }
 
     async upgrade_building(p_building) {
-        var b_index = this.buildings.findIndex(building => { if (building.name == p_building) { return true; } });
+        var b_index = this.buildings.findIndex(building => building.name == p_building);
         var l_index = this.buildings[b_index].level_details.findIndex(ld => ld.level == this.buildings[b_index].level);
         if (this.buildings[b_index].update_start === null && this.buildings[b_index].level_details[l_index].upgrade_time != 0) {
             var changed_resources = {};
@@ -89,7 +91,7 @@ class Game {
         if (this.buildings[building_id - 1].building_id == building_id) {
             b_index = building_id - 1;
         } else {
-            b_index = this.buildings.findIndex(building => {return building.building_id == building_id});
+            b_index = this.buildings.findIndex(building => building.building_id == building_id);
         }
         if (this.fetched_buildings[building_id] !== undefined && this.fetched_buildings[building_id].name !== undefined) {
             if (this.buildings[b_index].downgrade) {
@@ -112,6 +114,10 @@ class Game {
                 }
                 this.buildings[b_index].level++;
             }
+            if (this.buildings[b_index].name == 'resource_generator') {
+                this.resource_prods = this.buildings[b_index].level_details.find(ld => ld.level == this.buildings[b_index].level).production;
+                this.update_resource_ui();
+            }
             this.buildings[b_index].update_start = null;
             this.update_building_ui(b_index);
             delete this.fetched_buildings[building_id];
@@ -126,7 +132,7 @@ class Game {
     }
 
     async cancel_building_update(p_building) {
-        var b_index = this.buildings.findIndex(building => { if (building.name == p_building) { return true; } });
+        var b_index = this.buildings.findIndex(building => building.name == p_building);
         if (this.buildings[b_index].update_start !== null) {
             this.buildings[b_index].update_start = null;
             if (this.buildings[b_index].downgrade) {
@@ -147,7 +153,7 @@ class Game {
     }
 
     async downgrade_building(p_building) {
-        var b_index = this.buildings.findIndex(building => { if (building.name == p_building) { return true; } });
+        var b_index = this.buildings.findIndex(building => building.name == p_building);
         var l_index = this.buildings[b_index].level_details.findIndex(ld => ld.level == this.buildings[b_index].level);
         if (this.buildings[b_index].update_start === null && this.buildings[b_index].level_details[l_index].level != 0) {
                 this.socket.emit('downgrade_building', p_building);
@@ -181,7 +187,7 @@ class Game {
 
     async update_resource_ui() {
         for (var resource_type in this.resources) {
-            document.getElementById(resource_type).innerHTML = Math.floor(this.resources[resource_type]) + ' (' + this.resource_prods[resource_type]*3600 + '/h)';
+            document.getElementById(resource_type).innerHTML = Math.floor(this.resources[resource_type]) + ' (' + Math.round(this.resource_prods[resource_type]*3600 * 100)/100 + '/h)';
         }
     }
 

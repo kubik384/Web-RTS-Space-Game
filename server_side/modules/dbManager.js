@@ -1,9 +1,6 @@
 "use strict"
 
-const e = require('express');
 var mysql = require('mysql');
-const { ER_INVALID_JSON_PATH_ARRAY_CELL } = require('mysql/lib/protocol/constants/errors');
-
 const all_resource_types = 'wood, dirt, iron, pop';
 const resourceTable = all_resource_types.split(', ');
 var buildings = require('./../game_properties/buildings.json');
@@ -23,28 +20,40 @@ class DbManager {
 
     /**
      * 
-     * @param {string} username 
-     * @param {String|Array} p_resources 
+     * @param {String} username 
+     * @param {String|Array} p_resources Accepts in following formats: 'resource, resource, ..' OR [resource, resource, ..]
      * @param {Number} amount
      */
     update_resource(username, p_resources, amount = 0) {
         return new Promise((resolve,reject) => {
-            var resources = p_resources == 'all' ? resourceTable : p_resources;
-            var set_to = '';
-            
-            if (!Array.isArray(resources)) {
-                resources = resources.split(', ');
-            }
+            var resource_generator = buildings.find(b => b.name == 'resource_generator');
+            this.update_building_level(username, resource_generator.building_id).then(() => {
+                var query = `SELECT p.player_id, UNIX_TIMESTAMP(p.res_last_update) AS last_update, pb.level
+                FROM player_buildings pb
+                INNER JOIN players p ON p.player_id = pb.player_id
+                WHERE p.username = ? AND pb.building_id = ?`;
+                this.con.query(query, [username, resource_generator.building_id], function (err, results) {
+                    if (err) reject(err);
 
-            for (var i = 0; i < resources.length; i++) {
-                set_to += resources[i] + ' = ' + resources[i] + ' + ' + resources[i] + '_prod * (UNIX_TIMESTAMP(NOW()) - UNIX_TIMESTAMP(res_last_update)) + ' + amount + ' , ';
-            }
-            set_to += 'res_last_update = NOW()';
+                    var res_production = resource_generator.level_details.find(ld => ld.level == results[0].level).production;
+                    var resources = p_resources == 'all' ? resourceTable : p_resources;
+                    var set_to = '';
+                    
+                    if (!Array.isArray(resources)) {
+                        resources = resources.split(', ');
+                    }
+                    
+                    for (var i = 0; i < resources.length; i++) {
+                        set_to += resources[i] + ' = ' + resources[i] + ' + ' + (res_production[resources[i]] * (Math.floor(Date.now()/1000) - results[0].last_update) + amount) + ' , ';
+                    }
+                    set_to += 'res_last_update = NOW()';
 
-            var query = "UPDATE players SET " + set_to + " WHERE username = ?";
-            this.con.query(query, [username], function (err) {
-                if (err) reject(err);
-                resolve();
+                    var query = "UPDATE players SET " + set_to + " WHERE player_id = ?";
+                    this.con.query(query, [results[0].player_id], function (err) {
+                        if (err) reject(err);
+                        resolve();
+                    });
+                }.bind(this));
             });
         });
     }
@@ -62,34 +71,6 @@ class DbManager {
             }
 
             var query = 'SELECT ' + resources + ' FROM players WHERE username = ?';
-
-            this.con.query(query, [username], function (err, results) {
-                if (err) reject(err);
-                resolve(results);
-            });
-        });
-    }
-
-    /**
-     * @param {String} username Player's username
-     * @param {String} p_resource Can be exact resource or use 'all' to get all resource production values
-     */
-    get_resource_prod(username, p_resource) {
-        //probably can be replaced with some sort of mysql partial column name match
-        return new Promise((resolve,reject) => {
-            var resources = p_resource == 'all' ? resourceTable : p_resource;
-
-            if (!Array.isArray(resources)) {
-                resources = resources.split(', ');
-            }
-
-            var resource_prods = '';
-            for (var i = 0; i < resources.length; i++) {
-                resource_prods += resources[i] + '_prod AS ' + resourceTable[i] + ', ';
-            }
-            resource_prods = resource_prods.slice(0, resource_prods.length - 2);
-    
-            var query = 'SELECT ' + resource_prods + ' FROM players WHERE username = ?';
 
             this.con.query(query, [username], function (err, results) {
                 if (err) reject(err);
@@ -332,12 +313,12 @@ class DbManager {
         return new Promise((resolve,reject) => {
             this.update_resource(username, 'all').then(function() {
                 this.update_building_level(username, 'all').then(function() {
-                    Promise.all([this.get_resource_prod(username, 'all'), this.get_resource(username, 'all', true), this.get_user_building_details(username, 'all', true)]).then(values => {
-                        for (var i = 0; i < values[2].length; i++) {
-                            values[2][i].curr_level = values[2][i].level;
-                            values[2][i].level = [values[2][i].level - 1, values[2][i].level, values[2][i].level + 1];
+                    Promise.all([this.get_resource(username, 'all', true), this.get_user_building_details(username, 'all', true)]).then(values => {
+                        for (var i = 0; i < values[1].length; i++) {
+                            values[1][i].curr_level = values[1][i].level;
+                            values[1][i].level = [values[1][i].level - 1, values[1][i].level, values[1][i].level + 1];
                         }
-                        this.get_building_details(values[2]).then(results => callback({resource_prods: values[0], resources: values[1], buildings: values[2], building_details: results}));
+                        this.get_building_details(values[1]).then(results => callback({resources: values[0], buildings: values[1], building_details: results}));
                     }).catch(err => { console.log(err) });
                 }.bind(this));
             }.bind(this));

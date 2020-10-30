@@ -16,10 +16,10 @@
             {
                 "level": 1,
                 "upgrade_cost": {
-                    "wood": 200,
-                    "dirt": 50,
-                    "iron": 20,
-                    "pop": 10
+                    "wood": 1,
+                    "dirt": 1,
+                    "iron": 1,
+                    "pop": 1
                 },
                 "upgrade_time": 10
             },
@@ -57,17 +57,19 @@
                     "iron": 1,
                     "pop": 1
                 },
-                "upgrade_time": 10
+                "upgrade_time": 10,
+                "production": {"wood": 0.00015, "dirt": 0.0020, "iron": 0, "pop": 0}
             },
             {
                 "level": 1,
                 "upgrade_cost": {
-                    "wood": 200,
-                    "dirt": 50,
-                    "iron": 20,
-                    "pop": 10
+                    "wood": 1,
+                    "dirt": 1,
+                    "iron": 1,
+                    "pop": 1
                 },
-                "upgrade_time": 10
+                "upgrade_time": 10,
+                "production": {"wood": 0.005, "dirt": 0.01, "iron": 0.0005, "pop": 0}
             },
             {
                 "level": 2,
@@ -77,7 +79,8 @@
                     "iron": 1,
                     "pop": 1
                 },
-                "upgrade_time": 10
+                "upgrade_time": 10,
+                "production": {"wood": 0.008, "dirt": 0.035, "iron": 0.00075, "pop": 0}
             },
             {
                 "level": 3,
@@ -87,7 +90,8 @@
                     "iron": 1,
                     "pop": 1
                 },
-                "upgrade_time": 0
+                "upgrade_time": 0,
+                "production": {"wood": 0.012, "dirt": 0.055, "iron": 0.00095, "pop": 0}
             }
         ]
     }, 
@@ -103,17 +107,19 @@
                     "iron": 1,
                     "pop": 1
                 },
-                "upgrade_time": 10
+                "upgrade_time": 10,
+                "defense_bonus": 10
             },
             {
                 "level": 1,
                 "upgrade_cost": {
-                    "wood": 200,
-                    "dirt": 50,
-                    "iron": 20,
-                    "pop": 10
+                    "wood": 1,
+                    "dirt": 1,
+                    "iron": 1,
+                    "pop": 1
                 },
-                "upgrade_time": 10
+                "upgrade_time": 10,
+                "defense_bonus": 25
             },
             {
                 "level": 2,
@@ -123,7 +129,8 @@
                     "iron": 1,
                     "pop": 1
                 },
-                "upgrade_time": 10
+                "upgrade_time": 10,
+                "defense_bonus": 30
             },
             {
                 "level": 3,
@@ -133,7 +140,8 @@
                     "iron": 1,
                     "pop": 1
                 },
-                "upgrade_time": 0
+                "upgrade_time": 0,
+                "defense_bonus": 32
             }
         ]
     }
