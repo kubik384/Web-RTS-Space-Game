@@ -1,8 +1,8 @@
 "use strict"
 
 var mysql = require('mysql');
-const all_resource_types = 'wood, dirt, iron, pop';
-const resourceTable = all_resource_types.split(', ');
+var all_resource_types = 'pop, food, timber, metals, coal, oil, kerosene, hydrogen, uranium';
+var resourceTable = all_resource_types.split(', ');
 var buildings = require('./../game_properties/buildings.json');
 
 class DbManager {
@@ -44,7 +44,7 @@ class DbManager {
                     }
                     
                     for (var i = 0; i < resources.length; i++) {
-                        set_to += resources[i] + ' = ' + resources[i] + ' + ' + (res_production[resources[i]] * (Math.floor(Date.now()/1000) - results[0].last_update) + amount) + ' , ';
+                        set_to += resources[i] + ' = ' + resources[i] + ' + ' + ((res_production[resources[i]] === undefined ? 0 : res_production[resources[i]]) * (Math.floor(Date.now()/1000) - results[0].last_update) + amount) + ' , ';
                     }
                     set_to += 'res_last_update = NOW()';
 
@@ -84,7 +84,7 @@ class DbManager {
             this.update_resource(username, 'all').then(function() {
                 this.update_building_level(username, p_building).then(function() {
                     var b_index = buildings.findIndex(building => building.name == p_building);
-                    var query = `SELECT p.player_id, p.wood, p.dirt, p.iron, p.pop, pb.update_start, pb.level
+                    var query = `SELECT p.*, pb.update_start, pb.level
                     FROM player_buildings pb
                     INNER JOIN players p ON p.player_id = pb.player_id
                     WHERE p.username = ? AND pb.building_id = ?`;
@@ -97,16 +97,21 @@ class DbManager {
                             } else {
                                 l_index = buildings[b_index].level_details.findIndex(level_detail => level_detail.level == results[0].level)
                             }
-                            if (results[0].update_start === null && results[0].wood > buildings[b_index].level_details[l_index].upgrade_cost.wood && results[0].dirt > buildings[b_index].level_details[l_index].upgrade_cost.dirt && results[0].iron > buildings[b_index].level_details[l_index].upgrade_cost.iron && results[0].pop > buildings[b_index].level_details[l_index].upgrade_cost.pop) {
-                                query = `UPDATE player_buildings pb 
+                            query = `UPDATE player_buildings pb 
                                 INNER JOIN players p ON p.player_id = pb.player_id
-                                SET 
-                                    p.wood = p.wood - ${buildings[b_index].level_details[l_index].upgrade_cost.wood},
-                                    p.dirt = p.dirt - ${buildings[b_index].level_details[l_index].upgrade_cost.dirt},
-                                    p.iron = p.iron - ${buildings[b_index].level_details[l_index].upgrade_cost.iron},
-                                    p.pop = p.pop - ${buildings[b_index].level_details[l_index].upgrade_cost.pop},
-                                    pb.update_start = NOW()
+                                SET `;
+                            var sufficient_resources = true;
+                            for (const resource in buildings[b_index].level_details[l_index].upgrade_cost) {
+                                if (results[0][resource] > buildings[b_index].level_details[l_index].upgrade_cost[resource]) {
+                                    sufficient_resources = false;
+                                    break;
+                                } else {
+                                    query += `p.${resource} = p.${resource} - ${buildings[b_index].level_details[l_index].upgrade_cost[resource]}, `
+                                }
+                                query += `pb.update_start = NOW()
                                 WHERE p.player_id = ? AND pb.building_id = ? AND pb.update_start IS NULL`;
+                            }
+                            if (sufficient_resources && results[0].update_start === null) {
                                 this.con.query(query, [results[0].player_id, buildings[b_index].building_id], function (err) {
                                     if (err) reject(err);
                                     resolve();
@@ -151,12 +156,12 @@ class DbManager {
                                 }
                                 query = `UPDATE player_buildings pb 
                                 INNER JOIN players p ON p.player_id = pb.player_id
-                                SET 
-                                    p.wood = p.wood + ${buildings[b_index].level_details[l_index].upgrade_cost.wood},
-                                    p.dirt = p.dirt + ${buildings[b_index].level_details[l_index].upgrade_cost.dirt},
-                                    p.iron = p.iron + ${buildings[b_index].level_details[l_index].upgrade_cost.iron},
-                                    p.pop = p.pop + ${buildings[b_index].level_details[l_index].upgrade_cost.pop},
-                                    pb.update_start = NULL
+                                SET `;
+
+                                for (const resource in buildings[b_index].level_details[l_index].upgrade_cost) {
+                                    query += `p.${resource} = p.${resource} + ${buildings[b_index].level_details[l_index].upgrade_cost[resource]}, `;
+                                }
+                                query += `pb.update_start = NULL
                                 WHERE p.player_id = ? AND pb.building_id = ? AND pb.level = ? AND pb.update_start IS NOT NULL`;
                                 this.con.query(query, [results[0].player_id, buildings[b_index].building_id, results[0].level], function (err) {
                                     if (err) reject(err);

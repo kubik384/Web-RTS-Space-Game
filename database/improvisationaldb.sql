@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3308
--- Generation Time: Oct 30, 2020 at 07:53 PM
+-- Generation Time: Oct 31, 2020 at 08:01 PM
 -- Server version: 8.0.18
 -- PHP Version: 7.3.12
 
@@ -34,10 +34,15 @@ CREATE TABLE IF NOT EXISTS `players` (
   `username` varchar(32) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
   `password` varchar(128) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
   `res_last_update` timestamp NOT NULL,
-  `wood` double(16,4) UNSIGNED NOT NULL DEFAULT '100.0000',
-  `dirt` double(16,4) UNSIGNED NOT NULL DEFAULT '100.0000',
-  `iron` double(16,4) UNSIGNED NOT NULL DEFAULT '100.0000',
-  `pop` double(16,4) UNSIGNED NOT NULL DEFAULT '100.0000',
+  `population` int(12) NOT NULL DEFAULT '100',
+  `food` double(16,4) NOT NULL DEFAULT '100.0000',
+  `timber` double(16,4) NOT NULL DEFAULT '100.0000',
+  `metals` double(16,4) NOT NULL DEFAULT '100.0000',
+  `coal` double(16,4) NOT NULL DEFAULT '100.0000',
+  `oil` double(16,4) NOT NULL DEFAULT '100.0000',
+  `kerosene` double(16,4) NOT NULL DEFAULT '100.0000',
+  `hydrogen` double(16,4) NOT NULL DEFAULT '0.0000',
+  `uranium` double(16,4) NOT NULL DEFAULT '0.0000',
   PRIMARY KEY (`player_id`),
   UNIQUE KEY `username` (`username`)
 ) ENGINE=MyISAM AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -46,8 +51,8 @@ CREATE TABLE IF NOT EXISTS `players` (
 -- Dumping data for table `players`
 --
 
-INSERT INTO `players` (`player_id`, `username`, `password`, `res_last_update`, `wood`, `dirt`, `iron`, `pop`) VALUES
-(17, 'Newstory', '$2b$10$f7I6ge.NFp/ojqzQjw0DvOLEXpE79xwBxxsyrdzI303xS8PKPqeei', '2020-10-30 19:23:53', 5892.9426, 21064.3920, 18596.9859, 19840.2170);
+INSERT INTO `players` (`player_id`, `username`, `password`, `res_last_update`, `population`, `food`, `timber`, `metals`, `coal`, `oil`, `kerosene`, `hydrogen`, `uranium`) VALUES
+(17, 'Newstory', '$2b$10$f7I6ge.NFp/ojqzQjw0DvOLEXpE79xwBxxsyrdzI303xS8PKPqeei', '2020-10-30 19:23:53', 100, 0.0000, 0.0000, 0.0000, 100.0000, 100.0000, 100.0000, 0.0000, 0.0000);
 
 --
 -- Triggers `players`
