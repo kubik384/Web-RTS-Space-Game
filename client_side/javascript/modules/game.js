@@ -14,15 +14,42 @@ class Game {
     async display_starter_datapack(p_starter_datapack) {
         var starter_datapack = JSON.parse(p_starter_datapack);
         console.log(starter_datapack);
-        this.resources = starter_datapack.resources[0];
-        this.buildings = starter_datapack.building_details;
 
+        this.resources = starter_datapack.resources[0];
+        var resource_building_ui_html = '<table>';
+        for(var resource in starter_datapack.resources[0]) {
+            resource_building_ui_html += `
+            <tr>
+            <td><img src="client_side/images/resources/${resource}.png" height="16px"></img></td>
+            <td id='${resource}'></td>
+            </tr>`;
+        }
+        
+        var button_menu_html = '';
+        this.buildings = starter_datapack.building_details;
         for (var i = 0; i < starter_datapack.buildings.length; i++) {
             var building = starter_datapack.buildings.find(b => b.building_id == this.buildings[i].building_id);
             this.buildings[i].update_start = building.update_start;
             this.buildings[i].downgrade = building.downgrade;
             this.buildings[i].level = building.curr_level;
+
+            resource_building_ui_html += `
+            <tr>
+            <td><img src="client_side/images/buildings/${this.buildings[i].name}.png" height="20px"></img></td>
+            <td id='${this.buildings[i].name}' class='building_cell'>${this.buildings[i].level}</td>
+            </tr>`;
+            
+            button_menu_html += `
+            <div class = 'building_update_button_wrapper'>
+            <button id='upgrade-${this.buildings[i].name}' class='building_btn'>Upgrade ${this.buildings[i].name} <br />()</button>
+            <button id='downgrade-${this.buildings[i].name}' class='downgrade_btn'><img src="client_side/images/ui/downgrade_building.png" height="20px"></button>
+            </div>`;
         }
+        resource_building_ui_html += '</table>';
+        document.getElementById('resource_building_ui').innerHTML = resource_building_ui_html;
+        document.getElementById('button_menu').innerHTML = button_menu_html;
+
+
         var resource_generator = this.buildings.find(building => building.name == 'resource_generator');
         this.resource_prods = resource_generator.level_details.find(ld => ld.level == resource_generator.level).production;
 
@@ -37,6 +64,7 @@ class Game {
 
     
     update_game() {
+        /*
         var currTime = Math.floor(Date.now()/1000);
         var timePassed = currTime - this.lastUpdateTime;
         for (var resource_type in this.resource_prods) {
@@ -60,6 +88,7 @@ class Game {
             }
         }
         this.lastUpdateTime = currTime;
+        */
     }
 
     async upgrade_building(p_building) {

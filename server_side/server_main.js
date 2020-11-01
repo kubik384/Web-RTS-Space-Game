@@ -108,12 +108,6 @@ io.on('connection', socket => {
 		dbManager.get_starter_datapack(token, result => { socket.emit('starter_datapack', JSON.stringify(result)) });
 	});
 
-	socket.on('update_resource', data => {
-		var data = JSON.parse(data);
-		var token = socketTable[socket.id];
-		dbManager.update_resource(token, data.resource, data.amount);
-	});
-
 	socket.on('upgrade_building', building => {
 		var token = socketTable[socket.id];
 		dbManager.upgrade_building(token, building);
