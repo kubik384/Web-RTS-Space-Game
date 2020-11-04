@@ -102,7 +102,7 @@ class DbManager {
                                 SET `;
                             var sufficient_resources = true;
                             for (const resource in buildings[b_index].level_details[l_index].upgrade_cost) {
-                                if (results[0][resource] > buildings[b_index].level_details[l_index].upgrade_cost[resource]) {
+                                if (results[0][resource] < buildings[b_index].level_details[l_index].upgrade_cost[resource]) {
                                     sufficient_resources = false;
                                     break;
                                 } else {
