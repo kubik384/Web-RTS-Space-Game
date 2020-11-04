@@ -11,7 +11,7 @@ class Game {
         this.fetched_buildings = {};
     }
 
-    async display_starter_datapack(p_starter_datapack) {
+    async setup_game(p_starter_datapack) {
         var starter_datapack = JSON.parse(p_starter_datapack);
         console.log(starter_datapack);
 
@@ -20,7 +20,7 @@ class Game {
         for(var resource in starter_datapack.resources[0]) {
             resource_building_ui_html += `
             <tr>
-            <td><img src="client_side/images/resources/${resource}.png" height="16px"></img></td>
+            <td><img src="client_side/images/resources/${resource}.png" height="20px"></img></td>
             <td id='${resource}'></td>
             </tr>`;
         }
@@ -36,12 +36,12 @@ class Game {
             resource_building_ui_html += `
             <tr>
             <td><img src="client_side/images/buildings/${this.buildings[i].name}.png" height="20px"></img></td>
-            <td id='${this.buildings[i].name}' class='building_cell'>${this.buildings[i].level}</td>
+            <td id='${this.buildings[i].name}' class='building_cell'><span></span><img src="client_side/images/ui/red_cross.png" class="cancel" data-building='${this.buildings[i].name}' style='display:none;'></img></td>
             </tr>`;
             
             button_menu_html += `
             <div class = 'building_update_button_wrapper'>
-            <button id='upgrade-${this.buildings[i].name}' class='building_btn'>Upgrade ${this.buildings[i].name} <br />()</button>
+            <button id='upgrade-${this.buildings[i].name}' class='upgrade_btn'>Upgrade ${this.buildings[i].name} <br />()</button>
             <button id='downgrade-${this.buildings[i].name}' class='downgrade_btn'><img src="client_side/images/ui/downgrade_building.png" height="20px"></button>
             </div>`;
         }
@@ -49,6 +49,20 @@ class Game {
         document.getElementById('resource_building_ui').innerHTML = resource_building_ui_html;
         document.getElementById('button_menu').innerHTML = button_menu_html;
 
+        var buttons = document.getElementsByClassName('upgrade_btn');
+        for(var i = 0; i < buttons.length; i++) {
+            buttons[i].addEventListener('click', event => { this.upgrade_building(event.currentTarget.id.split('-')[1]) });
+        }
+
+        buttons = document.getElementsByClassName('downgrade_btn');
+        for(var i = 0; i < buttons.length; i++) {
+            buttons[i].addEventListener('click', event => { this.downgrade_building(event.currentTarget.id.split('-')[1]) });
+        }
+
+        buttons = document.getElementsByClassName('cancel');
+        for(var i = 0; i < buttons.length; i++) {
+            buttons[i].addEventListener('click', event => { this.cancel_building_update(event.currentTarget.dataset.building) });
+        }
 
         var resource_generator = this.buildings.find(building => building.name == 'resource_generator');
         this.resource_prods = resource_generator.level_details.find(ld => ld.level == resource_generator.level).production;
@@ -61,10 +75,8 @@ class Game {
         this.lastUpdateTime = Math.floor(Date.now()/1000);
         this.updateLoop = setInterval(this.update_game.bind(this), 1000);
     }
-
     
     update_game() {
-        /*
         var currTime = Math.floor(Date.now()/1000);
         var timePassed = currTime - this.lastUpdateTime;
         for (var resource_type in this.resource_prods) {
@@ -88,7 +100,6 @@ class Game {
             }
         }
         this.lastUpdateTime = currTime;
-        */
     }
 
     async upgrade_building(p_building) {
@@ -106,6 +117,7 @@ class Game {
                 }
             }
             if (sufficient_resources && this.buildings[b_index].level_details[l_index].upgrade_time > 0) {
+                console.log('upgrading');
                 this.socket.emit('upgrade_building', p_building);
                 this.resources = changed_resources;
                 this.update_resource_ui();
@@ -216,7 +228,7 @@ class Game {
 
     async update_resource_ui() {
         for (var resource_type in this.resources) {
-            document.getElementById(resource_type).innerHTML = Math.floor(this.resources[resource_type]) + ' (' + Math.round(this.resource_prods[resource_type]*3600 * 100)/100 + '/h)';
+            document.getElementById(resource_type).textContent = Math.floor(this.resources[resource_type]) + ' (' + Math.round(this.resource_prods[resource_type]*3600 * 100)/100 + '/h)';
         }
     }
 
@@ -234,27 +246,32 @@ class Game {
         var upgrade_cost = this.buildings[b_index].level_details[l_index].upgrade_cost;
         
         //ui part
-        var innerHTML = level;
+        var building_ui_element = document.getElementById(name);
+        var textContent = level;
         if (update_start !== null) {
             var building_time = update_start + upgrade_time - Math.floor(Date.now() / 1000);
-            innerHTML += downgrade ? ', Downgrading: ' : ', Ugrading: ';
-            innerHTML += building_time + 's' + '<img src="client_side/images/ui/red_cross.png" class="cancel" data-building="' + name + '"></img>';
+            textContent += downgrade ? ', Downgrading: ' : ', Ugrading: ';
+            textContent += building_time + 's';
+            building_ui_element.getElementsByClassName("cancel")[0].style.display = 'block';
+        } else {
+            building_ui_element.getElementsByClassName("cancel")[0].style.display = 'none';
         }
-        document.getElementById(name).innerHTML = innerHTML;
+        building_ui_element.getElementsByTagName("span")[0].textContent = textContent;
         
         if (update_start !== null) {
             upgrade_time = this.buildings[b_index].level_details[l_index].upgrade_time;
         }
+        
         //button part
+        //upgrade time 0 = maxed out building
         if (upgrade_time != 0) {
-            document.getElementById('upgrade-' + name).innerHTML = document.getElementById('upgrade-' + name).innerHTML.split('(')[0] + '(' 
-            + upgrade_cost.wood + '<img src="client_side/images/resources/wood.png" height="16px" class=\'button_image\'></img>'
-            + upgrade_cost.dirt + '<img src="client_side/images/resources/dirt.svg" height="16px" class=\'button_image\'></img>' 
-            + upgrade_cost.iron + '<img src="client_side/images/resources/iron.svg" height="16px" class=\'button_image\'></img>' 
-            + upgrade_cost.pop + '<img src="client_side/images/resources/pop.png" height="16px" class=\'button_image\'></img>'
-            + upgrade_time + 's)';
+            var innerHTML = document.getElementById('upgrade-' + name).innerHTML.split('(')[0] + '(';
+            for (var resource in upgrade_cost) {
+                innerHTML += upgrade_cost[resource] + `<img src="client_side/images/resources/${resource}.png" height="16px" class='button_image'></img>`;
+            }
+            document.getElementById('upgrade-' + name).innerHTML = innerHTML + upgrade_time + 's)';
         } else {
-            document.getElementById('upgrade-' + name).innerHTML = document.getElementById('upgrade-' + name).innerHTML.split('(')[0] + '(MAXED OUT)';
+            document.getElementById('upgrade-' + name).textContent = document.getElementById('upgrade-' + name).textContent.split('(')[0] + '(MAXED OUT)';
         }
     }
 }
