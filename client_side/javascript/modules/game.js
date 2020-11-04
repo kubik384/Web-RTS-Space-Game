@@ -20,7 +20,7 @@ class Game {
         for(var resource in starter_datapack.resources[0]) {
             resource_building_ui_html += `
             <tr>
-            <td><img src="client_side/images/resources/${resource}.png" height="20px"></img></td>
+            <td><img src="/client_side/images/resources/${resource}.png" height="20px"></img></td>
             <td id='${resource}'></td>
             </tr>`;
         }
@@ -35,14 +35,14 @@ class Game {
 
             resource_building_ui_html += `
             <tr>
-            <td><img src="client_side/images/buildings/${this.buildings[i].name}.png" height="20px"></img></td>
-            <td id='${this.buildings[i].name}' class='building_cell'><span></span><img src="client_side/images/ui/red_cross.png" class="cancel" data-building='${this.buildings[i].name}' style='display:none;'></img></td>
+            <td><img src="/client_side/images/buildings/${this.buildings[i].name}.png" height="20px"></img></td>
+            <td id='${this.buildings[i].name}' class='building_cell'><span></span><img src="/client_side/images/ui/red_cross.png" class="cancel" data-building='${this.buildings[i].name}' style='display:none;'></img></td>
             </tr>`;
             
             button_menu_html += `
             <div class = 'building_update_button_wrapper'>
             <button id='upgrade-${this.buildings[i].name}' class='upgrade_btn'>Upgrade ${this.buildings[i].name} <br />()</button>
-            <button id='downgrade-${this.buildings[i].name}' class='downgrade_btn'><img src="client_side/images/ui/downgrade_building.png" height="20px"></button>
+            <button id='downgrade-${this.buildings[i].name}' class='downgrade_btn'><img src="/client_side/images/ui/downgrade_building.png" height="20px"></button>
             </div>`;
         }
         resource_building_ui_html += '</table>';
@@ -117,7 +117,6 @@ class Game {
                 }
             }
             if (sufficient_resources && this.buildings[b_index].level_details[l_index].upgrade_time > 0) {
-                console.log('upgrading');
                 this.socket.emit('upgrade_building', p_building);
                 this.resources = changed_resources;
                 this.update_resource_ui();
@@ -267,7 +266,7 @@ class Game {
         if (upgrade_time != 0) {
             var innerHTML = document.getElementById('upgrade-' + name).innerHTML.split('(')[0] + '(';
             for (var resource in upgrade_cost) {
-                innerHTML += upgrade_cost[resource] + `<img src="client_side/images/resources/${resource}.png" height="16px" class='button_image'></img>`;
+                innerHTML += upgrade_cost[resource] + `<img src="/client_side/images/resources/${resource}.png" height="16px" class='button_image'></img>`;
             }
             document.getElementById('upgrade-' + name).innerHTML = innerHTML + upgrade_time + 's)';
         } else {

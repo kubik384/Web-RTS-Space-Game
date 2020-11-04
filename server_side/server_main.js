@@ -14,6 +14,10 @@ const DbManager = require('./modules/dbManager.js');
 
 const saltRounds = 10;
 const gameURL = '/game';
+const planetURL = gameURL + '/planet';
+const mapURL = gameURL + '/map';
+const messageURL = gameURL + '/message';
+const researchURL = gameURL + '/research';
 const dbManager = new DbManager();
 const root = path.resolve(__dirname, '..');
 var tokens = [];
@@ -70,7 +74,7 @@ app.post('/login', function(req, res) {
 					tokens.push(username);
 					res.cookie('token', username, { maxAge: 900000 });
 					//Would use redirect, however according to answers from stack overflow, when using ajax, express redirect does not work and has to be created from client's side instead
-					res.send(req.protocol + '://' + req.get('host') + gameURL);
+					res.send(req.protocol + '://' + req.get('host') + planetURL);
 				} else {
 					res.sendStatus(401);
 				}
@@ -83,10 +87,10 @@ app.post('/login', function(req, res) {
 	});
 });
 
-app.get(gameURL, function(req,res) {
+app.get(planetURL, function(req,res) {
 	if (req.cookies.token !== undefined) {
 		if (tokens.findIndex(token => { if (token == req.cookies.token) { return true; } }) != -1) {
-			res.sendFile(path.join(root + '/client_side', 'pages/game.html'));
+			res.sendFile(path.join(root + '/client_side', 'pages/planet.html'));
 		} else {
 			res.clearCookie('token');
 			res.redirect(303, '/');
@@ -94,6 +98,49 @@ app.get(gameURL, function(req,res) {
 	} else {
 		res.redirect(303, '/');
 	}
+});
+
+app.get(mapURL, function(req,res) {
+	if (req.cookies.token !== undefined) {
+		if (tokens.findIndex(token => { if (token == req.cookies.token) { return true; } }) != -1) {
+			res.sendFile(path.join(root + '/client_side', 'pages/map.html'));
+		} else {
+			res.clearCookie('token');
+			res.redirect(303, '/');
+		}
+	} else {
+		res.redirect(303, '/');
+	}
+});
+
+app.get(messageURL, function(req,res) {
+	if (req.cookies.token !== undefined) {
+		if (tokens.findIndex(token => { if (token == req.cookies.token) { return true; } }) != -1) {
+			res.sendFile(path.join(root + '/client_side', 'pages/message.html'));
+		} else {
+			res.clearCookie('token');
+			res.redirect(303, '/');
+		}
+	} else {
+		res.redirect(303, '/');
+	}
+});
+
+app.get(researchURL, function(req,res) {
+	if (req.cookies.token !== undefined) {
+		if (tokens.findIndex(token => { if (token == req.cookies.token) { return true; } }) != -1) {
+			res.sendFile(path.join(root + '/client_side', 'pages/research.html'));
+		} else {
+			res.clearCookie('token');
+			res.redirect(303, '/');
+		}
+	} else {
+		res.redirect(303, '/');
+	}
+});
+
+app.use(function(req, res){
+	res.redirect('/');
 });
 
 // Starts the server
