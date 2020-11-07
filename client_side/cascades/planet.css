@@ -10,7 +10,6 @@ button {
 }
 
 .upgrade_btn {
-	margin-top: 20px;
 	width: 500px;
 	height: 80px;
 }
@@ -22,12 +21,10 @@ button {
 }
 
 #resource_building_ui {
-	margin-top: 80px;
 	float: right;
 }
 
 #button_menu {
-	margin-top: 80px;
 	float: left;
 }
 
@@ -66,9 +63,10 @@ tr > td:nth-child(2) {
 #navbar {
 	overflow: hidden;
 	background-color: #333;
-	position: fixed;
+	position: sticky;
 	top: 0;
 	width: 100%;
+	margin-bottom: 20px;
 }
 
 #navbar a {

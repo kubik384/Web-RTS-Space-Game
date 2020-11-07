@@ -150,7 +150,8 @@ server.listen(8080, function() {
 
 // Add the WebSocket handlers
 io.on('connection', socket => {
-	socket.on('login_player', token => {
+	//Planet
+	socket.on('planet_datapack_request', token => {
 		socketTable[socket.id] = token;
 		dbManager.get_starter_datapack(token, result => { socket.emit('starter_datapack', JSON.stringify(result)) });
 	});
@@ -174,6 +175,13 @@ io.on('connection', socket => {
 	socket.on('downgrade_building', building => {
 		var token = socketTable[socket.id];
 		dbManager.downgrade_building(token, building);
+	});
+
+	//Map
+	socket.on('map_datapack_request', token => {
+		socketTable[socket.id] = token;
+		socket.emit('map_datapack', 'datapack');
+		//dbManager.get_map_datapack(token, result => { socket.emit('map_datapack', JSON.stringify(result)) });
 	});
 
 	socket.on('disconnect', () => {

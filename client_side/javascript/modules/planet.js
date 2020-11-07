@@ -11,13 +11,13 @@ class Game {
         this.fetched_buildings = {};
     }
 
-    async setup_game(p_starter_datapack) {
-        var starter_datapack = JSON.parse(p_starter_datapack);
-        console.log(starter_datapack);
+    async setup_game(p_datapack) {
+        var datapack = JSON.parse(p_datapack);
+        console.log(datapack);
 
-        this.resources = starter_datapack.resources[0];
+        this.resources = datapack.resources[0];
         var resource_building_ui_html = '<table>';
-        for(var resource in starter_datapack.resources[0]) {
+        for(var resource in datapack.resources[0]) {
             resource_building_ui_html += `
             <tr>
             <td><img src="/client_side/images/resources/${resource}.png" height="20px"></img></td>
@@ -26,9 +26,9 @@ class Game {
         }
         
         var button_menu_html = '';
-        this.buildings = starter_datapack.building_details;
-        for (var i = 0; i < starter_datapack.buildings.length; i++) {
-            var building = starter_datapack.buildings.find(b => b.building_id == this.buildings[i].building_id);
+        this.buildings = datapack.building_details;
+        for (var i = 0; i < datapack.buildings.length; i++) {
+            var building = datapack.buildings.find(b => b.building_id == this.buildings[i].building_id);
             this.buildings[i].update_start = building.update_start;
             this.buildings[i].downgrade = building.downgrade;
             this.buildings[i].level = building.curr_level;
@@ -215,7 +215,7 @@ class Game {
     }
 
     async request_data() {
-        this.socket.emit('login_player', document.cookie.split('token=')[1]);
+        this.socket.emit('planet_datapack_request', document.cookie.split('token=')[1]);
     }
 
     async update_resource(resource, amount) {
