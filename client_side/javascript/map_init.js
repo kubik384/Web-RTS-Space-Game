@@ -8,7 +8,6 @@ var socket = io();
 
 async function start() {
 	game = new Game(socket);
-	window.onresize = game.window_resize_handler();
 	document.removeEventListener('DOMContentLoaded', start);
 
 	//socket events
