@@ -4,6 +4,7 @@ var mysql = require('mysql');
 var all_resource_types = 'pop, food, timber, metals, coal, oil, kerosene, hydrogen, uranium';
 var resourceTable = all_resource_types.split(', ');
 var buildings = require('./../game_properties/buildings.json');
+var space_objects = require('./../game_properties/space_objects.json');
 
 class DbManager {
     constructor() {
@@ -198,7 +199,7 @@ class DbManager {
      * @param {String} username Username of the player
      * @param {String} p_building Building name 'all' can be used to get all buildings from the player
      */
-    get_user_building_details(username, p_building, hide_player_id = false) {
+    get_player_building_details(username, p_building, hide_player_id = false) {
         return new Promise((resolve,reject) => {
             this.update_building_level(username, p_building).then(function () {
                 var building_id;
@@ -215,7 +216,7 @@ class DbManager {
                 this.con.query(query, [username, building_id], function (err, results) {
                     if (err) reject(err);
                     resolve(results);
-                }.bind(this));
+                });
             }.bind(this));
         });
     }
@@ -276,7 +277,7 @@ class DbManager {
 
     /**
      * Returns results in following format [{building_id, name, level_details: [{level, upgrade_time, wood_cost, dirt_cost, iron_cost, pop_cost}]}, ..]
-     * @param {Array} p_buildings in format [{building_id, level}] Level can be an array of levels
+     * @param {Array} p_buildings in format [{building_id, level}]. Level can be an array of levels.
      */
     get_building_details(p_buildings) {
         return new Promise((resolve) => {
@@ -305,6 +306,45 @@ class DbManager {
         });
     }
 
+    //pso - player space objects
+    get_pso_details(username, p_space_object_id, hide_player_id = false) {
+        return new Promise((resolve,reject) => {
+            var space_object_id;
+            var query = hide_player_id ? 'SELECT ' : 'SELECT pso.player_id, '
+            query += `pso.space_object_id, pso.x, pso.y, pso.rot, pso.width, pso.height
+            FROM player_space_objects pso
+            INNER JOIN players p ON p.player_id = pso.player_id
+            WHERE p.username = ?`;
+            if (p_space_object_id != 'all') {
+                query += ' AND pso.space_object_id = ?';
+            }
+            this.con.query(query, [username, space_object_id], function (err, results) {
+                if (err) reject(err);
+                resolve(results);
+            });
+        });
+    }
+
+    //so - space objects
+    /**
+     * Returns results in following format [{space_object_id, image, ..}, ..]
+     * @param {Array} p_space_objects in format [{space_object_id, ..}]
+     */
+    get_so_details(p_space_objects) {
+        return new Promise((resolve,reject) => {
+            var b_index = -1;
+            for (var i = 0; i < p_space_objects.length; i++) {
+                if (space_objects[p_space_objects[i].space_object_id - 1].space_object_id == p_space_objects[i].space_object_id) {
+                    b_index = p_space_objects[i].space_object_id - 1;
+                } else {
+                    b_index = space_objects.findIndex(space_object => space_object.space_object_id == p_space_objects[i].space_object_id);
+                }
+                p_space_objects[i].image = space_objects[b_index].image;
+            }
+            resolve(p_space_objects);
+        });
+    }
+
     execute_query(query, argumentArr) {
         return new Promise((resolve,reject) => {
             this.con.query(query, argumentArr, function (err, results) {
@@ -315,20 +355,24 @@ class DbManager {
     }
 
     get_starter_datapack(username, callback) {
-        return new Promise((resolve,reject) => {
-            this.update_resource(username, 'all').then(function() {
-                this.update_building_level(username, 'all').then(function() {
-                    Promise.all([this.get_resource(username, 'all', true), this.get_user_building_details(username, 'all', true)]).then(values => {
-                        for (var i = 0; i < values[1].length; i++) {
-                            values[1][i].curr_level = values[1][i].level;
-                            values[1][i].level = [values[1][i].level - 1, values[1][i].level, values[1][i].level + 1];
-                        }
-                        this.get_building_details(values[1]).then(results => callback({resources: values[0], buildings: values[1], building_details: results}));
-                    }).catch(err => { console.log(err) });
-                }.bind(this));
+        this.update_resource(username, 'all').then(function() {
+            this.update_building_level(username, 'all').then(function() {
+                Promise.all([this.get_resource(username, 'all', true), this.get_player_building_details(username, 'all', true)]).then(values => {
+                    for (var i = 0; i < values[1].length; i++) {
+                        values[1][i].curr_level = values[1][i].level;
+                        values[1][i].level = [values[1][i].level - 1, values[1][i].level, values[1][i].level + 1];
+                    }
+                    this.get_building_details(values[1]).then(results => callback({resources: values[0], buildings: values[1], building_details: results}));
+                }).catch(err => { console.log(err) });
             }.bind(this));
-        });
-        
+        }.bind(this));
+    }
+
+    get_map_datapack(username, callback) {
+        this.get_pso_details(username, 'all', true).then(pso_details => {
+            this.get_so_details(pso_details).then(pso_so_details => { callback({space_objects: pso_so_details}) });
+        }).catch(err => { console.log(err) });
+        //callback({main_star: {x: 0, y: 0, rot: 0}, main_planet: {x: Math.random() * (210 - 140) + 140, y: 0, rot: 0}});
     }
 }
 

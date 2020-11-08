@@ -180,8 +180,7 @@ io.on('connection', socket => {
 	//Map
 	socket.on('map_datapack_request', token => {
 		socketTable[socket.id] = token;
-		socket.emit('map_datapack', {main_star: {x: 0, y: 0, rot: 0}, main_planet: {x: Math.random() * (200 - 80) + 80, y: Math.random() * (200 - 80) + 80, rot: 0}});
-		//dbManager.get_map_datapack(token, result => { socket.emit('map_datapack', JSON.stringify(result)) });
+		dbManager.get_map_datapack(token, result => { socket.emit('map_datapack', JSON.stringify(result)) });
 	});
 
 	socket.on('disconnect', () => {
