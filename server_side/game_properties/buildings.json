@@ -51,7 +51,7 @@
                     "timber": 1
                 },
                 "upgrade_time": 10,
-                "production": {"timber": 0.00015}
+                "production": {"timber": 0.0003}
             },
             {
                 "level": 2,
@@ -59,7 +59,7 @@
                     "timber": 1
                 },
                 "upgrade_time": 10,
-                "production": {"timber": 0.00015}
+                "production": {"timber": 0.00045}
             },
             {
                 "level": 3,
@@ -67,7 +67,7 @@
                     "timber": 1
                 },
                 "upgrade_time": 0,
-                "production": {"timber": 0.00015}
+                "production": {"timber": 0.00060}
             }
         ]
     }, 

@@ -16,7 +16,14 @@
 		<div id='container'>
 			<div id='navbar'>
 				<a href='/game/planet'>Planet</a>
-				<a href='/game/map'>Map</a>
+				<!-- Need to make map into a scrolldown menu with system and galaxy options (arguments in url?)-->
+				<div id="dropdown_select">
+					<button id="dropdown_btn">Map</button>
+					<div id="dropdown_menu">
+						<a href='/game/map?layout=system'>System</a>
+						<a href='/game/map?layout=galaxy'>Galaxy</a>
+					</div>
+				</div> 
 				<a href='/game/message'>Messages</a>
 				<a href='/game/research'>Research</a>
 			</div>
