@@ -368,11 +368,10 @@ class DbManager {
         }.bind(this));
     }
 
-    get_map_datapack(username, callback) {
+    get_map_datapack(username, layout, callback) {
         this.get_pso_details(username, 'all', true).then(pso_details => {
             this.get_so_details(pso_details).then(pso_so_details => { callback({space_objects: pso_so_details}) });
         }).catch(err => { console.log(err) });
-        //callback({main_star: {x: 0, y: 0, rot: 0}, main_planet: {x: Math.random() * (210 - 140) + 140, y: 0, rot: 0}});
     }
 }
 
