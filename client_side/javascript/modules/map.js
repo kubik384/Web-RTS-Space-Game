@@ -12,6 +12,7 @@ class Game {
         this.map_height;
         this.space_objects = [];
         this.system_center_object;
+        this.layout;
     }
 
     async request_data() {
@@ -20,7 +21,10 @@ class Game {
 
     async setup_game(p_datapack) {
         var datapack = JSON.parse(p_datapack);
-        console.log(datapack);
+        console.log(datapack);  
+        const query_string = window.location.search;
+        const url_parameters = new URLSearchParams(query_string);
+        this.layout = url_parameters.get('layout');
         this.map_canvas = document.getElementById("map");
         this.map_ctx = this.map_canvas.getContext("2d");
         window.onresize = this.window_resize_handler();

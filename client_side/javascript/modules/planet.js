@@ -41,8 +41,8 @@ class Game {
             
             button_menu_html += `
             <div class = 'building_update_button_wrapper'>
-            <button id='upgrade-${this.buildings[i].name}' class='upgrade_btn'>Upgrade ${this.buildings[i].name} <br />()</button>
-            <button id='downgrade-${this.buildings[i].name}' class='downgrade_btn'><img src="/client_side/images/ui/downgrade_building.png" height="20px"></button>
+            <button id='upgrade-${this.buildings[i].name}' class='upgrade_btn btn'>Upgrade ${this.buildings[i].name} <br />()</button>
+            <button id='downgrade-${this.buildings[i].name}' class='downgrade_btn btn'><img src="/client_side/images/ui/downgrade_building.png" height="20px"></button>
             </div>`;
         }
         resource_building_ui_html += '</table>';
