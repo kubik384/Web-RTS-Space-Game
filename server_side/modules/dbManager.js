@@ -13,7 +13,7 @@ class DbManager {
             host: "localhost",
             user: "root",
             password: null,
-            port: 3308,
+            port: 3306,
             database: "improvisationalDB"
         });
         this.con.connect( err => { if (err) throw err; });

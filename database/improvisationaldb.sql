@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS `players` (
   `uranium` double(16,4) NOT NULL DEFAULT '0.0000',
   PRIMARY KEY (`player_id`),
   UNIQUE KEY `username` (`username`)
-) ENGINE=MyISAM AUTO_INCREMENT=24 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=24 DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
 --
 -- Dumping data for table `players`
@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS `player_buildings` (
   `update_start` timestamp NULL DEFAULT NULL,
   `downgrade` tinyint(1) NOT NULL,
   PRIMARY KEY (`building_id`,`player_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=MyISAM DEFAULT DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
 --
 -- Dumping data for table `player_buildings`
@@ -118,7 +118,7 @@ CREATE TABLE IF NOT EXISTS `player_space_objects` (
   `width` int(3) UNSIGNED NOT NULL,
   `height` int(3) UNSIGNED NOT NULL,
   PRIMARY KEY (`player_id`,`space_object_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=MyISAM DEFAULT DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
 --
 -- Dumping data for table `player_space_objects`
