@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS `player_buildings` (
   `update_start` timestamp NULL DEFAULT NULL,
   `downgrade` tinyint(1) NOT NULL,
   PRIMARY KEY (`building_id`,`player_id`)
-) ENGINE=MyISAM DEFAULT DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
 --
 -- Dumping data for table `player_buildings`
@@ -118,7 +118,7 @@ CREATE TABLE IF NOT EXISTS `player_space_objects` (
   `width` int(3) UNSIGNED NOT NULL,
   `height` int(3) UNSIGNED NOT NULL,
   PRIMARY KEY (`player_id`,`space_object_id`)
-) ENGINE=MyISAM DEFAULT DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
 --
 -- Dumping data for table `player_space_objects`
