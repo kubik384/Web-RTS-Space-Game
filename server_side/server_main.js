@@ -177,10 +177,9 @@ io.on('connection', socket => {
 		dbManager.downgrade_building(token, building);
 	});
 
-	//Map
 	socket.on('map_datapack_request', (token, layout) => {
 		socketTable[socket.id] = token;
-		dbManager.get_map_datapack(token, layout, result => { socket.emit('map_datapack', JSON.stringify(result)) });
+		dbManager.get_map_datapack(layout, result => { socket.emit('map_datapack', JSON.stringify(result)) });
 	});
 
 	socket.on('disconnect', () => {

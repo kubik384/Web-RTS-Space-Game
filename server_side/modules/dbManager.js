@@ -5,6 +5,7 @@ var all_resource_types = 'pop, food, timber, metals, coal, oil, kerosene, hydrog
 var resourceTable = all_resource_types.split(', ');
 var buildings = require('./../game_properties/buildings.json');
 var space_objects = require('./../game_properties/space_objects.json');
+var galaxies = require('./../game_properties/galaxies.json');
 
 class DbManager {
     constructor() {
@@ -306,42 +307,48 @@ class DbManager {
         });
     }
 
-    //pso - player space objects
-    get_pso_details(username, p_space_object_id, hide_player_id = false) {
+    /**
+     * Returns results in following format [{space_object_id, image, x, y, rot, width, height}, ..]
+     */
+    get_space_objects() {
         return new Promise((resolve,reject) => {
-            var space_object_id;
-            var query = hide_player_id ? 'SELECT ' : 'SELECT pso.player_id, '
-            query += `pso.space_object_id, pso.x, pso.y, pso.rot, pso.width, pso.height
-            FROM player_space_objects pso
-            INNER JOIN players p ON p.player_id = pso.player_id
-            WHERE p.username = ?`;
-            if (p_space_object_id != 'all') {
-                query += ' AND pso.space_object_id = ?';
-            }
-            this.con.query(query, [username, space_object_id], function (err, results) {
+            var query = `SELECT space_object_id, x, y, rot, width, height, image_id
+            FROM space_objects`;
+            this.con.query(query, function (err, results) {
                 if (err) reject(err);
+                var b_index = -1;
+                for (var i = 0; i < results.length; i++) {
+                    if (space_objects[results[i].image_id - 1].space_object_id == results[i].image_id) {
+                        b_index = results[i].image_id - 1;
+                    } else {
+                        b_index = space_objects.findIndex(space_object => space_object.space_object_id == results[i].image_id);
+                    }
+                    results[i].image = space_objects[b_index].image;
+                }
                 resolve(results);
             });
         });
     }
 
-    //so - space objects
     /**
-     * Returns results in following format [{space_object_id, image, ..}, ..]
-     * @param {Array} p_space_objects in format [{space_object_id, ..}]
+     * Returns results in following format [{galaxy_id, image, x, y, width, height}, ..]
      */
-    get_so_details(p_space_objects) {
+    get_galaxies() {
         return new Promise((resolve,reject) => {
-            var b_index = -1;
-            for (var i = 0; i < p_space_objects.length; i++) {
-                if (space_objects[p_space_objects[i].space_object_id - 1].space_object_id == p_space_objects[i].space_object_id) {
-                    b_index = p_space_objects[i].space_object_id - 1;
-                } else {
-                    b_index = space_objects.findIndex(space_object => space_object.space_object_id == p_space_objects[i].space_object_id);
+            var query = `SELECT * FROM galaxies`;
+            this.con.query(query, function (err, results) {
+                if (err) reject(err);
+                var b_index = -1;
+                for (var i = 0; i < results.length; i++) {
+                    if (galaxies[results[i].image_id - 1].galaxy_id == results[i].image_id) {
+                        b_index = results[i].image_id - 1;
+                    } else {
+                        b_index = galaxies.findIndex(galaxy => galaxy.galaxy_id == results[i].image_id);
+                    }
+                    results[i].image = galaxies[b_index].image;
                 }
-                p_space_objects[i].image = space_objects[b_index].image;
-            }
-            resolve(p_space_objects);
+                resolve(results);
+            });
         });
     }
 
@@ -368,10 +375,12 @@ class DbManager {
         }.bind(this));
     }
 
-    get_map_datapack(username, layout, callback) {
-        this.get_pso_details(username, 'all', true).then(pso_details => {
-            this.get_so_details(pso_details).then(pso_so_details => { callback({space_objects: pso_so_details}) });
-        }).catch(err => { console.log(err) });
+    get_map_datapack(layout, callback) {
+        if (layout === 'system') {
+            this.get_space_objects().then(space_objects => { callback({space_objects: space_objects})}).catch(err => { console.log(err) });
+        } else if(layout === 'galaxy') {
+            this.get_galaxies().then(galaxies => { callback({galaxies: galaxies})}).catch(err => { console.log(err) });
+        }
     }
 }
 
