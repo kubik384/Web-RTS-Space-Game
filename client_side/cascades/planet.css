@@ -116,3 +116,7 @@ tr > td:nth-child(2) {
 #dropdown_select:hover #dropdown_menu {
 	display: block;
 }
+
+#units {
+	float: left;
+}

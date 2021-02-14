@@ -1,7 +1,7 @@
 [
     {
         "building_id": 1,
-        "name": "towncenter",
+        "name": "administration",
         "level_details": [
             {
                 "level": 0,
@@ -73,7 +73,7 @@
     }, 
     {
         "building_id": 3,
-        "name": "walls",
+        "name": "space station",
         "level_details": [
             {
                 "level": 0,
@@ -106,6 +106,36 @@
                 },
                 "upgrade_time": 0,
                 "defense_bonus": 32
+            }
+        ]
+    }, 
+    {
+        "building_id": 4,
+        "name": "space dock",
+        "level_details": [
+            {
+                "level": 0,
+                "upgrade_cost": {
+                    "timber": 2
+                },
+                "upgrade_time": 10,
+                "units": []
+            },
+            {
+                "level": 1,
+                "upgrade_cost": {
+                    "timber": 2
+                },
+                "upgrade_time": 10,
+                "units": [1]
+            },
+            {
+                "level": 2,
+                "upgrade_cost": {
+                    "timber": 2
+                },
+                "upgrade_time": 10,
+                "units": [1,2]
             }
         ]
     }

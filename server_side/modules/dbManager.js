@@ -6,6 +6,7 @@ var resourceTable = all_resource_types.split(', ');
 var buildings = require('./../game_properties/buildings.json');
 var space_objects = require('./../game_properties/space_objects.json');
 var galaxies = require('./../game_properties/galaxies.json');
+var units = require('./../game_properties/units.json');
 
 class DbManager {
     constructor() {
@@ -200,12 +201,11 @@ class DbManager {
      * @param {String} username Username of the player
      * @param {String} p_building Building name 'all' can be used to get all buildings from the player
      */
-    get_player_building_details(username, p_building, hide_player_id = false) {
+    get_player_building_details(username, p_building) {
         return new Promise((resolve,reject) => {
             this.update_building_level(username, p_building).then(function () {
                 var building_id;
-                var query = hide_player_id ? 'SELECT ' : 'SELECT pb.player_id, '
-                query += `pb.building_id, pb.level, pb.downgrade,
+                var query = `SELECT pb.player_id, pb.building_id, pb.level, pb.downgrade,
                 UNIX_TIMESTAMP(pb.update_start) AS update_start
                 FROM player_buildings pb
                 INNER JOIN players p ON p.player_id = pb.player_id
@@ -277,7 +277,7 @@ class DbManager {
     }
 
     /**
-     * Returns results in following format [{building_id, name, level_details: [{level, upgrade_time, wood_cost, dirt_cost, iron_cost, pop_cost}]}, ..]
+     * Returns results in following format [{building_id, name, level_details: [{level, upgrade_time, wood_cost, dirt_cost, iron_cost, pop_cost}, upgrade time, ..]}, ..]
      * @param {Array} p_buildings in format [{building_id, level}]. Level can be an array of levels.
      */
     get_building_details(p_buildings) {
@@ -352,6 +352,49 @@ class DbManager {
         });
     }
 
+    /**
+     * Returns results in following format [{unit_id, name, cost, build_time}, ..]
+     * @param {Array} p_units in format [{unit_id}]
+     */
+    get_unit_details(p_units) {
+        return new Promise((resolve) => {
+            var unit_details = [];
+            var u_index = -1;
+            for (var i = 0; i < p_units.length; i++) {
+                //Units are stored in an array. If they are stored storted by unit_id, then unit with id 1 should be stored at the index 0, id 2 at the index 1, ..
+                if (units[p_units[i].unit_id - 1].unit_id == p_units[i].unit_id) {
+                    u_index = p_units[i].unit_id - 1;
+                } else {
+                    u_index = units.findIndex(unit => unit.unit_id == p_units[i].unit_id);
+                }
+                unit_details.push(units[u_index]);
+            }
+            resolve(unit_details);
+        });
+    }
+
+    /**
+     * Returns results in following format [{building_id, name, level_details: [{level, upgrade_time, wood_cost, dirt_cost, iron_cost, pop_cost}, upgrade time, ..]}, ..]
+     * @param {string} username username of the user the data is supposed to be loaded for
+     * @param {string} p_unit Either a singular unit to get the data for or all of the unit data for the selected user
+     */
+    get_player_units(username, p_unit) {
+        return new Promise((resolve,reject) => {
+            var query = `SELECT pu.* 
+            FROM player_units pu
+            INNER JOIN players p ON p.player_id = pu.player_id
+            WHERE p.username = ?`;
+            if (p_unit != 'all') {
+                var u_index = units.findIndex(unit => unit.name == p_unit);
+                query += ' AND pu.unit_id = ' + (u_index + 1);
+            }
+            this.con.query(query, [username] ,function (err, results) {
+                if (err) reject(err);
+                resolve(results);
+            });
+        });
+    }
+
     execute_query(query, argumentArr) {
         return new Promise((resolve,reject) => {
             this.con.query(query, argumentArr, function (err, results) {
@@ -364,12 +407,19 @@ class DbManager {
     get_starter_datapack(username, callback) {
         this.update_resource(username, 'all').then(function() {
             this.update_building_level(username, 'all').then(function() {
-                Promise.all([this.get_resource(username, 'all', true), this.get_player_building_details(username, 'all', true)]).then(values => {
+                Promise.all([this.get_resource(username, 'all'), this.get_player_building_details(username, 'all'), this.get_player_units(username, 'all')]).then(values => {
                     for (var i = 0; i < values[1].length; i++) {
                         values[1][i].curr_level = values[1][i].level;
                         values[1][i].level = [values[1][i].level - 1, values[1][i].level, values[1][i].level + 1];
                     }
-                    this.get_building_details(values[1]).then(results => callback({resources: values[0], buildings: values[1], building_details: results}));
+                    this.get_building_details(values[1]).then(building_results => {
+                        this.get_unit_details(values[2]).then(unit_results => {
+                            for (var i = 0; i < unit_results.length; i++) {
+                                unit_results[i].count = values[2][i].count;
+                            }
+                            callback({resources: values[0], buildings: values[1], units: unit_results, building_details: building_results});
+                        });
+                    });
                 }).catch(err => { console.log(err) });
             }.bind(this));
         }.bind(this));

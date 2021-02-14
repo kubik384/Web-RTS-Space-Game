@@ -8,6 +8,7 @@ class Game {
         this.resource_prods;
         this.resources;
         this.buildings;
+        this.units;
         this.fetched_buildings = {};
     }
 
@@ -46,8 +47,21 @@ class Game {
             </div>`;
         }
         resource_building_ui_html += '</table>';
+
+        this.units = datapack.units;
+        var units_html = '<table>';
+        for (var i = 0; i < this.units.length; i++) {
+            units_html += `
+            <tr>
+            <td><img src="/client_side/images/units/${this.units[i].name}.png" height="20px"></img></td>
+            </tr>`;
+        }
+        units_html += '</table>';
+
+
         document.getElementById('resource_building_ui').innerHTML = resource_building_ui_html;
         document.getElementById('button_menu').innerHTML = button_menu_html;
+        document.getElementById('units').innerHTML = units_html;
 
         var buttons = document.getElementsByClassName('upgrade_btn');
         for(var i = 0; i < buttons.length; i++) {
