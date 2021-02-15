@@ -29,7 +29,7 @@ class DbManager {
      */
     update_resource(username, p_resources, amount = 0) {
         return new Promise((resolve,reject) => {
-            var resource_generator = buildings.find(b => b.name == 'resource_generator');
+            var resource_generator = buildings.find(b => b.name == 'Resource Generator');
             this.update_building_level(username, resource_generator.building_id).then(() => {
                 var query = `SELECT p.player_id, UNIX_TIMESTAMP(p.res_last_update) AS last_update, pb.level
                 FROM player_buildings pb

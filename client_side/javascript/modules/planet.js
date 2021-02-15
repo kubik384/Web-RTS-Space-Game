@@ -17,7 +17,7 @@ class Game {
         console.log(datapack);
 
         this.resources = datapack.resources[0];
-        var resource_building_ui_html = '<table>';
+        var resource_building_ui_html = '<table id="resource_table">';
         for(var resource in datapack.resources[0]) {
             resource_building_ui_html += `
             <tr>
@@ -49,14 +49,17 @@ class Game {
         resource_building_ui_html += '</table>';
 
         this.units = datapack.units;
-        var units_html = '<table>';
+        var units_html = '<table id="units_table">';
         for (var i = 0; i < this.units.length; i++) {
             units_html += `
             <tr>
             <td><img src="/client_side/images/units/${this.units[i].name}.png" height="20px"></img></td>
+            <td>${this.units[i].name}</td>
+            <td>${this.units[i].count}</td>
+            <td><input type="text" id="unit_create_count"></td>
             </tr>`;
         }
-        units_html += '</table>';
+        units_html += '<tr><td colspan="4" id="submit_unit_create_cell"><button id="submit_unit_create">Build</button></td></tr></table>';
 
 
         document.getElementById('resource_building_ui').innerHTML = resource_building_ui_html;
@@ -78,7 +81,7 @@ class Game {
             buttons[i].addEventListener('click', event => { this.cancel_building_update(event.currentTarget.dataset.building) });
         }
 
-        var resource_generator = this.buildings.find(building => building.name == 'resource_generator');
+        var resource_generator = this.buildings.find(building => building.name == 'Resource Generator');
         this.resource_prods = resource_generator.level_details.find(ld => ld.level == resource_generator.level).production;
 
         this.update_resource_ui();

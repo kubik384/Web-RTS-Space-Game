@@ -1,7 +1,7 @@
 [
     {
         "unit_id": 1,
-        "name": "fighter",
+        "name": "Fighter",
         "cost": {
             "timber": 1
         },
@@ -9,7 +9,7 @@
     },
     {
         "unit_id": 2,
-        "name": "cruiser",
+        "name": "Cruiser",
         "cost": {
             "timber": 2
         },

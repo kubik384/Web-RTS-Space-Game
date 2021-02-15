@@ -20,21 +20,8 @@
 	margin-left: 5px;
 }
 
-#resource_building_ui {
-	float: right;
-}
-
 #button_menu {
 	float: left;
-}
-
-table {
-	text-align: left;
-	margin-right: 20px
-}
-
-tr > td:nth-child(2) {
-	padding-left: 40px;
 }
 
 .button_image {
@@ -117,6 +104,26 @@ tr > td:nth-child(2) {
 	display: block;
 }
 
-#units {
-	float: left;
+#layout_table {
+	width: 100%;
+}
+
+#layout_table > tbody > tr > td:nth-child(1) {
+	float: left;	
+}
+
+#layout_table > tbody > tr > td:nth-child(2) {
+	float: right;
+}
+
+#resource_table > tbody > tr > td:nth-child(2) {
+	padding-left: 40px;
+}
+
+#unit_create_count {
+	width: 50px;
+}
+
+#submit_unit_create_cell {
+	text-align: center;
 }

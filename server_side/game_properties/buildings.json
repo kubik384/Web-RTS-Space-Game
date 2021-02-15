@@ -1,7 +1,7 @@
 [
     {
         "building_id": 1,
-        "name": "administration",
+        "name": "Administration Building",
         "level_details": [
             {
                 "level": 0,
@@ -35,7 +35,7 @@
     },
     {
         "building_id": 2,
-        "name": "resource_generator",
+        "name": "Resource Generator",
         "level_details": [
             {
                 "level": 0,
@@ -73,7 +73,7 @@
     }, 
     {
         "building_id": 3,
-        "name": "space station",
+        "name": "Space Station",
         "level_details": [
             {
                 "level": 0,
@@ -111,7 +111,7 @@
     }, 
     {
         "building_id": 4,
-        "name": "space dock",
+        "name": "Space Dock",
         "level_details": [
             {
                 "level": 0,
