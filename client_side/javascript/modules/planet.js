@@ -21,8 +21,8 @@ class Game {
         for(var resource in datapack.resources[0]) {
             resource_building_ui_html += `
             <tr>
-            <td><img src="/client_side/images/resources/${resource}.png" height="20px"></img></td>
-            <td id='${resource}'></td>
+                <td><img src="/client_side/images/resources/${resource}.png" height="20px"></img></td>
+                <td id='${resource}'></td>
             </tr>`;
         }
         
@@ -36,30 +36,45 @@ class Game {
 
             resource_building_ui_html += `
             <tr>
-            <td><img src="/client_side/images/buildings/${this.buildings[i].name}.png" height="20px"></img></td>
-            <td id='${this.buildings[i].name}' class='building_cell'><span></span><img src="/client_side/images/ui/red_cross.png" class="cancel" data-building='${this.buildings[i].name}' style='display:none;'></img></td>
+                <td><img src="/client_side/images/buildings/${this.buildings[i].name}.png" height="20px"></img></td>
+                <td id='${this.buildings[i].name}' class='building_cell'><span></span><img src="/client_side/images/ui/red_cross.png" class="cancel" data-building='${this.buildings[i].name}' style='display:none;'></img></td>
             </tr>`;
             
             button_menu_html += `
             <div class = 'building_update_button_wrapper'>
-            <button id='upgrade-${this.buildings[i].name}' class='upgrade_btn btn'>Upgrade ${this.buildings[i].name} <br />()</button>
-            <button id='downgrade-${this.buildings[i].name}' class='downgrade_btn btn'><img src="/client_side/images/ui/downgrade_building.png" height="20px"></button>
+                <button id='upgrade-${this.buildings[i].name}' class='upgrade_btn btn'>Upgrade ${this.buildings[i].name} <br />()</button>
+                <button id='downgrade-${this.buildings[i].name}' class='downgrade_btn btn'><img src="/client_side/images/ui/downgrade_building.png" height="20px"></button>
             </div>`;
         }
         resource_building_ui_html += '</table>';
 
         this.units = datapack.units;
-        var units_html = '<table id="units_table">';
+        var units_html = `<form id="units_form"><table id="units_table">
+        <tr>
+            <th>Unit</th>
+            <th>Name</th>
+            <th>Cost</th>
+            <th>Available</th>
+            <th>Time</th>
+            <th>Build</th>
+        </tr>
+        `;
         for (var i = 0; i < this.units.length; i++) {
             units_html += `
             <tr>
-            <td><img src="/client_side/images/units/${this.units[i].name}.png" height="20px"></img></td>
-            <td>${this.units[i].name}</td>
-            <td>${this.units[i].count}</td>
-            <td><input type="text" id="unit_create_count"></td>
+                <td><img src="/client_side/images/units/${this.units[i].name}.png" height="20px"></img></td>
+                <td>${this.units[i].name}</td>
+                <td>`
+                for (var resource in this.units[i].cost) {
+                    units_html += `${this.units[i].cost[resource]} <img src="/client_side/images/resources/${resource}.png" height="20px"></img>`;
+                }
+                units_html += `</td>
+                <td>${this.units[i].count}</td>
+                <td>${this.units[i].build_time}</td>
+                <td><input type="number" class="unit_create_count" id="${this.units[i].name}"></td>
             </tr>`;
         }
-        units_html += '<tr><td colspan="4" id="submit_unit_create_cell"><button id="submit_unit_create">Build</button></td></tr></table>';
+        units_html += '<tr><td colspan="10" id="submit_unit_create_cell"><input type="submit" value="Build"></input></td></tr></table></form>';
 
 
         document.getElementById('resource_building_ui').innerHTML = resource_building_ui_html;
@@ -80,6 +95,11 @@ class Game {
         for(var i = 0; i < buttons.length; i++) {
             buttons[i].addEventListener('click', event => { this.cancel_building_update(event.currentTarget.dataset.building) });
         }
+
+        document.getElementById('units_form').addEventListener('submit', event => { 
+            event.preventDefault();
+            this.build_ships(event.currentTarget) 
+        });
 
         var resource_generator = this.buildings.find(building => building.name == 'Resource Generator');
         this.resource_prods = resource_generator.level_details.find(ld => ld.level == resource_generator.level).production;
@@ -288,6 +308,34 @@ class Game {
             document.getElementById('upgrade-' + name).innerHTML = innerHTML + upgrade_time + 's)';
         } else {
             document.getElementById('upgrade-' + name).textContent = document.getElementById('upgrade-' + name).textContent.split('(')[0] + '(MAXED OUT)';
+        }
+    }
+
+    async build_ships(units_form) {
+        var remaining_resources = Object.assign({}, this.resources);
+        var sufficient_resources = true;
+        var units = [];
+        //last one is the submit button - therefore length - 1
+        for (var i = 0; i < units_form.elements.length - 1; i++) {
+            if (units_form.elements[i].value != '' && units_form.elements[i].value != '0' && parseInt(units_form.elements[i].value) > 0) {
+                units.push({name: units_form.elements[i].id, count: units_form.elements[i].value});
+                for (var resource in this.units[i].cost) {
+                    remaining_resources[resource] -= this.units[i].cost[resource] * units_form.elements[i].value;
+                }
+            }
+        }
+
+        for (var resource in remaining_resources) {
+            if (remaining_resources[resource] < 0) {
+                sufficient_resources = false;
+                break;
+            }
+        }
+
+        if (sufficient_resources) {
+            this.resources = remaining_resources;
+            this.update_resource_ui();
+            this.socket.emit('build_units', units);
         }
     }
 }

@@ -1,6 +1,7 @@
 * {
 	margin: 0;
 	padding: 0;
+	border-spacing: 0;
 	font-size: 24px;
 }
 
@@ -17,11 +18,15 @@
 .downgrade_btn {
 	width: 40px;
 	height: 80px;
-	margin-left: 5px;
+	margin-left: 2px;
 }
 
 #button_menu {
 	float: left;
+}
+
+#button_menu > div {
+	padding-bottom: 10px;
 }
 
 .button_image {
@@ -106,24 +111,43 @@
 
 #layout_table {
 	width: 100%;
+	padding: 0 20px;
 }
 
 #layout_table > tbody > tr > td:nth-child(1) {
-	float: left;	
+	float: left;
 }
 
 #layout_table > tbody > tr > td:nth-child(2) {
 	float: right;
 }
 
+#layout_table > tbody > tr:first-child > td {
+	margin-bottom: 100px;
+}
+
 #resource_table > tbody > tr > td:nth-child(2) {
 	padding-left: 40px;
 }
 
-#unit_create_count {
-	width: 50px;
+.unit_create_count {
+	width: 100px;
 }
 
 #submit_unit_create_cell {
+	padding: 3px 0;
+}
+
+#units_table > tbody > tr > *:not(:first-child) {
+	border-left: 1px solid black;
+	padding: 5px;
+}
+
+#units_table > tbody > tr > td {
+	border-top: 1px solid black;
+}
+
+#units_table {
 	text-align: center;
+	border: 1px solid black;
 }

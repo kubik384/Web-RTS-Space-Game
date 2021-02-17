@@ -182,6 +182,11 @@ io.on('connection', socket => {
 		dbManager.get_map_datapack(layout, result => { socket.emit('map_datapack', JSON.stringify(result)) });
 	});
 
+	socket.on('build_units', (units) => {
+		var token = socketTable[socket.id];units
+		dbManager.build_units(token, units);
+	});
+
 	socket.on('disconnect', () => {
 		tokens.slice(tokens.findIndex(token => { if (token == socketTable[socket.id]) { return true; } }), 1);
 		delete socketTable[socket.id];

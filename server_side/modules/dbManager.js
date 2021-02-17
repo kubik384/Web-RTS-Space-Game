@@ -432,6 +432,10 @@ class DbManager {
             this.get_galaxies().then(galaxies => { callback({galaxies: galaxies})}).catch(err => { console.log(err) });
         }
     }
+
+    build_units(username, units) {
+        console.log(units);
+    }
 }
 
 module.exports = DbManager;
