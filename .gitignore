@@ -2,3 +2,4 @@
 node_modules/
 debug.log
 .vscode/launch.json
+package-lock.json
