@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 14, 2021 at 12:13 PM
+-- Generation Time: Feb 18, 2021 at 06:50 PM
 -- Server version: 10.4.17-MariaDB
 -- PHP Version: 8.0.0
 
@@ -73,7 +73,7 @@ CREATE TABLE `players` (
 --
 
 INSERT INTO `players` (`player_id`, `username`, `password`, `res_last_update`, `pop`, `food`, `timber`, `metals`, `coal`, `oil`, `kerosene`, `hydrogen`, `uranium`) VALUES
-(23, 'Newstory', '$2b$10$3gMrZj1izC5qobr9qWiMvOsTOZlA.Pgwv1ieljZQhoD3zaKkdat22', '2021-02-14 11:08:52', 100, 100.0000, 5162.8202, 100.0000, 100.0000, 100.0000, 100.0000, 0.0000, 0.0000);
+(23, 'Newstory', '$2b$10$3gMrZj1izC5qobr9qWiMvOsTOZlA.Pgwv1ieljZQhoD3zaKkdat22', '2021-02-17 20:24:40', 100, 100.0000, 5338.3490, 100.0000, 100.0000, 100.0000, 100.0000, 0.0000, 0.0000);
 
 --
 -- Triggers `players`
@@ -84,15 +84,15 @@ CREATE TRIGGER `Create buildings and space_objects after player insert` AFTER IN
     INSERT INTO `player_buildings` (`player_id`, `building_id`, `level`, `update_start`, `downgrade`) VALUES (new.player_id, '2', '1', NULL, 0);
     INSERT INTO `player_buildings` (`player_id`, `building_id`, `level`, `update_start`, `downgrade`) VALUES (new.player_id, '3', '0', NULL, 0);
     INSERT INTO `player_buildings` (`player_id`, `building_id`, `level`, `update_start`, `downgrade`) VALUES (new.player_id, '4', '0', NULL, 0);
-    INSERT INTO `player_space_objects` (`player_id`, `space_object_id`, `x`, `y`, `rot`, `width`, `height`) VALUES (new.player_id, '1', 0, 0, 0, 160, 160);
-    INSERT INTO `player_space_objects` (`player_id`, `space_object_id`, `x`, `y`, `rot`, `width`, `height`) VALUES (new.player_id, '2', RAND()*(210-140)+140, 0, RAND()*(360), 10, 10);
+    INSERT INTO `player_units` (`player_id`, `unit_id`, `count`) VALUES (new.player_id, '1','0');
+    INSERT INTO `player_units` (`player_id`, `unit_id`, `count`) VALUES (new.player_id, '2','0');
 END
 $$
 DELIMITER ;
 DELIMITER $$
 CREATE TRIGGER `Delete buildings and space objects on player delete` AFTER DELETE ON `players` FOR EACH ROW BEGIN
 	DELETE FROM `player_buildings` WHERE `player_id` = old.player_id;
-    DELETE FROM `player_space_objects` WHERE `player_id` = old.player_id;
+    DELETE FROM `player_units` WHERE `player_id` = old.player_id;
 END
 $$
 DELIMITER ;

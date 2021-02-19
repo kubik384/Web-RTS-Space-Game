@@ -16,9 +16,9 @@ class Game {
         var datapack = JSON.parse(p_datapack);
         console.log(datapack);
 
-        this.resources = datapack.resources[0];
+        this.resources = datapack.resources;
         var resource_building_ui_html = '<table id="resource_table">';
-        for(var resource in datapack.resources[0]) {
+        for(var resource in datapack.resources) {
             resource_building_ui_html += `
             <tr>
                 <td><img src="/client_side/images/resources/${resource}.png" height="20px"></img></td>
@@ -48,38 +48,53 @@ class Game {
         }
         resource_building_ui_html += '</table>';
 
+        var space_dock = this.buildings.find(b => b.building_id == 4);
+        var allowed_unit_ids = space_dock.level_details[space_dock.level].units;
         this.units = datapack.units;
-        var units_html = `<form id="units_form"><table id="units_table">
-        <tr>
-            <th>Unit</th>
-            <th>Name</th>
-            <th>Cost</th>
-            <th>Available</th>
-            <th>Time</th>
-            <th>Build</th>
-        </tr>
-        `;
-        for (var i = 0; i < this.units.length; i++) {
-            units_html += `
+        if (allowed_unit_ids.length > 0) {
+            var units_html = `<form id="units_form"><table id="units_table">
             <tr>
-                <td><img src="/client_side/images/units/${this.units[i].name}.png" height="20px"></img></td>
-                <td>${this.units[i].name}</td>
-                <td>`
-                for (var resource in this.units[i].cost) {
-                    units_html += `${this.units[i].cost[resource]} <img src="/client_side/images/resources/${resource}.png" height="20px"></img>`;
+                <th>Unit</th>
+                <th>Name</th>
+                <th>Cost</th>
+                <th>Available</th>
+                <th>Time</th>
+                <th>Build</th>
+            </tr>
+            `;
+            for (var i = 0; i < allowed_unit_ids.length; i++) {
+                var u_index;
+                if (this.units[allowed_unit_ids[i] - 1].unit_id == allowed_unit_ids[i]) {
+                    u_index = allowed_unit_ids[i];
+                    
+                } else {
+                    u_index = this.units.find(unit => unit.unit_id == allowed_unit_ids[i]).unit_id;
                 }
-                units_html += `</td>
-                <td>${this.units[i].count}</td>
-                <td>${this.units[i].build_time}</td>
-                <td><input type="number" class="unit_create_count" id="${this.units[i].name}"></td>
-            </tr>`;
+                
+                units_html += `
+                <tr>
+                    <td><img src="/client_side/images/units/${this.units[i].name}.png" height="20px"></img></td>
+                    <td>${this.units[u_index].name}</td>
+                    <td>`
+                    for (var resource in this.units[u_index].cost) {
+                        units_html += `${this.units[u_index].cost[resource]} <img src="/client_side/images/resources/${resource}.png" height="20px"></img>`;
+                    }
+                    units_html += `</td>
+                    <td>${this.units[u_index].count}</td>
+                    <td>${this.units[u_index].build_time}</td>
+                    <td><input type="number" class="unit_create_count" id="${this.units[i].unit_id}"></td>
+                </tr>`;
+            }
+            units_html += '<tr><td colspan="10" id="submit_unit_create_cell"><input type="submit" value="Build"></input></td></tr></table></form>';
+            document.getElementById('units').innerHTML = units_html;
+
+            document.getElementById('units_form').addEventListener('submit', event => { 
+                event.preventDefault();
+                this.build_ships(event.currentTarget) 
+            });
         }
-        units_html += '<tr><td colspan="10" id="submit_unit_create_cell"><input type="submit" value="Build"></input></td></tr></table></form>';
-
-
         document.getElementById('resource_building_ui').innerHTML = resource_building_ui_html;
         document.getElementById('button_menu').innerHTML = button_menu_html;
-        document.getElementById('units').innerHTML = units_html;
 
         var buttons = document.getElementsByClassName('upgrade_btn');
         for(var i = 0; i < buttons.length; i++) {
@@ -96,12 +111,7 @@ class Game {
             buttons[i].addEventListener('click', event => { this.cancel_building_update(event.currentTarget.dataset.building) });
         }
 
-        document.getElementById('units_form').addEventListener('submit', event => { 
-            event.preventDefault();
-            this.build_ships(event.currentTarget) 
-        });
-
-        var resource_generator = this.buildings.find(building => building.name == 'Resource Generator');
+        var resource_generator = this.buildings.find(building => building.building_id == 2);
         this.resource_prods = resource_generator.level_details.find(ld => ld.level == resource_generator.level).production;
 
         this.update_resource_ui();
@@ -191,7 +201,7 @@ class Game {
                 }
                 this.buildings[b_index].level++;
             }
-            if (this.buildings[b_index].name == 'resource_generator') {
+            if (this.buildings[b_index].building_id == 2) {
                 this.resource_prods = this.buildings[b_index].level_details.find(ld => ld.level == this.buildings[b_index].level).production;
                 this.update_resource_ui();
             }
@@ -318,7 +328,7 @@ class Game {
         //last one is the submit button - therefore length - 1
         for (var i = 0; i < units_form.elements.length - 1; i++) {
             if (units_form.elements[i].value != '' && units_form.elements[i].value != '0' && parseInt(units_form.elements[i].value) > 0) {
-                units.push({name: units_form.elements[i].id, count: units_form.elements[i].value});
+                units.push({unit_id: units_form.elements[i].id, count: units_form.elements[i].value});
                 for (var resource in this.units[i].cost) {
                     remaining_resources[resource] -= this.units[i].cost[resource] * units_form.elements[i].value;
                 }

@@ -158,7 +158,11 @@ io.on('connection', socket => {
 
 	socket.on('upgrade_building', building => {
 		var token = socketTable[socket.id];
-		dbManager.upgrade_building(token, building);
+		dbManager.upgrade_building(token, building).catch(e => {
+			if (e != 'Not enough resources to upgrade building') {
+				throw e;
+			}
+		});
 	});
 
 	socket.on('fetch_building_details', data => {
@@ -183,8 +187,14 @@ io.on('connection', socket => {
 	});
 
 	socket.on('build_units', (units) => {
-		var token = socketTable[socket.id];units
-		dbManager.build_units(token, units);
+		var token = socketTable[socket.id];
+		dbManager.build_units(token, units).catch(e => {
+			if (e != 'Not enough resources to build all units' && e != 'Invalid units input received') {
+				throw e;
+			} else {
+				console.log(e);
+			}
+		});
 	});
 
 	socket.on('disconnect', () => {
