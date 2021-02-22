@@ -1,8 +1,11 @@
 "use strict"
 
+import { Utils } from './utils.js';
+
 class Game {
     constructor(socket) {
         this.socket = socket;
+        this.utils = new Utils();
         this.lastUpdateTime;
         this.updateLoop;
         this.resource_prods;
@@ -17,12 +20,15 @@ class Game {
         console.log(datapack);
 
         this.resources = datapack.resources;
-        var resource_building_ui_html = '<table id="resource_table">';
+        var resource_building_ui_html = '<table id="resource_table"><tbody>';
         for(var resource in datapack.resources) {
             resource_building_ui_html += `
             <tr>
-                <td><img src="/client_side/images/resources/${resource}.png" height="20px"></img></td>
-                <td id='${resource}'></td>
+                <td>
+                    <img src="/client_side/images/resources/${resource}.png" height="20px"></img>
+                </td>
+                <td id='${resource}'>
+                </td>
             </tr>`;
         }
         
@@ -36,8 +42,12 @@ class Game {
 
             resource_building_ui_html += `
             <tr>
-                <td><img src="/client_side/images/buildings/${this.buildings[i].name}.png" height="20px"></img></td>
-                <td id='${this.buildings[i].name}' class='building_cell'><span></span><img src="/client_side/images/ui/red_cross.png" class="cancel" data-building='${this.buildings[i].name}' style='display:none;'></img></td>
+                <td>
+                    <img src="/client_side/images/buildings/${this.buildings[i].name}.png" height="20px"></img>
+                </td>
+                <td id='${this.buildings[i].name}' class='building_cell'>
+                    <span></span><img src="/client_side/images/ui/red_cross.png" class="cancel" data-building='${this.buildings[i].name}' style='display:none;'></img>
+                </td>
             </tr>`;
             
             button_menu_html += `
@@ -46,55 +56,110 @@ class Game {
                 <button id='downgrade-${this.buildings[i].name}' class='downgrade_btn btn'><img src="/client_side/images/ui/downgrade_building.png" height="20px"></button>
             </div>`;
         }
-        resource_building_ui_html += '</table>';
+        resource_building_ui_html += '</tbody></table>';
+        document.getElementById('resource_building_ui').innerHTML = resource_building_ui_html;
+        document.getElementById('button_menu').innerHTML = button_menu_html;
 
-        var space_dock = this.buildings.find(b => b.building_id == 4);
-        var allowed_unit_ids = space_dock.level_details[space_dock.level].units;
         this.units = datapack.units;
+        var units_building = this.buildings.find(b => b.building_id == 4);
+        var b_index = units_building.level_details.findIndex(level_detail => level_detail.level == units_building.level);
+        var allowed_unit_ids = units_building.level_details[b_index].units;
         if (allowed_unit_ids.length > 0) {
-            var units_html = `<form id="units_form"><table id="units_table">
-            <tr>
-                <th>Unit</th>
-                <th>Name</th>
-                <th>Cost</th>
-                <th>Available</th>
-                <th>Time</th>
-                <th>Build</th>
-            </tr>
-            `;
+            var create_units_html = `<form id="create_units_form"><table id="create_units_table">
+            <thead>
+                <tr>
+                    <th>Unit</th>
+                    <th>Name</th>
+                    <th>Cost</th>
+                    <th>Time</th>
+                    <th>Build</th>
+                </tr>
+            </thead>
+            <tbody>`;
             for (var i = 0; i < allowed_unit_ids.length; i++) {
                 var u_index;
                 if (this.units[allowed_unit_ids[i] - 1].unit_id == allowed_unit_ids[i]) {
-                    u_index = allowed_unit_ids[i];
+                    u_index = allowed_unit_ids[i] - 1;
                     
                 } else {
                     u_index = this.units.find(unit => unit.unit_id == allowed_unit_ids[i]).unit_id;
                 }
                 
-                units_html += `
+                create_units_html += `
                 <tr>
-                    <td><img src="/client_side/images/units/${this.units[i].name}.png" height="20px"></img></td>
-                    <td>${this.units[u_index].name}</td>
+                    <td>
+                        <img src="/client_side/images/units/${this.units[u_index].name}.png" height="20px"></img>
+                    </td>
+                    <td>
+                        <span>${this.units[u_index].name}</span>
+                    </td>
                     <td>`
-                    for (var resource in this.units[u_index].cost) {
-                        units_html += `${this.units[u_index].cost[resource]} <img src="/client_side/images/resources/${resource}.png" height="20px"></img>`;
-                    }
-                    units_html += `</td>
-                    <td>${this.units[u_index].count}</td>
-                    <td>${this.units[u_index].build_time}</td>
-                    <td><input type="number" class="unit_create_count" id="${this.units[i].unit_id}"></td>
+                        for (var resource in this.units[u_index].cost) {
+                            create_units_html += `${this.units[u_index].cost[resource]} <img src="/client_side/images/resources/${resource}.png" height="20px"></img>`;
+                        }
+                        create_units_html += `
+                    </td>
+                    <td>
+                        <span>${this.units[u_index].build_time}</span>
+                    </td>
+                    <td>
+                        <input type="number" class="unit_create_count" id="unit_${this.units[u_index].unit_id}">
+                    </td>
                 </tr>`;
             }
-            units_html += '<tr><td colspan="10" id="submit_unit_create_cell"><input type="submit" value="Build"></input></td></tr></table></form>';
-            document.getElementById('units').innerHTML = units_html;
-
-            document.getElementById('units_form').addEventListener('submit', event => { 
+            create_units_html += '<tr><td colspan="10" id="submit_unit_create_cell"><input type="submit" value="Build"></input></td></tr></tbody></table></form>';
+            document.getElementById('create_units_wrapper').innerHTML = create_units_html;
+            document.getElementById('create_units_form').addEventListener('submit', event => { 
                 event.preventDefault();
                 this.build_ships(event.currentTarget) 
             });
         }
-        document.getElementById('resource_building_ui').innerHTML = resource_building_ui_html;
-        document.getElementById('button_menu').innerHTML = button_menu_html;
+
+        var units_table_html = '<table id="units_table"><tbody>';
+        for (var i = 0; i < this.units.length; i++) {
+            units_table_html += `<tr>
+                <td>
+                    <img src="/client_side/images/units/${this.units[i].name}.png" height="20px"></img>
+                </td>
+                <td id="unit_count_${this.units[i].unit_id}" class="unit_cell">
+                    <span>${this.units[i].count}</span>
+                </td>
+            </tr>`;
+        }
+        units_table_html += '</tbody></table>';
+        document.getElementById('units_wrapper').innerHTML = units_table_html;
+
+        var units_que_table_html = `<table id="units_que_table">
+        <thead>
+            <tr>
+                <th>
+                    <span>Unit</span>
+                </th>
+                <th>
+                    <span>Number</span>
+                </th>
+                <th>
+                    <span>Time left</span>
+                </th>
+            </tr>
+        </thead>
+        <tbody>`;
+        for (var i = 0; i < this.units.length; i++) {
+            units_que_table_html += `<tr>
+                <td>
+                    <img src="/client_side/images/units/${this.units[i].name}.png" height="15px"></img>
+                    <span>${this.units[i].name}</span>
+                </td>
+                <td>
+                    <span>${this.units[i].count}</span>
+                </td>
+                <td>
+                    <span>${await this.utils.seconds_to_time(this.units[i].build_time * this.units[i].count)}</span>
+                </td>
+            </tr>`;
+        }
+        units_que_table_html += '</tbody></table>';
+        document.getElementById('units_que_wrapper').innerHTML = units_que_table_html;
 
         var buttons = document.getElementsByClassName('upgrade_btn');
         for(var i = 0; i < buttons.length; i++) {
@@ -181,7 +246,17 @@ class Game {
             b_index = this.buildings.findIndex(building => building.building_id == building_id);
         }
         if (this.fetched_buildings[building_id] !== undefined && this.fetched_buildings[building_id].name !== undefined) {
-            if (this.buildings[b_index].downgrade) {
+            var upgrading = !this.buildings[b_index].downgrade;
+            if (upgrading) {
+                var l_index = this.buildings[b_index].level_details.findIndex(ld => ld.level == this.buildings[b_index].level - 1);
+                if (l_index != -1) {
+                    this.buildings[b_index].level_details.shift();
+                }
+                if (this.fetched_buildings[building_id].level_details[0] !== undefined) {
+                    this.buildings[b_index].level_details.push(this.fetched_buildings[building_id].level_details[0]);
+                }
+                this.buildings[b_index].level++;
+            } else {
                 var l_index = this.buildings[b_index].level_details.findIndex(ld => ld.level == this.buildings[b_index].level + 1);
                 if (l_index != -1) {
                     this.buildings[b_index].level_details.pop();
@@ -191,19 +266,13 @@ class Game {
                 }
                 this.buildings[b_index].downgrade = 0;
                 this.buildings[b_index].level--;
-            } else {
-                var l_index = this.buildings[b_index].level_details.findIndex(ld => ld.level == this.buildings[b_index].level - 1);
-                if (l_index != -1) {
-                    this.buildings[b_index].level_details.shift();
-                }
-                if (this.fetched_buildings[building_id].level_details[0] !== undefined) {
-                    this.buildings[b_index].level_details.push(this.fetched_buildings[building_id].level_details[0]);
-                }
-                this.buildings[b_index].level++;
             }
             if (this.buildings[b_index].building_id == 2) {
                 this.resource_prods = this.buildings[b_index].level_details.find(ld => ld.level == this.buildings[b_index].level).production;
                 this.update_resource_ui();
+            }
+            if (this.buildings[b_index].building_id == 4) {
+                this.update_units_table(upgrading);
             }
             this.buildings[b_index].update_start = null;
             this.update_building_ui(b_index);
@@ -327,26 +396,77 @@ class Game {
         var units = [];
         //last one is the submit button - therefore length - 1
         for (var i = 0; i < units_form.elements.length - 1; i++) {
-            if (units_form.elements[i].value != '' && units_form.elements[i].value != '0' && parseInt(units_form.elements[i].value) > 0) {
-                units.push({unit_id: units_form.elements[i].id, count: units_form.elements[i].value});
+            if (units_form.elements[i].value != '' && parseInt(units_form.elements[i].value) > 0) {
+                units.push({unit_id: units_form.elements[i].id.substr(5), count: units_form.elements[i].value});
                 for (var resource in this.units[i].cost) {
                     remaining_resources[resource] -= this.units[i].cost[resource] * units_form.elements[i].value;
+                    if (remaining_resources[resource] < 0) {
+                        sufficient_resources = false;
+                        break;
+                    }
                 }
             }
-        }
-
-        for (var resource in remaining_resources) {
-            if (remaining_resources[resource] < 0) {
-                sufficient_resources = false;
+            if (!sufficient_resources) {
                 break;
             }
         }
 
-        if (sufficient_resources) {
+        if (sufficient_resources && units.length > 0) {
+            for (var i = 0; i < units.length; i++) {
+                var u_index = this.units.findIndex(unit => unit.unit_id == units[i].unit_id);
+                this.units[u_index].count += parseInt(units[i].count);
+            }
             this.resources = remaining_resources;
             this.update_resource_ui();
+            this.update_units_count();
             this.socket.emit('build_units', units);
         }
+    }
+
+    async update_units_count() {
+        for (var i = 0; i < this.units.length; i++) {
+            var elementId = 'unit_count_' + this.units[i].unit_id;
+            document.getElementById(elementId).textContent = this.units[i].count;
+        }
+    }
+
+    async update_units_table(upgrading) {
+        var units_building = this.buildings.find(b => b.building_id == 4);
+        var allowed_unit_ids = units_building.level_details.find(level_detail => level_detail.level == units_building.level).units;
+        var previously_allowed_unit_ids = units_building.level_details.find(level_detail => level_detail.level == units_building.level + upgrading ? 1 : -1).units;
+        var changed_unit_ids = allowed_unit_ids.filter(allowed_unit_id => previously_allowed_unit_ids.indexOf(allowed_unit_id) === -1);
+        console.log(changed_unit_ids);
+
+        if (changed_unit_ids.length > 0) {
+            var create_units_table = document.getElementById("create_units_table");
+            if (upgrading) {
+                for (var i = 0; i < changed_unit_ids.length; i++) {
+                    var u_index = this.units.findIndex(unit => unit.unit_id == changed_unit_ids[i]);
+                    var create_unit_row = create_units_table.insertRow(create_units_table.rows.length - 1);
+                    var create_unit_row_html = `
+                    <tr>
+                        <td><img src="/client_side/images/units/${this.units[u_index].name}.png" height="20px"></img></td>
+                        <td>${this.units[u_index].name}</td>
+                        <td>`
+                        for (var resource in this.units[u_index].cost) {
+                            create_unit_row_html += `${this.units[u_index].cost[resource]} <img src="/client_side/images/resources/${resource}.png" height="20px"></img>`;
+                        }
+                        create_unit_row_html += `</td>
+                        <td>${this.units[u_index].build_time}</td>
+                        <td><input type="number" class="unit_create_count" id="unit_${this.units[u_index].unit_id}"></td>
+                    </tr>`;
+                    create_unit_row.innerHTML = create_unit_row_html;
+                }
+            } else {
+                for (var i = 0; i < changed_unit_ids.length; i++) {
+                    create_units_table.deleteRow(create_units_table.rows.length - 2);
+                }
+            }
+        }
+    }
+
+    async update_unit_que() {
+        
     }
 }
 

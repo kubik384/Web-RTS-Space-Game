@@ -2,12 +2,10 @@
 	margin: 0;
 	padding: 0;
 	border-spacing: 0;
-	font-size: 24px;
 }
 
-.btn {
-	width: 120px;
-	height: 40px;
+button, html, input {
+	font-size: 24px;
 }
 
 .upgrade_btn {
@@ -42,7 +40,7 @@
 	cursor: pointer;
 }
 
-.building_cell {
+.building_cell, .unit_cell {
 	display: flex;
 	width: 250px;
 }
@@ -126,7 +124,7 @@
 	margin-bottom: 100px;
 }
 
-#resource_table > tbody > tr > td:nth-child(2) {
+#resource_table > tbody > tr > td:nth-child(2), #units_table > tbody > tr > td:nth-child(2) {
 	padding-left: 40px;
 }
 
@@ -138,16 +136,32 @@
 	padding: 3px 0;
 }
 
-#units_table > tbody > tr > *:not(:first-child) {
+#units_que_table {
+	width: 100%;
+	font-size: 20px;
+}
+
+#create_units_table {
+	margin-top: 20px;
+}
+
+#create_units_table, #units_que_table {
+	text-align: center;
+	border: 1px solid black;
+}
+
+#create_units_table > * > tr > *:not(:first-child) {
 	border-left: 1px solid black;
+}
+
+#create_units_table > * > tr > * {
 	padding: 5px;
 }
 
-#units_table > tbody > tr > td {
-	border-top: 1px solid black;
+#units_que_table > * > tr > * {
+	padding: 0 5px;
 }
 
-#units_table {
-	text-align: center;
-	border: 1px solid black;
+#create_units_table > tbody > tr > td, #units_que_table > tbody > tr:first-child > td {
+	border-top: 1px solid black;
 }

@@ -191,8 +191,6 @@ io.on('connection', socket => {
 		dbManager.build_units(token, units).catch(e => {
 			if (e != 'Not enough resources to build all units' && e != 'Invalid units input received') {
 				throw e;
-			} else {
-				console.log(e);
 			}
 		});
 	});

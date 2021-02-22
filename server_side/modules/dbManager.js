@@ -200,7 +200,7 @@ class DbManager {
      * @param {String} username Username of the player
      * @param {String} p_building Building name 'all' can be used to get all buildings from the player
      */
-    get_player_building_details(username, p_building) {
+    get_player_building_details(username, p_building, passingId = false) {
         return new Promise((resolve,reject) => {
             this.update_building_level(username, p_building).then(function () {
                 var building_id;
@@ -210,11 +210,18 @@ class DbManager {
                 INNER JOIN players p ON p.player_id = pb.player_id
                 WHERE p.username = ?`;
                 if (p_building != 'all') {
-                    building_id = buildings.find(building => building.name == p_building).building_id;
+                    if (passingId) {
+                        building_id = p_building;
+                    } else {
+                        building_id = buildings.find(building => building.name == p_building).building_id;
+                    }
                     query += ' AND pb.building_id = ?';
                 }
                 this.con.query(query, [username, building_id], function (err, results) {
                     if (err) reject(err);
+                    if (p_building != 'all') {
+                        resolve(results[0]);
+                    }
                     resolve(results);
                 });
             }.bind(this));
@@ -440,47 +447,54 @@ class DbManager {
         return new Promise((resolve,reject) => {
             this.update_building_level(username, 4, true).then(function() {
                 this.get_resource(username, 'all', true).then(function(player_resources) {
-                    var updated_player_resources = Object.assign({}, player_resources);
-                    var query = 'UPDATE players SET ';
-                    for (var i = 0; i < p_units.length; i++) {
-                        var u_index = units.findIndex(unit => unit.unit_id == p_units[i].unit_id);
-                        for (var resource in units[u_index].cost) {
-                            if (updated_player_resources[resource] > units[u_index].cost[resource] * p_units[i].count) {
-                                if (p_units[i].count > 0) {
-                                    updated_player_resources[resource] -= units[u_index].cost[resource] * p_units[i].count;
+                    this.get_player_building_details(username, 4, true).then(function(p_units_building) {
+                        var units_building_level_details = buildings.find(building => building.building_id == p_units_building.building_id).level_details
+                        var allowed_units = units_building_level_details.find(level_detail => level_detail.level == p_units_building.level).units;
+                        var updated_player_resources = Object.assign({}, player_resources);
+                        var query = 'UPDATE players SET ';
+                        for (var i = 0; i < p_units.length; i++) {
+                            var u_index = units.findIndex(unit => unit.unit_id == p_units[i].unit_id);
+                            for (var resource in units[u_index].cost) {
+                                if (updated_player_resources[resource] > units[u_index].cost[resource] * p_units[i].count) {
+                                    if (p_units[i].count > 0 && allowed_units.includes(parseInt(p_units[i].unit_id))) {
+                                        updated_player_resources[resource] -= units[u_index].cost[resource] * p_units[i].count;
+                                    } else {
+                                        p_units.splice(i, 1);
+                                    }
                                 } else {
-                                    p_units.splice(i, 1);
+                                    reject('Not enough resources to build all units');
                                 }
-                            } else {
-                                reject('Not enough resources to build all units');
                             }
                         }
-                    }
-                    if (p_units.length < 1) {
-                        reject('Invalid units input received');
-                    }
-                    //Currently expecting units to cost at least 1 resource. If want to implement free unit, will need to change this part of the code
-                    //to not execute the query when the units_cost never exceeded 0
-                    for (var resource in player_resources) {
-                        var units_cost = player_resources[resource] - updated_player_resources[resource];
-                        if (units_cost > 0) {
-                            query += `${resource} = ${resource} - ${units_cost}, `;
+                        if (p_units.length < 1) {
+                            reject('Invalid units input received');
                         }
-                    }
-                    //remove the ", " part
-                    query = query.slice(0, query.length - 2) + ' WHERE username = ?';
-                    this.con.query(query, [username], function (err) {
-                        if (err) reject(err);
-                        for (var i = 0; i < p_units.length; i++) {
-                            query = `UPDATE player_units pu
-                            INNER JOIN players p ON p.player_id = pu.player_id 
-                            SET pu.count = pu.count + ?
-                            WHERE p.username = ? AND pu.unit_id = ?`;
-                            this.con.query(query, [p_units[i].count, username, p_units[i].unit_id], function (err) {
-                                if (err) reject(err);
-                            });
+                        //Currently expecting units to cost at least 1 of every mentioned resource
+                        //If you want to implement free unit or just add cost of 0 for certain resource, will need to change this part of the code
+                        //to not execute the query when the units_cost never exceeded 0
+                        for (var resource in player_resources) {
+                            var units_cost = player_resources[resource] - updated_player_resources[resource];
+                            if (units_cost > 0) {
+                                query += `${resource} = ${resource} - ${units_cost}, `;
+                            }
                         }
-                        resolve();
+
+                        
+                        //remove the ", " part
+                        query = query.slice(0, query.length - 2) + ' WHERE username = ?';
+                        this.con.query(query, [username], function (err) {
+                            if (err) reject(err);
+                            for (var i = 0; i < p_units.length; i++) {
+                                query = `UPDATE player_unit_ques puq
+                                INNER JOIN players p ON p.player_id = puq.player_id 
+                                SET puq.count = puq.count + ?, puq.start_time = IF (puq.start_time IS NULL, NOW(), puq.start_time)
+                                WHERE p.username = ? AND puq.unit_id = ?`;
+                                this.con.query(query, [p_units[i].count, username, p_units[i].unit_id], function (err) {
+                                    if (err) reject(err);
+                                });
+                            }
+                            resolve();
+                        }.bind(this));
                     }.bind(this));
                 }.bind(this));
             }.bind(this));
