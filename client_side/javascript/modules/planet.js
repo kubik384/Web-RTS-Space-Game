@@ -12,6 +12,7 @@ class Game {
         this.resources;
         this.buildings;
         this.units;
+        this.unit_ques;
         this.fetched_buildings = {};
     }
 
@@ -129,6 +130,7 @@ class Game {
         units_table_html += '</tbody></table>';
         document.getElementById('units_wrapper').innerHTML = units_table_html;
 
+        this.unit_ques = datapack.unit_ques;
         var units_que_table_html = `<table id="units_que_table">
         <thead>
             <tr>
@@ -144,19 +146,22 @@ class Game {
             </tr>
         </thead>
         <tbody>`;
-        for (var i = 0; i < this.units.length; i++) {
+        for (var i = 0; i < this.unit_ques.length; i++) {
+            var uq_index = this.units.findIndex(unit => unit.unit_id == this.unit_ques[i].unit_id);
+            var timeLeft = this.units[uq_index].build_time * this.unit_ques[i].count - (Math.floor(Date.now()/1000) - this.unit_ques[i].calculated_timestamp);
             units_que_table_html += `<tr>
                 <td>
-                    <img src="/client_side/images/units/${this.units[i].name}.png" height="15px"></img>
-                    <span>${this.units[i].name}</span>
+                    <img src="/client_side/images/units/${this.units[uq_index].name}.png" height="15px"></img>
+                    <span>${this.units[uq_index].name}</span>
                 </td>
                 <td>
-                    <span>${this.units[i].count}</span>
+                    <span>${this.unit_ques[i].count}</span>
                 </td>
                 <td>
-                    <span>${await this.utils.seconds_to_time(this.units[i].build_time * this.units[i].count)}</span>
+                    <span>${timeLeft > 0 ? await this.utils.seconds_to_time(timeLeft) : 0}</span>
                 </td>
             </tr>`;
+            console.log(this.units[uq_index].build_time * this.unit_ques[i].count - (Math.floor(Date.now()/1000) - this.unit_ques[i].calculated_timestamp));
         }
         units_que_table_html += '</tbody></table>';
         document.getElementById('units_que_wrapper').innerHTML = units_que_table_html;

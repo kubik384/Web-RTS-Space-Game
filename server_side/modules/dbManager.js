@@ -405,6 +405,60 @@ class DbManager {
         });
     }
 
+    update_player_unit_que(username, p_unit) {
+        return new Promise((resolve,reject) => {
+            /*
+            var resource_generator = buildings.find(b => b.building_id == 2);
+            this.update_building_level(username, resource_generator.building_id).then(() => {
+                var query = `SELECT p.player_id, UNIX_TIMESTAMP(p.res_last_update) AS last_update, pb.level
+                FROM player_buildings pb
+                INNER JOIN players p ON p.player_id = pb.player_id
+                WHERE p.username = ? AND pb.building_id = ?`;
+                this.con.query(query, [username, resource_generator.building_id], function (err, results) {
+                    if (err) reject(err);
+
+                    var res_production = resource_generator.level_details.find(ld => ld.level == results[0].level).production;
+                    var resources = p_resources == 'all' ? resourceTable : p_resources;
+                    var set_to = '';
+                    
+                    if (!Array.isArray(resources)) {
+                        resources = resources.split(', ');
+                    }
+                    
+                    for (var i = 0; i < resources.length; i++) {
+                        set_to += resources[i] + ' = ' + resources[i] + ' + ' + ((res_production[resources[i]] === undefined ? 0 : res_production[resources[i]]) * (Math.floor(Date.now()/1000) - results[0].last_update) + amount) + ' , ';
+                    }
+                    set_to += 'res_last_update = NOW()';
+
+                    var query = "UPDATE players SET " + set_to + " WHERE player_id = ?";
+                    this.con.query(query, [results[0].player_id], function (err) {
+                        if (err) reject(err);
+                        resolve();
+                    });
+                }.bind(this));
+            });
+            */
+            resolve();
+        });
+    }
+
+    get_player_unit_ques(username, p_unit) {
+        return new Promise((resolve,reject) => {
+            var query = `SELECT puq.unit_id, puq.count, UNIX_TIMESTAMP(puq.calculated_timestamp) AS calculated_timestamp
+            FROM player_unit_ques puq
+            INNER JOIN players p ON p.player_id = puq.player_id
+            WHERE p.username = ?`;
+            if (p_unit != 'all') {
+                var u_index = units.findIndex(unit => unit.name == p_unit);
+                query += ' AND puq.unit_id = ' + (u_index + 1);
+            }
+            this.con.query(query, [username] ,function (err, results) {
+                if (err) reject(err);
+                resolve(results);
+            });
+        });
+    }
+
     execute_query(query, argumentArr) {
         return new Promise((resolve,reject) => {
             this.con.query(query, argumentArr, function (err, results) {
@@ -417,20 +471,22 @@ class DbManager {
     get_starter_datapack(username, callback) {
         this.update_resource(username, 'all').then(function() {
             this.update_building_level(username, 'all').then(function() {
-                Promise.all([this.get_resource(username, 'all'), this.get_player_building_details(username, 'all'), this.get_player_units(username, 'all')]).then(values => {
-                    for (var i = 0; i < values[1].length; i++) {
-                        values[1][i].curr_level = values[1][i].level;
-                        values[1][i].level = [values[1][i].level - 1, values[1][i].level, values[1][i].level + 1];
-                    }
-                    this.get_building_details(values[1]).then(building_results => {
-                        this.get_unit_details(values[2]).then(unit_results => {
-                            for (var i = 0; i < unit_results.length; i++) {
-                                unit_results[i].count = values[2][i].count;
-                            }
-                            callback({resources: values[0], buildings: values[1], units: unit_results, building_details: building_results});
+                this.update_player_unit_que(username, 'all').then(function() {
+                    Promise.all([this.get_resource(username, 'all'), this.get_player_building_details(username, 'all'), this.get_player_units(username, 'all'), this.get_player_unit_ques(username, 'all')]).then(values => {
+                        for (var i = 0; i < values[1].length; i++) {
+                            values[1][i].curr_level = values[1][i].level;
+                            values[1][i].level = [values[1][i].level - 1, values[1][i].level, values[1][i].level + 1];
+                        }
+                        this.get_building_details(values[1]).then(building_results => {
+                            this.get_unit_details(values[2]).then(unit_results => {
+                                for (var i = 0; i < unit_results.length; i++) {
+                                    unit_results[i].count = values[2][i].count;
+                                }
+                                callback({resources: values[0], buildings: values[1], units: unit_results, unit_ques: values[3], building_details: building_results});
+                            });
                         });
-                    });
-                }).catch(err => { console.log(err) });
+                    }).catch(err => { console.log(err) });
+                }.bind(this));
             }.bind(this));
         }.bind(this));
     }
