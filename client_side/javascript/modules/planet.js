@@ -1,11 +1,11 @@
 "use strict"
 
 import { Utils } from './utils.js';
+var utils = new Utils();
 
 class Game {
     constructor(socket) {
         this.socket = socket;
-        this.utils = new Utils();
         this.lastUpdateTime;
         this.updateLoop;
         this.resource_prods;
@@ -148,7 +148,7 @@ class Game {
         <tbody>`;
         for (var i = 0; i < this.unit_ques.length; i++) {
             var uq_index = this.units.findIndex(unit => unit.unit_id == this.unit_ques[i].unit_id);
-            var timeLeft = this.units[uq_index].build_time * this.unit_ques[i].count - (Math.floor(Date.now()/1000) - this.unit_ques[i].calculated_timestamp);
+            var timeLeft = this.units[uq_index].build_time * this.unit_ques[i].count - (utils.get_timestamp() - this.unit_ques[i].calculated_timestamp);
             units_que_table_html += `<tr>
                 <td>
                     <img src="/client_side/images/units/${this.units[uq_index].name}.png" height="15px"></img>
@@ -161,7 +161,6 @@ class Game {
                     <span>${timeLeft > 0 ? await this.utils.seconds_to_time(timeLeft) : 0}</span>
                 </td>
             </tr>`;
-            console.log(this.units[uq_index].build_time * this.unit_ques[i].count - (Math.floor(Date.now()/1000) - this.unit_ques[i].calculated_timestamp));
         }
         units_que_table_html += '</tbody></table>';
         document.getElementById('units_que_wrapper').innerHTML = units_que_table_html;
@@ -189,12 +188,12 @@ class Game {
             this.update_building_ui(i);
         }
 
-        this.lastUpdateTime = Math.floor(Date.now()/1000);
+        this.lastUpdateTime = utils.get_timestamp();
         this.updateLoop = setInterval(this.update_game.bind(this), 1000);
     }
     
     update_game() {
-        var currTime = Math.floor(Date.now()/1000);
+        var currTime = utils.get_timestamp();
         var timePassed = currTime - this.lastUpdateTime;
         for (var resource_type in this.resource_prods) {
             this.resources[resource_type] += this.resource_prods[resource_type] * timePassed;
@@ -205,7 +204,7 @@ class Game {
             if (this.buildings[i].update_start !== null) {
                 this.update_building_ui(i);
                 var l_index = this.buildings[i].level_details.findIndex(ld => ld.level == (this.buildings[i].level - this.buildings[i].downgrade));
-                var timeLeft = this.buildings[i].update_start + this.buildings[i].level_details[l_index].upgrade_time - Math.floor(Date.now() / 1000);
+                var timeLeft = this.buildings[i].update_start + this.buildings[i].level_details[l_index].upgrade_time - utils.get_timestamp();
                 if (timeLeft <= 0) {
                     this.update_building(this.buildings[i].building_id);
                 } else if (timeLeft <= 10) {
@@ -237,7 +236,7 @@ class Game {
                 this.socket.emit('upgrade_building', p_building);
                 this.resources = changed_resources;
                 this.update_resource_ui();
-                this.buildings[b_index].update_start = Math.floor(Date.now() / 1000);
+                this.buildings[b_index].update_start = utils.get_timestamp();
                 this.update_building_ui(b_index);
             }
         }
@@ -318,7 +317,7 @@ class Game {
         var l_index = this.buildings[b_index].level_details.findIndex(ld => ld.level == this.buildings[b_index].level);
         if (this.buildings[b_index].update_start === null && this.buildings[b_index].level_details[l_index].level != 0) {
                 this.socket.emit('downgrade_building', p_building);
-                this.buildings[b_index].update_start = Math.floor(Date.now() / 1000);
+                this.buildings[b_index].update_start = utils.get_timestamp();
                 this.buildings[b_index].downgrade = 1;
                 this.update_building_ui(b_index);
         }
@@ -369,7 +368,7 @@ class Game {
         var building_ui_element = document.getElementById(name);
         var textContent = level;
         if (update_start !== null) {
-            var building_time = update_start + upgrade_time - Math.floor(Date.now() / 1000);
+            var building_time = update_start + upgrade_time - utils.get_timestamp();
             textContent += downgrade ? ', Downgrading: ' : ', Ugrading: ';
             textContent += building_time + 's';
             building_ui_element.getElementsByClassName("cancel")[0].style.display = 'block';

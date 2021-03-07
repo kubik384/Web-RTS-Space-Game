@@ -1,6 +1,8 @@
 "use strict"
 
 var mysql = require('mysql');
+var Utils = require('./utils.js');
+var utils = new Utils();
 var all_resource_types = 'pop, food, timber, metals, coal, oil, kerosene, hydrogen, uranium';
 var resourceTable = all_resource_types.split(', ');
 var buildings = require('./../game_properties/buildings.json');
@@ -47,7 +49,7 @@ class DbManager {
                     }
                     
                     for (var i = 0; i < resources.length; i++) {
-                        set_to += resources[i] + ' = ' + resources[i] + ' + ' + ((res_production[resources[i]] === undefined ? 0 : res_production[resources[i]]) * (Math.floor(Date.now()/1000) - results[0].last_update) + amount) + ' , ';
+                        set_to += resources[i] + ' = ' + resources[i] + ' + ' + ((res_production[resources[i]] === undefined ? 0 : res_production[resources[i]]) * (utils.get_timestamp() - results[0].last_update) + amount) + ' , ';
                     }
                     set_to += 'res_last_update = NOW()';
 
@@ -267,7 +269,7 @@ class DbManager {
                         } else {
                             l_index = buildings[b_index].level_details.findIndex(level_detail => level_detail.level == (results[i].level - results[i].downgrade));
                         }
-                        if ((Math.floor(Date.now() / 1000) - results[i].update_start - buildings[b_index].level_details[l_index].upgrade_time) > 0) {
+                        if ((utils.get_timestamp() - results[i].update_start - buildings[b_index].level_details[l_index].upgrade_time) > 0) {
                             query += results[i].building_id + ',';
                             execute_query = true;
                         }
@@ -405,40 +407,40 @@ class DbManager {
         });
     }
 
-    update_player_unit_que(username, p_unit) {
+    update_player_unit_que(username) {
         return new Promise((resolve,reject) => {
-            /*
-            var resource_generator = buildings.find(b => b.building_id == 2);
-            this.update_building_level(username, resource_generator.building_id).then(() => {
-                var query = `SELECT p.player_id, UNIX_TIMESTAMP(p.res_last_update) AS last_update, pb.level
-                FROM player_buildings pb
-                INNER JOIN players p ON p.player_id = pb.player_id
-                WHERE p.username = ? AND pb.building_id = ?`;
-                this.con.query(query, [username, resource_generator.building_id], function (err, results) {
-                    if (err) reject(err);
-
-                    var res_production = resource_generator.level_details.find(ld => ld.level == results[0].level).production;
-                    var resources = p_resources == 'all' ? resourceTable : p_resources;
-                    var set_to = '';
-                    
-                    if (!Array.isArray(resources)) {
-                        resources = resources.split(', ');
+            this.get_player_unit_ques(username, 'all').then(function(player_unit_ques) {
+                for (var i = 0; i < player_unit_ques.length; i++) {
+                    if (player_unit_ques[i].count == 0) {
+                        continue;
                     }
+                    var unit_build_time = units.find(unit => unit.unit_id == player_unit_ques[i].unit_id).build_time;
+                    var updated_count = player_unit_ques[i].count - Math.floor((utils.get_timestamp() - player_unit_ques[i].calculated_timestamp) / unit_build_time);
+                    updated_count = updated_count > 0 ? updated_count : 0;
+                    var created_units = (updated_count - player_unit_ques[i].count) + player_unit_ques[i].count;
+                    var time_remainder = updated_count < 1 ? 0 : (utils.get_timestamp() - player_unit_ques[i].calculated_timestamp) % unit_build_time;
                     
-                    for (var i = 0; i < resources.length; i++) {
-                        set_to += resources[i] + ' = ' + resources[i] + ' + ' + ((res_production[resources[i]] === undefined ? 0 : res_production[resources[i]]) * (Math.floor(Date.now()/1000) - results[0].last_update) + amount) + ' , ';
-                    }
-                    set_to += 'res_last_update = NOW()';
-
-                    var query = "UPDATE players SET " + set_to + " WHERE player_id = ?";
-                    this.con.query(query, [results[0].player_id], function (err) {
+                    var query = `UPDATE player_unit_ques puq
+                    INNER JOIN players p ON p.player_id = puq.player_id
+                    SET 
+                        puq.count = ?,
+                        puq.calculated_timestamp = NOW() - ?
+                    WHERE p.username = ?`;
+                    
+                    this.con.query(query, [updated_count, time_remainder, username], function (err) {
                         if (err) reject(err);
-                        resolve();
-                    });
-                }.bind(this));
-            });
-            */
-            resolve();
+                    }).then(function() {
+                        query = `UPDATE player_units pu
+                        INNER JOIN players p ON p.player_id = pu.player_id
+                        SET pu.count = ?
+                        WHERE p.username = ?`;
+                        this.con.query(query, [created_units, username], function (err) {
+                            if (err) reject(err);
+                        });
+                    }.bind(this));
+                }
+                resolve();
+            }.bind(this));
         });
     }
 
@@ -535,21 +537,22 @@ class DbManager {
                             }
                         }
 
-                        
-                        //remove the ", " part
-                        query = query.slice(0, query.length - 2) + ' WHERE username = ?';
-                        this.con.query(query, [username], function (err) {
-                            if (err) reject(err);
-                            for (var i = 0; i < p_units.length; i++) {
-                                query = `UPDATE player_unit_ques puq
-                                INNER JOIN players p ON p.player_id = puq.player_id 
-                                SET puq.count = puq.count + ?, puq.start_time = IF (puq.start_time IS NULL, NOW(), puq.start_time)
-                                WHERE p.username = ? AND puq.unit_id = ?`;
-                                this.con.query(query, [p_units[i].count, username, p_units[i].unit_id], function (err) {
-                                    if (err) reject(err);
-                                });
-                            }
-                            resolve();
+                        this.update_player_unit_que(username).then(function() {
+                            //remove the ", " part
+                            query = query.slice(0, query.length - 2) + ' WHERE username = ?';
+                            this.con.query(query, [username], function (err) {
+                                if (err) reject(err);
+                                for (var i = 0; i < p_units.length; i++) {
+                                    query = `UPDATE player_unit_ques puq
+                                    INNER JOIN players p ON p.player_id = puq.player_id 
+                                    SET puq.count = puq.count + ?, puq.start_time = IF (puq.count = 0, NOW(), puq.start_time)
+                                    WHERE p.username = ? AND puq.unit_id = ?`;
+                                    this.con.query(query, [p_units[i].count, username, p_units[i].unit_id], function (err) {
+                                        if (err) reject(err);
+                                    });
+                                }
+                                resolve();
+                            }.bind(this));
                         }.bind(this));
                     }.bind(this));
                 }.bind(this));

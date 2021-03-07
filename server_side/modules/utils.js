@@ -1,6 +1,6 @@
 "use strict"
 
-class Utils {
+module.exports = class Utils {
     async seconds_to_time(p_seconds) {
         var days = parseInt( (p_seconds / 86400) );
         var hours = parseInt( (p_seconds - (days * 86400)) / 3600 );
@@ -13,5 +13,3 @@ class Utils {
         return Math.floor(Date.now()/1000);
     }
 }
-
-export { Utils };
