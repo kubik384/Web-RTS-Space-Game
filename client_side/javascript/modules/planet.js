@@ -158,7 +158,7 @@ class Game {
                     <span>${this.unit_ques[i].count}</span>
                 </td>
                 <td>
-                    <span>${timeLeft > 0 ? await this.utils.seconds_to_time(timeLeft) : 0}</span>
+                    <span>${timeLeft > 0 ? await utils.seconds_to_time(timeLeft) : 0}</span>
                 </td>
             </tr>`;
         }
