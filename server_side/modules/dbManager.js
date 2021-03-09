@@ -78,7 +78,7 @@ class DbManager {
         return new Promise( async function ( resolve, reject ) {
             this.con.query(query, [username], async function (err, results) {
                 if (err) reject(err);
-                resolve(results);
+                resolve(results[0]);
             });
         }.bind(this));
     }
