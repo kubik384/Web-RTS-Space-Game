@@ -196,7 +196,7 @@ class DbManager {
     /**
      * Returns result(s) in following format [{player_id, building_id, level, update_start(in UNIX timestamp), upgrade_time}, ..]
      * @param {String} username Username of the player
-     * @param {String} p_building Building name 'all' can be used to get all buildings from the player
+     * @param {String} p_building Building name 'all' can be used to get all buildings from the player. Otherwise only 1 building can be passed
      */
     async get_player_building_details(username, p_building, passingId = false) {
         await this.update_building_level(username, p_building);
@@ -473,14 +473,14 @@ class DbManager {
         await this.update_player_unit_que(username, 'all');
         var resources = await this.get_resource(username, 'all');
         var building_details = await this.get_player_building_details(username, 'all');
-        var player_units = await this.get_player_units(username, 'all');
-        var player_ques = await this.get_player_unit_ques(username, 'all');
-        var building_results = await this.get_building_details(building_details);
-        var unit_results = await this.get_unit_details(player_units);
         for (var i = 0; i < building_details.length; i++) {
             building_details[i].curr_level = building_details[i].level;
             building_details[i].level = [building_details[i].level - 1, building_details[i].level, building_details[i].level + 1];
         }
+        var player_units = await this.get_player_units(username, 'all');
+        var player_ques = await this.get_player_unit_ques(username, 'all');
+        var building_results = await this.get_building_details(building_details);
+        var unit_results = await this.get_unit_details(player_units);
         for (var i = 0; i < unit_results.length; i++) {
             unit_results[i].count = player_units[i].count;
         }
@@ -503,6 +503,7 @@ class DbManager {
         var p_units_building = await this.get_player_building_details(username, 4, true);
         var units_building_level_details = buildings.find(building => building.building_id == p_units_building.building_id).level_details
         var allowed_units = units_building_level_details.find(level_detail => level_detail.level == p_units_building.level).units;
+        //Object.assign works properly only for objects with enumerable properties
         var updated_player_resources = Object.assign({}, player_resources);
         var query = 'UPDATE players SET ';
         for (var i = 0; i < p_units.length; i++) {
@@ -547,6 +548,7 @@ class DbManager {
                     promises.push(new Promise( async function ( resolve, reject ) {
                         this.con.query(query, [p_units[i].count, username, p_units[i].unit_id], async function(err) {
                             if (err) reject(err);
+                            resolve();
                         });
                     }.bind(this)));
                 }
