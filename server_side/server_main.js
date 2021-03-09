@@ -66,9 +66,7 @@ app.post('/login', function(req, res) {
 	dbManager.execute_query(query, [username]).then(results => {
 		if (results.length == 1) {
 			bcrypt.compare(password, results[0].password, function(err, passwordsMatch) {
-				if (err) {
-					throw err;
-				}
+				if (err) { throw err; }
 				if (passwordsMatch) {
 					//Client saves username as token, which is then sent from client to the server to authorize actions sent through socket for every action. If players object does not have attribute equal to token, then action is not executed and user is redirected back to login page instead
 					tokens.push(username);
@@ -150,10 +148,9 @@ server.listen(8080, function() {
 
 // Add the WebSocket handlers
 io.on('connection', socket => {
-	//Planet
 	socket.on('planet_datapack_request', token => {
 		socketTable[socket.id] = token;
-		dbManager.get_starter_datapack(token, result => { socket.emit('starter_datapack', JSON.stringify(result)) });
+		dbManager.get_starter_datapack(token).then(datapack => { socket.emit('starter_datapack', JSON.stringify(datapack)); });
 	});
 
 	socket.on('upgrade_building', building => {
@@ -166,9 +163,7 @@ io.on('connection', socket => {
 	});
 
 	socket.on('fetch_building_details', data => {
-		dbManager.get_building_details(data).then((results) => {
-			socket.emit('building_fetch_result', results[0]);
-		});
+		dbManager.get_building_details(data).then(results => { socket.emit('building_fetch_result', results[0]);});
 	});
 
 	socket.on('cancel_building_update', building => {
@@ -183,7 +178,7 @@ io.on('connection', socket => {
 
 	socket.on('map_datapack_request', (token, layout) => {
 		socketTable[socket.id] = token;
-		dbManager.get_map_datapack(layout, result => { socket.emit('map_datapack', JSON.stringify(result)) });
+		dbManager.get_map_datapack(layout).then(result => {socket.emit('map_datapack', JSON.stringify(result))});
 	});
 
 	socket.on('build_units', (units) => {
