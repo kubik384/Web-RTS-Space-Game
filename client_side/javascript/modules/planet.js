@@ -112,7 +112,7 @@ class Game {
             document.getElementById('create_units_wrapper').innerHTML = create_units_html;
             document.getElementById('create_units_form').addEventListener('submit', event => { 
                 event.preventDefault();
-                this.build_ships(event.currentTarget) 
+                this.build_units(event.currentTarget) 
             });
         }
 
@@ -147,6 +147,9 @@ class Game {
         </thead>
         <tbody>`;
         for (var i = 0; i < this.unit_ques.length; i++) {
+            if (this.unit_ques[i].count == 0) {
+                continue;
+            }
             var uq_index = this.units.findIndex(unit => unit.unit_id == this.unit_ques[i].unit_id);
             var timeLeft = this.units[uq_index].build_time * this.unit_ques[i].count - (utils.get_timestamp() - this.unit_ques[i].calculated_timestamp);
             units_que_table_html += `<tr>
@@ -215,6 +218,8 @@ class Game {
                 }
             }
         }
+
+        this.update_unit_que(currTime);
         this.lastUpdateTime = currTime;
     }
 
@@ -369,9 +374,14 @@ class Game {
         var textContent = level;
         if (update_start !== null) {
             var building_time = update_start + upgrade_time - utils.get_timestamp();
-            textContent += downgrade ? ', Downgrading: ' : ', Ugrading: ';
-            textContent += building_time + 's';
-            building_ui_element.getElementsByClassName("cancel")[0].style.display = 'block';
+            if (building_time > 0) {
+                textContent += downgrade ? ', Downgrading: ' : ', Ugrading: ';
+                textContent += building_time + 's';
+                building_ui_element.getElementsByClassName("cancel")[0].style.display = 'block';
+            } else {
+                textContent += ', Updating';
+                building_ui_element.getElementsByClassName("cancel")[0].style.display = 'none';
+            }
         } else {
             building_ui_element.getElementsByClassName("cancel")[0].style.display = 'none';
         }
@@ -394,7 +404,7 @@ class Game {
         }
     }
 
-    async build_ships(units_form) {
+    async build_units(units_form) {
         var remaining_resources = Object.assign({}, this.resources);
         var sufficient_resources = true;
         var units = [];
@@ -417,12 +427,15 @@ class Game {
 
         if (sufficient_resources && units.length > 0) {
             for (var i = 0; i < units.length; i++) {
-                var u_index = this.units.findIndex(unit => unit.unit_id == units[i].unit_id);
-                this.units[u_index].count += parseInt(units[i].count);
+                var uq_index = this.unit_ques.findIndex(unit_que => unit_que.unit_id == units[i].unit_id);
+                if (this.unit_ques[uq_index].count == 0) {
+                    this.unit_ques[uq_index].calculated_timestamp = utils.get_timestamp();
+                }
+                this.unit_ques[uq_index].count += parseInt(units[i].count);
             }
             this.resources = remaining_resources;
             this.update_resource_ui();
-            this.update_units_count();
+            this.update_unit_que_ui();
             this.socket.emit('build_units', units);
         }
     }
@@ -439,7 +452,6 @@ class Game {
         var allowed_unit_ids = units_building.level_details.find(level_detail => level_detail.level == units_building.level).units;
         var previously_allowed_unit_ids = units_building.level_details.find(level_detail => level_detail.level == units_building.level + upgrading ? 1 : -1).units;
         var changed_unit_ids = allowed_unit_ids.filter(allowed_unit_id => previously_allowed_unit_ids.indexOf(allowed_unit_id) === -1);
-        console.log(changed_unit_ids);
 
         if (changed_unit_ids.length > 0) {
             var create_units_table = document.getElementById("create_units_table");
@@ -469,8 +481,27 @@ class Game {
         }
     }
 
-    async update_unit_que() {
-        
+    async update_unit_que(timestamp) {
+        for (var i = 0; i < this.unit_ques.length; i++) {
+            if (this.unit_ques[i].count == 0) {
+                continue;
+            }
+            var unit_build_time = this.units.find(unit => unit.unit_id == this.unit_ques[i].unit_id).build_time;
+            var created_units = Math.floor((timestamp - this.unit_ques[i].calculated_timestamp) / unit_build_time);
+            this.update_unit_que_ui();
+            if (created_units < 1) {
+                continue;
+            }
+            this.unit_ques[i].count = Math.max(0, this.unit_ques[i].count - created_units);
+            this.unit_ques[i].calculated_timestamp = this.unit_ques[i].count < 1 ? 0 : (utils.get_timestamp() - this.unit_ques[i].calculated_timestamp) % unit_build_time;
+            var u_index = this.units.findIndex(unit => unit.unit_id == this.unit_ques[i].unit_id);
+            this.units[u_index].count += created_units;
+            this.update_units_count();
+        }
+    }
+
+    async update_unit_que_ui() {
+        //TODO
     }
 }
 
