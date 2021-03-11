@@ -410,11 +410,11 @@ class DbManager {
                 return loop(i + 1);
             }
             var unit_build_time = units.find(unit => unit.unit_id == player_unit_ques[i].unit_id).build_time;
-            var created_units = Math.floor((utils.get_timestamp() - player_unit_ques[i].calculated_timestamp) / unit_build_time);
+            var created_units = Math.min(Math.floor((utils.get_timestamp() - player_unit_ques[i].calculated_timestamp) / unit_build_time), player_unit_ques[i].count);
             if (created_units < 1) {
                 return loop(i + 1);
             }
-            var updated_count = Math.max(0, player_unit_ques[i].count - created_units);
+            var updated_count = player_unit_ques[i].count - created_units;
             var time_remainder = updated_count < 1 ? 0 : (utils.get_timestamp() - player_unit_ques[i].calculated_timestamp) % unit_build_time;
             
             var query = `UPDATE player_unit_ques puq
