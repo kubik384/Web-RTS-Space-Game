@@ -48,7 +48,7 @@ class DbManager {
                 }
                 
                 for (var i = 0; i < resources.length; i++) {
-                    set_to += resources[i] + ' = ' + resources[i] + ' + ' + ((res_production[resources[i]] === undefined ? 0 : res_production[resources[i]]) * (utils.get_timestamp() - results[0].last_update) + amount) + ' , ';
+                    set_to += resources[i] + ' = ' + resources[i] + ' + ' + ((res_production[resources[i]] === undefined ? 0 : res_production[resources[i]]) * (await utils.get_timestamp() - results[0].last_update) + amount) + ' , ';
                 }
                 set_to += 'res_last_update = NOW()';
 
@@ -266,7 +266,7 @@ class DbManager {
                     } else {
                         l_index = buildings[b_index].level_details.findIndex(level_detail => level_detail.level == (results[i].level - results[i].downgrade));
                     }
-                    if ((utils.get_timestamp() - results[i].update_start - buildings[b_index].level_details[l_index].upgrade_time) > 0) {
+                    if ((await utils.get_timestamp() - results[i].update_start - buildings[b_index].level_details[l_index].upgrade_time) > 0) {
                         query += results[i].building_id + ',';
                         execute_query = true;
                     }
@@ -407,15 +407,16 @@ class DbManager {
                 return;
             }
             if (player_unit_ques[i].count == 0) {
-                return loop(i + 1);
+                return await loop(i + 1);
             }
+            var timestamp = await utils.get_timestamp();
             var unit_build_time = units.find(unit => unit.unit_id == player_unit_ques[i].unit_id).build_time;
-            var created_units = Math.min(Math.floor((utils.get_timestamp() - player_unit_ques[i].calculated_timestamp) / unit_build_time), player_unit_ques[i].count);
+            var created_units = Math.min(Math.floor((timestamp - player_unit_ques[i].calculated_timestamp) / unit_build_time), player_unit_ques[i].count);
             if (created_units < 1) {
-                return loop(i + 1);
+                return await loop(i + 1);
             }
             var updated_count = player_unit_ques[i].count - created_units;
-            var time_remainder = updated_count < 1 ? 0 : (utils.get_timestamp() - player_unit_ques[i].calculated_timestamp) % unit_build_time;
+            var time_remainder = updated_count < 1 ? 0 : (timestamp - player_unit_ques[i].calculated_timestamp) % unit_build_time;
             
             var query = `UPDATE player_unit_ques puq
             INNER JOIN players p ON p.player_id = puq.player_id
@@ -424,7 +425,7 @@ class DbManager {
                 puq.calculated_timestamp = NOW() - ?
             WHERE p.username = ? AND puq.unit_id = ?`;
 
-            return new Promise( async function ( resolve, reject ) {
+            return await new Promise( async function ( resolve, reject ) {
                 this.con.query(query, [updated_count, time_remainder, username, player_unit_ques[i].unit_id], async function(err) {
                     if (err) reject(err);
                     query = `UPDATE player_units pu
@@ -438,7 +439,7 @@ class DbManager {
                 }.bind(this));
             }.bind(this));
         }.bind(this);
-        return loop(0);
+        return await loop(0);
     }
 
     async get_player_unit_ques(username, p_unit) {

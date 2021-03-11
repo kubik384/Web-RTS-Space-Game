@@ -9,7 +9,7 @@ module.exports = class Utils {
         return (days != 0 ? days + ":" : '') + (hours < 10 ? "0" + hours : hours) + ":" + (minutes < 10 ? "0" + minutes : minutes) + (days == 0 ? ":" + (seconds < 10 ? "0" + seconds : seconds) : '');
     }
 
-    get_timestamp() {
+    async get_timestamp() {
         return Math.floor(Date.now()/1000);
     }
 }
