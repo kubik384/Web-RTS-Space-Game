@@ -66,17 +66,19 @@ class Game {
         var b_index = units_building.level_details.findIndex(level_detail => level_detail.level == units_building.level);
         var allowed_unit_ids = units_building.level_details[b_index].units;
         if (allowed_unit_ids.length > 0) {
-            var create_units_html = `<form id="create_units_form"><table id="create_units_table">
-            <thead>
-                <tr>
-                    <th>Unit</th>
-                    <th>Name</th>
-                    <th>Cost</th>
-                    <th>Time</th>
-                    <th>Build</th>
-                </tr>
-            </thead>
-            <tbody>`;
+            var create_units_html = `
+            <form id="create_units_form">
+                <table id="create_units_table">
+                    <thead>
+                        <tr>
+                            <th>Unit</th>
+                            <th>Name</th>
+                            <th>Cost</th>
+                            <th>Time</th>
+                            <th>Build</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
             for (var i = 0; i < allowed_unit_ids.length; i++) {
                 var u_index;
                 if (this.units[allowed_unit_ids[i] - 1].unit_id == allowed_unit_ids[i]) {
@@ -118,7 +120,8 @@ class Game {
 
         var units_table_html = '<table id="units_table"><tbody>';
         for (var i = 0; i < this.units.length; i++) {
-            units_table_html += `<tr>
+            units_table_html += `
+            <tr>
                 <td>
                     <img src="/client_side/images/units/${this.units[i].name}.png" height="20px"></img>
                 </td>
@@ -131,37 +134,36 @@ class Game {
         document.getElementById('units_wrapper').innerHTML = units_table_html;
 
         this.unit_ques = datapack.unit_ques;
-        var units_que_table_html = `<table id="units_que_table">
-        <thead>
-            <tr>
-                <th>
-                    <span>Unit</span>
-                </th>
-                <th>
-                    <span>Number</span>
-                </th>
-                <th>
-                    <span>Time left</span>
-                </th>
-            </tr>
-        </thead>
-        <tbody>`;
+        var units_que_table_html = `
+        <table id="units_que_table">
+            <thead>
+                <tr>
+                    <th>
+                        <span>Unit</span>
+                    </th>
+                    <th>
+                        <span>Number</span>
+                    </th>
+                    <th>
+                        <span>Time left</span>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>`;
         for (var i = 0; i < this.unit_ques.length; i++) {
-            if (this.unit_ques[i].count == 0) {
-                continue;
-            }
             var uq_index = this.units.findIndex(unit => unit.unit_id == this.unit_ques[i].unit_id);
-            var timeLeft = this.units[uq_index].build_time * this.unit_ques[i].count - (utils.get_timestamp() - this.unit_ques[i].calculated_timestamp);
-            units_que_table_html += `<tr>
+            var timeLeft = this.units[uq_index].build_time * this.unit_ques[i].count - (await utils.get_timestamp() - this.unit_ques[i].calculated_timestamp);
+            units_que_table_html += `
+            <tr id="unit_que_row_${this.units[uq_index].unit_id}" style="display: ${this.unit_ques[i].count == 0 ? 'none' : 'table-row'}">
                 <td>
                     <img src="/client_side/images/units/${this.units[uq_index].name}.png" height="15px"></img>
                     <span>${this.units[uq_index].name}</span>
                 </td>
                 <td>
-                    <span>${this.unit_ques[i].count}</span>
+                    <span class="count">${this.unit_ques[i].count}</span>
                 </td>
                 <td>
-                    <span>${timeLeft > 0 ? await utils.seconds_to_time(timeLeft) : 0}</span>
+                    <span class="timeLeft">${timeLeft > 0 ? await utils.seconds_to_time(timeLeft) : 0}</span>
                 </td>
             </tr>`;
         }
@@ -191,36 +193,36 @@ class Game {
             this.update_building_ui(i);
         }
 
-        this.lastUpdateTime = utils.get_timestamp();
+        this.lastUpdateTime = await utils.get_timestamp();
         this.updateLoop = setInterval(this.update_game.bind(this), 1000);
     }
     
     update_game() {
-        var currTime = utils.get_timestamp();
-        var timePassed = currTime - this.lastUpdateTime;
-        for (var resource_type in this.resource_prods) {
-            this.resources[resource_type] += this.resource_prods[resource_type] * timePassed;
-            this.update_resource_ui();
-        }
-        
-        for (var i = 0; i < this.buildings.length; i++) {
-            if (this.buildings[i].update_start !== null) {
-                this.update_building_ui(i);
-                var l_index = this.buildings[i].level_details.findIndex(ld => ld.level == (this.buildings[i].level - this.buildings[i].downgrade));
-                var timeLeft = this.buildings[i].update_start + this.buildings[i].level_details[l_index].upgrade_time - utils.get_timestamp();
-                if (timeLeft <= 0) {
-                    this.update_building(this.buildings[i].building_id);
-                } else if (timeLeft <= 10) {
-                    var l_index_2 = this.buildings[i].level_details.findIndex(ld => ld.level == (this.buildings[i].level + (this.buildings[i].downgrade ? -1 : 1)));
-                    if (l_index_2 !== -1 && this.buildings[i].level_details[l_index_2].upgrade_time != 0 && this.buildings[i].level_details[l_index_2].level != 0) {
-                        this.fetch_building_details(this.buildings[i].building_id, this.buildings[i].level + (this.buildings[i].downgrade ? -2 : 2));
+        utils.get_timestamp().then(function(currTime) {
+            var timePassed = currTime - this.lastUpdateTime;
+            for (var resource_type in this.resource_prods) {
+                this.resources[resource_type] += this.resource_prods[resource_type] * timePassed;
+                this.update_resource_ui();
+            }
+            
+            for (var i = 0; i < this.buildings.length; i++) {
+                if (this.buildings[i].update_start !== null) {
+                    this.update_building_ui(i);
+                    var l_index = this.buildings[i].level_details.findIndex(ld => ld.level == (this.buildings[i].level - this.buildings[i].downgrade));
+                    var timeLeft = this.buildings[i].update_start + this.buildings[i].level_details[l_index].upgrade_time - utils.get_timestamp();
+                    if (timeLeft <= 0) {
+                        this.update_building(this.buildings[i].building_id);
+                    } else if (timeLeft <= 10) {
+                        var l_index_2 = this.buildings[i].level_details.findIndex(ld => ld.level == (this.buildings[i].level + (this.buildings[i].downgrade ? -1 : 1)));
+                        if (l_index_2 !== -1 && this.buildings[i].level_details[l_index_2].upgrade_time != 0 && this.buildings[i].level_details[l_index_2].level != 0) {
+                            this.fetch_building_details(this.buildings[i].building_id, this.buildings[i].level + (this.buildings[i].downgrade ? -2 : 2));
+                        }
                     }
                 }
             }
-        }
-
-        this.update_unit_que(currTime);
-        this.lastUpdateTime = currTime;
+            this.update_unit_que(currTime);
+            this.lastUpdateTime = currTime;
+        }.bind(this));
     }
 
     async upgrade_building(p_building) {
@@ -241,7 +243,7 @@ class Game {
                 this.socket.emit('upgrade_building', p_building);
                 this.resources = changed_resources;
                 this.update_resource_ui();
-                this.buildings[b_index].update_start = utils.get_timestamp();
+                this.buildings[b_index].update_start = await utils.get_timestamp();
                 this.update_building_ui(b_index);
             }
         }
@@ -322,7 +324,7 @@ class Game {
         var l_index = this.buildings[b_index].level_details.findIndex(ld => ld.level == this.buildings[b_index].level);
         if (this.buildings[b_index].update_start === null && this.buildings[b_index].level_details[l_index].level != 0) {
                 this.socket.emit('downgrade_building', p_building);
-                this.buildings[b_index].update_start = utils.get_timestamp();
+                this.buildings[b_index].update_start = await utils.get_timestamp();
                 this.buildings[b_index].downgrade = 1;
                 this.update_building_ui(b_index);
         }
@@ -373,7 +375,7 @@ class Game {
         var building_ui_element = document.getElementById(name);
         var textContent = level;
         if (update_start !== null) {
-            var building_time = update_start + upgrade_time - utils.get_timestamp();
+            var building_time = update_start + upgrade_time - await utils.get_timestamp();
             if (building_time > 0) {
                 textContent += downgrade ? ', Downgrading: ' : ', Ugrading: ';
                 textContent += building_time + 's';
@@ -426,21 +428,22 @@ class Game {
         }
 
         if (sufficient_resources && units.length > 0) {
+            var timestamp = await utils.get_timestamp();
             for (var i = 0; i < units.length; i++) {
                 var uq_index = this.unit_ques.findIndex(unit_que => unit_que.unit_id == units[i].unit_id);
                 if (this.unit_ques[uq_index].count == 0) {
-                    this.unit_ques[uq_index].calculated_timestamp = utils.get_timestamp();
+                    this.unit_ques[uq_index].calculated_timestamp = timestamp;
                 }
                 this.unit_ques[uq_index].count += parseInt(units[i].count);
             }
             this.resources = remaining_resources;
             this.update_resource_ui();
-            this.update_unit_que_ui();
+            this.update_unit_que_ui(timestamp);
             this.socket.emit('build_units', units);
         }
     }
 
-    async update_units_count() {
+    async update_unit_ui() {
         for (var i = 0; i < this.units.length; i++) {
             var elementId = 'unit_count_' + this.units[i].unit_id;
             document.getElementById(elementId).textContent = this.units[i].count;
@@ -487,21 +490,37 @@ class Game {
                 continue;
             }
             var unit_build_time = this.units.find(unit => unit.unit_id == this.unit_ques[i].unit_id).build_time;
-            var created_units = Math.floor((timestamp - this.unit_ques[i].calculated_timestamp) / unit_build_time);
-            this.update_unit_que_ui();
+            var created_units = Math.min(Math.floor((timestamp - this.unit_ques[i].calculated_timestamp) / unit_build_time), this.unit_ques[i].count);
+            this.update_unit_que_ui(timestamp);
             if (created_units < 1) {
                 continue;
             }
-            this.unit_ques[i].count = Math.max(0, this.unit_ques[i].count - created_units);
-            this.unit_ques[i].calculated_timestamp = this.unit_ques[i].count < 1 ? 0 : (utils.get_timestamp() - this.unit_ques[i].calculated_timestamp) % unit_build_time;
+            this.unit_ques[i].count = this.unit_ques[i].count - created_units;
+            var time_remainder = (await utils.get_timestamp() - this.unit_ques[i].calculated_timestamp) % unit_build_time;
+            this.unit_ques[i].calculated_timestamp = this.unit_ques[i].count < 1 ? 0 : timestamp - time_remainder;
             var u_index = this.units.findIndex(unit => unit.unit_id == this.unit_ques[i].unit_id);
             this.units[u_index].count += created_units;
-            this.update_units_count();
+            this.update_unit_ui();
         }
     }
 
-    async update_unit_que_ui() {
-        //TODO
+    async update_unit_que_ui(timestamp) {
+        for(var i = 0; i < this.unit_ques.length; i++) {
+            var uq_index = this.units.findIndex(unit => unit.unit_id == this.unit_ques[i].unit_id);
+            var timeLeft = this.units[uq_index].build_time * this.unit_ques[i].count - (timestamp - this.unit_ques[i].calculated_timestamp);
+            var unit_que_column = document.getElementById('unit_que_row_' + this.unit_ques[i].unit_id);
+            if ((this.unit_ques[i].count == 0) || (this.unit_ques[i].count == 1 && timeLeft < 1)) {
+                if (unit_que_column.style.display != 'none') {
+                    unit_que_column.style.display = 'none';
+                }
+            } else {
+                if (unit_que_column.style.display == 'none') {
+                    unit_que_column.style.display = 'table-row';
+                }
+                unit_que_column.getElementsByClassName('count')[0].innerHTML = this.unit_ques[i].count;
+                unit_que_column.getElementsByClassName('timeLeft')[0].innerHTML = await utils.seconds_to_time(timeLeft);
+            }
+        }
     }
 }
 
