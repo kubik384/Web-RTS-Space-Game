@@ -50,11 +50,11 @@ app.post('/register', function(req, res) {
 					query = "INSERT INTO players (username, password) VALUES ( ? , ? )";
 					dbManager.execute_query(query, [username, hash]).then(() => {
 						res.sendStatus(200);
-					}).catch(err => { console.log(err) });
+					}).catch(err => { throw err });
 				});
 			}
 		}).catch(err => {
-			console.log(err);
+			throw err;
 		});
 	}
 });
@@ -81,7 +81,7 @@ app.post('/login', function(req, res) {
 			res.sendStatus(401);
 		}
 	}).catch(err => {
-		console.log(err);
+		throw err;
 	});
 });
 

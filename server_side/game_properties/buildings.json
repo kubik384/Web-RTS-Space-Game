@@ -134,7 +134,7 @@
                 "upgrade_cost": {
                     "timber": 2
                 },
-                "upgrade_time": 10,
+                "upgrade_time": 0,
                 "units": [1,2]
             }
         ]
