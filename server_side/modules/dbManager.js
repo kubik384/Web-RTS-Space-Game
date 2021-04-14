@@ -317,7 +317,7 @@ class DbManager {
                     } else {
                         l_index = buildings[b_index].level_details.findIndex(level_detail => level_detail.level == (results[i].level - results[i].downgrade));
                     }
-                    if ((await utils.get_timestamp() - results[i].update_start - buildings[b_index].level_details[l_index].upgrade_time) > 0) {
+                    if ((await utils.get_timestamp() - results[i].update_start - buildings[b_index].level_details[l_index].upgrade_time) >= 0) {
                         query += results[i].building_id + ',';
                         execute_query = true;
                     }
@@ -573,10 +573,11 @@ class DbManager {
 
     async get_map_datapack(layout) {
         if (layout === 'system') {
-            var space_objects = this.get_space_objects();
+            var space_objects = await this.get_space_objects();
+            console.log(space_objects);
             return {space_objects: space_objects};
         } else if(layout === 'galaxy') {
-            var galaxies = this.get_galaxies();
+            var galaxies = await this.get_galaxies();
             return {galaxies: galaxies};
         }
     }

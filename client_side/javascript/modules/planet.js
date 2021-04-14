@@ -65,58 +65,56 @@ class Game {
         var units_building = this.buildings.find(b => b.building_id == 4);
         var b_index = units_building.level_details.findIndex(level_detail => level_detail.level == units_building.level);
         var allowed_unit_ids = units_building.level_details[b_index].units;
-        if (allowed_unit_ids.length > 0) {
-            var create_units_html = `
-            <form id="create_units_form">
-                <table id="create_units_table">
-                    <thead>
-                        <tr>
-                            <th>Unit</th>
-                            <th>Name</th>
-                            <th>Cost</th>
-                            <th>Time</th>
-                            <th>Build</th>
-                        </tr>
-                    </thead>
-                    <tbody>`;
-            for (var i = 0; i < allowed_unit_ids.length; i++) {
-                var u_index;
-                if (this.units[allowed_unit_ids[i] - 1].unit_id == allowed_unit_ids[i]) {
-                    u_index = allowed_unit_ids[i] - 1;
-                    
-                } else {
-                    u_index = this.units.find(unit => unit.unit_id == allowed_unit_ids[i]).unit_id;
-                }
+        var create_units_html = `
+        <form id="create_units_form">
+            <table id="create_units_table" style="display: ${allowed_unit_ids.length > 0 ? 'table' : 'none'}">
+                <thead>
+                    <tr>
+                        <th>Unit</th>
+                        <th>Name</th>
+                        <th>Cost</th>
+                        <th>Time</th>
+                        <th>Build</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+        for (var i = 0; i < allowed_unit_ids.length; i++) {
+            var u_index;
+            if (this.units[allowed_unit_ids[i] - 1].unit_id == allowed_unit_ids[i]) {
+                u_index = allowed_unit_ids[i] - 1;
                 
-                create_units_html += `
-                <tr>
-                    <td>
-                        <img src="/client_side/images/units/${this.units[u_index].name}.png" height="20px"></img>
-                    </td>
-                    <td>
-                        <span>${this.units[u_index].name}</span>
-                    </td>
-                    <td>`
-                        for (var resource in this.units[u_index].cost) {
-                            create_units_html += `${this.units[u_index].cost[resource]} <img src="/client_side/images/resources/${resource}.png" height="20px"></img>`;
-                        }
-                        create_units_html += `
-                    </td>
-                    <td>
-                        <span>${this.units[u_index].build_time}</span>
-                    </td>
-                    <td>
-                        <input type="number" class="unit_create_count" id="unit_${this.units[u_index].unit_id}">
-                    </td>
-                </tr>`;
+            } else {
+                u_index = this.units.find(unit => unit.unit_id == allowed_unit_ids[i]).unit_id;
             }
-            create_units_html += '<tr><td colspan="10" id="submit_unit_create_cell"><input type="submit" value="Build"></input></td></tr></tbody></table></form>';
-            document.getElementById('create_units_wrapper').innerHTML = create_units_html;
-            document.getElementById('create_units_form').addEventListener('submit', event => { 
-                event.preventDefault();
-                this.build_units(event.currentTarget) 
-            });
+            
+            create_units_html += `
+            <tr>
+                <td>
+                    <img src="/client_side/images/units/${this.units[u_index].name}.png" height="20px"></img>
+                </td>
+                <td>
+                    <span>${this.units[u_index].name}</span>
+                </td>
+                <td>`
+                    for (var resource in this.units[u_index].cost) {
+                        create_units_html += `${this.units[u_index].cost[resource]} <img src="/client_side/images/resources/${resource}.png" height="20px"></img>`;
+                    }
+                    create_units_html += `
+                </td>
+                <td>
+                    <span>${this.units[u_index].build_time}</span>
+                </td>
+                <td>
+                    <input type="number" class="unit_create_count" id="unit_${this.units[u_index].unit_id}">
+                </td>
+            </tr>`;
         }
+        create_units_html += '<tr><td colspan="10" id="submit_unit_create_cell"><input type="submit" value="Build"></input></td></tr></tbody></table></form>';
+        document.getElementById('create_units_wrapper').innerHTML = create_units_html;
+        document.getElementById('create_units_form').addEventListener('submit', event => { 
+            event.preventDefault();
+            this.build_units(event.currentTarget) 
+        });
 
         var units_table_html = '<table id="units_table"><tbody>';
         for (var i = 0; i < this.units.length; i++) {
@@ -198,7 +196,7 @@ class Game {
     }
     
     update_game() {
-        utils.get_timestamp().then(function(currTime) {
+        utils.get_timestamp().then(async function(currTime) {
             var timePassed = currTime - this.lastUpdateTime;
             for (var resource_type in this.resource_prods) {
                 this.resources[resource_type] += this.resource_prods[resource_type] * timePassed;
@@ -207,16 +205,13 @@ class Game {
             
             for (var i = 0; i < this.buildings.length; i++) {
                 if (this.buildings[i].update_start !== null) {
-                    this.update_building_ui(i);
+                    await this.update_building_ui(i);
                     var l_index = this.buildings[i].level_details.findIndex(ld => ld.level == (this.buildings[i].level - this.buildings[i].downgrade));
-                    var timeLeft = this.buildings[i].update_start + this.buildings[i].level_details[l_index].upgrade_time - utils.get_timestamp();
+                    var timeLeft = this.buildings[i].update_start + this.buildings[i].level_details[l_index].upgrade_time - currTime;
                     if (timeLeft <= 0) {
-                        this.update_building(this.buildings[i].building_id);
+                        await this.update_building(this.buildings[i].building_id);
                     } else if (timeLeft <= 10) {
-                        var l_index_2 = this.buildings[i].level_details.findIndex(ld => ld.level == (this.buildings[i].level + (this.buildings[i].downgrade ? -1 : 1)));
-                        if (l_index_2 !== -1 && this.buildings[i].level_details[l_index_2].upgrade_time != 0 && this.buildings[i].level_details[l_index_2].level != 0) {
-                            this.fetch_building_details(this.buildings[i].building_id, this.buildings[i].level + (this.buildings[i].downgrade ? -2 : 2));
-                        }
+                        this.fetch_building_details(this.buildings[i].building_id, this.buildings[i].level + (this.buildings[i].downgrade ? -2 : 2));
                     }
                 }
             }
@@ -228,7 +223,7 @@ class Game {
     async upgrade_building(p_building) {
         var b_index = this.buildings.findIndex(building => building.name == p_building);
         var l_index = this.buildings[b_index].level_details.findIndex(ld => ld.level == this.buildings[b_index].level);
-        if (this.buildings[b_index].update_start === null && this.buildings[b_index].level_details[l_index].upgrade_time != 0) {
+        if (this.buildings[b_index].update_start === null && this.buildings[b_index].level_details[l_index].upgrade_time >= 0) {
             var changed_resources = {};
             var sufficient_resources = true;
             for (var resource_type in this.buildings[b_index].level_details[l_index].upgrade_cost) {
@@ -239,7 +234,7 @@ class Game {
                     break;
                 }
             }
-            if (sufficient_resources && this.buildings[b_index].level_details[l_index].upgrade_time > 0) {
+            if (sufficient_resources && this.buildings[b_index].level_details[l_index].upgrade_time >= 0) {
                 this.socket.emit('upgrade_building', p_building);
                 this.resources = changed_resources;
                 this.update_resource_ui();
@@ -283,7 +278,7 @@ class Game {
                 this.update_resource_ui();
             }
             if (this.buildings[b_index].building_id == 4) {
-                this.update_units_table(upgrading);
+                await this.update_units_table(upgrading);
             }
             this.buildings[b_index].update_start = null;
             this.update_building_ui(b_index);
@@ -332,8 +327,14 @@ class Game {
 
     async fetch_building_details(building_id, level) {
         if (this.fetched_buildings[building_id] === undefined) {
-            this.fetched_buildings[building_id] = {};
-            this.socket.emit('fetch_building_details', [{building_id: building_id, level: level}]);
+            var b_index = this.buildings.findIndex(building => building.building_id == building_id);
+            var ld_index = this.buildings[b_index].level_details.findIndex(ld => ld.level == level + (this.buildings[b_index].downgrade ? 1 : -1));
+            if (ld_index != -1 && this.buildings[b_index].level_details[ld_index].upgrade_time >= 0 && level >= 0) {
+                this.fetched_buildings[building_id] = {};
+                this.socket.emit('fetch_building_details', [{building_id: building_id, level: level}]);
+            } else {
+                this.fetched_buildings[building_id] = {name: this.buildings[b_index].name, level_details: [0]};
+            }
         }
     }
 
@@ -377,11 +378,10 @@ class Game {
         if (update_start !== null) {
             var building_time = update_start + upgrade_time - await utils.get_timestamp();
             if (building_time > 0) {
-                textContent += downgrade ? ', Downgrading: ' : ', Ugrading: ';
+                textContent += downgrade ? ', Downgrading: ' : ', Upgrading: ';
                 textContent += building_time + 's';
                 building_ui_element.getElementsByClassName("cancel")[0].style.display = 'block';
             } else {
-                textContent += ', Updating';
                 building_ui_element.getElementsByClassName("cancel")[0].style.display = 'none';
             }
         } else {
@@ -395,7 +395,7 @@ class Game {
         
         //button part
         //upgrade time 0 = maxed out building
-        if (upgrade_time != 0) {
+        if (upgrade_time >= 0) {
             var innerHTML = document.getElementById('upgrade-' + name).innerHTML.split('(')[0] + '(';
             for (var resource in upgrade_cost) {
                 innerHTML += upgrade_cost[resource] + `<img src="/client_side/images/resources/${resource}.png" height="16px" class='button_image'></img>`;
@@ -453,12 +453,16 @@ class Game {
     async update_units_table(upgrading) {
         var units_building = this.buildings.find(b => b.building_id == 4);
         var allowed_unit_ids = units_building.level_details.find(level_detail => level_detail.level == units_building.level).units;
-        var previously_allowed_unit_ids = units_building.level_details.find(level_detail => level_detail.level == units_building.level + upgrading ? 1 : -1).units;
+        var previously_allowed_unit_ids = units_building.level_details.find(level_detail => level_detail.level == units_building.level + (upgrading ? -1 : 1)).units;
         var changed_unit_ids = allowed_unit_ids.filter(allowed_unit_id => previously_allowed_unit_ids.indexOf(allowed_unit_id) === -1);
+        changed_unit_ids = changed_unit_ids.concat(previously_allowed_unit_ids.filter(previously_allowed_unit_id => allowed_unit_ids.indexOf(previously_allowed_unit_id) === -1));
 
         if (changed_unit_ids.length > 0) {
             var create_units_table = document.getElementById("create_units_table");
             if (upgrading) {
+                if (previously_allowed_unit_ids.length == 0) {
+                    create_units_table.style.display = 'table';
+                }
                 for (var i = 0; i < changed_unit_ids.length; i++) {
                     var u_index = this.units.findIndex(unit => unit.unit_id == changed_unit_ids[i]);
                     var create_unit_row = create_units_table.insertRow(create_units_table.rows.length - 1);
@@ -477,6 +481,9 @@ class Game {
                     create_unit_row.innerHTML = create_unit_row_html;
                 }
             } else {
+                if (allowed_unit_ids.length == 0) {
+                    create_units_table.style.display = 'none';
+                }
                 for (var i = 0; i < changed_unit_ids.length; i++) {
                     create_units_table.deleteRow(create_units_table.rows.length - 2);
                 }
