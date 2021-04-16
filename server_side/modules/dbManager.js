@@ -37,11 +37,14 @@ class DbManager {
         INNER JOIN players p ON p.player_id = pb.player_id
         WHERE p.username = ? AND pb.building_id = ?`;
         return new Promise( async function ( resolve, reject ) {
-            await this.con.query(query, [username, resource_generator.building_id], async function(err, results) {
-                if (err) { 
+            this.con.query(query, [username, resource_generator.building_id], async function(err, results) {
+                if (err) {
                     reject(err);
                     return;
                 };
+                if (results[0] === undefined) {
+                    console.log(results);
+                }
                 var res_production = resource_generator.level_details.find(ld => ld.level == results[0].level).production;
                 var resources = p_resources == 'all' ? resourceTable : p_resources;
                 var set_to = '';
@@ -470,18 +473,15 @@ class DbManager {
 
     async update_player_unit_que(username) {
         var player_unit_ques = await this.get_player_unit_ques(username, 'all');
-        var loop = async function(i) {
-            if (i >= player_unit_ques.length) {
-                return;
-            }
+        for (var i = 0; i < player_unit_ques.length; i++) {
             if (player_unit_ques[i].count == 0) {
-                return await loop(i + 1);
+                continue;
             }
             var timestamp = await utils.get_timestamp();
             var unit_build_time = units.find(unit => unit.unit_id == player_unit_ques[i].unit_id).build_time;
             var created_units = Math.min(Math.floor((timestamp - player_unit_ques[i].calculated_timestamp) / unit_build_time), player_unit_ques[i].count);
             if (created_units < 1) {
-                return await loop(i + 1);
+                continue;
             }
             var updated_count = player_unit_ques[i].count - created_units;
             var time_remainder = updated_count < 1 ? 0 : (timestamp - player_unit_ques[i].calculated_timestamp) % unit_build_time;
@@ -493,28 +493,28 @@ class DbManager {
                 puq.calculated_timestamp = NOW() - ?
             WHERE p.username = ? AND puq.unit_id = ?`;
 
-            return await new Promise( async function ( resolve, reject ) {
+            await new Promise( async function ( resolve, reject ) {
                 this.con.query(query, [updated_count, time_remainder, username, player_unit_ques[i].unit_id], async function(err) {
-                    if (err) { 
+                    if (err) {
                         reject(err);
                         return;
                     };
+                    console.log(timestamp - time_remainder);
                     query = `UPDATE player_units pu
                     INNER JOIN players p ON p.player_id = pu.player_id
                     SET pu.count = pu.count + ?
                     WHERE p.username = ? AND pu.unit_id = ?`;
                     this.con.query(query, [created_units, username, player_unit_ques[i].unit_id], async function(err) {
-                        if (err) { 
+                        if (err) {
                             reject(err);
                             return;
                         };
-                        resolve(await loop(i + 1));
-                        return;
+                        console.log(timestamp - time_remainder);
+                        resolve();
                     });
                 }.bind(this));
             }.bind(this));
-        }.bind(this);
-        return await loop(0);
+        }
     }
 
     async get_player_unit_ques(username, p_unit) {

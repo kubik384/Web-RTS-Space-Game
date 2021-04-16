@@ -162,6 +162,10 @@ button, html, input {
 	padding: 0 5px;
 }
 
-#create_units_table > tbody > tr > td, #units_que_table > tbody > tr:first-child > td {
+#create_units_table > tbody > tr > td {
 	border-top: 1px solid black;
+}
+
+#units_que_table > thead > tr:first-child > th {
+	border-bottom: 1px solid black;
 }

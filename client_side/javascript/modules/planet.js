@@ -377,13 +377,9 @@ class Game {
         var textContent = level;
         if (update_start !== null) {
             var building_time = update_start + upgrade_time - await utils.get_timestamp();
-            if (building_time > 0) {
-                textContent += downgrade ? ', Downgrading: ' : ', Upgrading: ';
-                textContent += building_time + 's';
-                building_ui_element.getElementsByClassName("cancel")[0].style.display = 'block';
-            } else {
-                building_ui_element.getElementsByClassName("cancel")[0].style.display = 'none';
-            }
+            textContent += downgrade ? ', Downgrading: ' : ', Upgrading: ';
+            textContent += (building_time < 0 ? 0 : building_time) + 's';
+            building_ui_element.getElementsByClassName("cancel")[0].style.display = 'block';
         } else {
             building_ui_element.getElementsByClassName("cancel")[0].style.display = 'none';
         }
@@ -498,16 +494,18 @@ class Game {
             }
             var unit_build_time = this.units.find(unit => unit.unit_id == this.unit_ques[i].unit_id).build_time;
             var created_units = Math.min(Math.floor((timestamp - this.unit_ques[i].calculated_timestamp) / unit_build_time), this.unit_ques[i].count);
-            this.update_unit_que_ui(timestamp);
             if (created_units < 1) {
+                this.update_unit_que_ui(timestamp);
                 continue;
+            } else {
+                this.unit_ques[i].count = this.unit_ques[i].count - created_units;
+                var time_remainder = (await utils.get_timestamp() - this.unit_ques[i].calculated_timestamp) % unit_build_time;
+                this.unit_ques[i].calculated_timestamp = this.unit_ques[i].count < 1 ? 0 : timestamp - time_remainder;
+                this.update_unit_que_ui(timestamp);
+                var u_index = this.units.findIndex(unit => unit.unit_id == this.unit_ques[i].unit_id);
+                this.units[u_index].count += created_units;
+                this.update_unit_ui();
             }
-            this.unit_ques[i].count = this.unit_ques[i].count - created_units;
-            var time_remainder = (await utils.get_timestamp() - this.unit_ques[i].calculated_timestamp) % unit_build_time;
-            this.unit_ques[i].calculated_timestamp = this.unit_ques[i].count < 1 ? 0 : timestamp - time_remainder;
-            var u_index = this.units.findIndex(unit => unit.unit_id == this.unit_ques[i].unit_id);
-            this.units[u_index].count += created_units;
-            this.update_unit_ui();
         }
     }
 
