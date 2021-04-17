@@ -1,7 +1,7 @@
 [
     {
         "building_id": 1,
-        "name": "towncenter",
+        "name": "Administration Building",
         "level_details": [
             {
                 "level": 0,
@@ -29,13 +29,13 @@
                 "upgrade_cost": {
                     "timber": 1
                 },
-                "upgrade_time": 0
+                "upgrade_time": -1
             }
         ]
     },
     {
         "building_id": 2,
-        "name": "resource_generator",
+        "name": "Resource Generator",
         "level_details": [
             {
                 "level": 0,
@@ -66,14 +66,14 @@
                 "upgrade_cost": {
                     "timber": 1
                 },
-                "upgrade_time": 0,
+                "upgrade_time": -1,
                 "production": {"timber": 0.00060}
             }
         ]
     }, 
     {
         "building_id": 3,
-        "name": "walls",
+        "name": "Space Station",
         "level_details": [
             {
                 "level": 0,
@@ -104,8 +104,38 @@
                 "upgrade_cost": {
                     "timber": 1
                 },
-                "upgrade_time": 0,
+                "upgrade_time": -1,
                 "defense_bonus": 32
+            }
+        ]
+    }, 
+    {
+        "building_id": 4,
+        "name": "Space Dock",
+        "level_details": [
+            {
+                "level": 0,
+                "upgrade_cost": {
+                    "timber": 2
+                },
+                "upgrade_time": 10,
+                "units": []
+            },
+            {
+                "level": 1,
+                "upgrade_cost": {
+                    "timber": 2
+                },
+                "upgrade_time": 10,
+                "units": [1]
+            },
+            {
+                "level": 2,
+                "upgrade_cost": {
+                    "timber": 2
+                },
+                "upgrade_time": -1,
+                "units": [1,2]
             }
         ]
     }

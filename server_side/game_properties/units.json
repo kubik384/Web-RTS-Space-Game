@@ -1,0 +1,18 @@
+[
+    {
+        "unit_id": 1,
+        "name": "Fighter",
+        "cost": {
+            "timber": 1
+        },
+        "build_time": 10
+    },
+    {
+        "unit_id": 2,
+        "name": "Cruiser",
+        "cost": {
+            "timber": 2
+        },
+        "build_time": 120
+    }
+]
