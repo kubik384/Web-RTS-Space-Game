@@ -572,7 +572,6 @@ class DbManager {
     async get_map_datapack(layout) {
         if (layout === 'system') {
             var space_objects = await this.get_space_objects();
-            console.log(space_objects);
             return {space_objects: space_objects};
         } else if(layout === 'galaxy') {
             var galaxies = await this.get_galaxies();

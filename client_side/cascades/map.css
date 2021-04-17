@@ -43,17 +43,15 @@ body {
 }
 
 #map_container {
-	margin-top: 10px;
-	margin-bottom: 10px;
 	text-align: center;
-	height: calc(100% - 68px);
+	height: 100%;
 }
 
 #map {
 	background-color: black;
 	border: 2px solid darkblue;
-	width: 50%;
-	height: 100%;
+	width: 100%;
+	height: calc(100% - 4px);
 }
 
 #dropdown_select {
@@ -91,4 +89,23 @@ body {
 
 #dropdown_select:hover #dropdown_menu {
 	display: block;
+}
+
+#layout_table {
+	padding-top: 10px;
+	padding-bottom: 10px;
+	height: calc(100% - 48px);
+}
+
+#layout_table > tbody > tr > td {
+	width: 20%;
+	padding: 0px 5px;
+}
+
+#map_column {
+	width: 50% !important;
+}
+
+#assemble_fleet {
+	font-size: 20px;
 }

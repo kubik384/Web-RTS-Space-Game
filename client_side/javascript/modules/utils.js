@@ -12,6 +12,18 @@ class Utils {
     async get_timestamp() {
         return Math.floor(Date.now()/1000);
     }
+
+    async angleToRad(angle) {
+        return angle/180 * Math.PI;
+    }
+
+    syncAngleToRad(angle) {
+        return angle/180 * Math.PI;
+    }
+
+    async radToAngle(rad) {
+        return rad/Math.Pi * 180;
+    }
 }
 
 export { Utils };
