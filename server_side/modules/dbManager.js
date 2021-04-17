@@ -490,16 +490,15 @@ class DbManager {
             INNER JOIN players p ON p.player_id = puq.player_id
             SET 
                 puq.count = ?,
-                puq.calculated_timestamp = NOW() - ?
+                puq.calculated_timestamp = ?
             WHERE p.username = ? AND puq.unit_id = ?`;
 
             await new Promise( async function ( resolve, reject ) {
-                this.con.query(query, [updated_count, time_remainder, username, player_unit_ques[i].unit_id], async function(err) {
+                this.con.query(query, [updated_count, timestamp - time_remainder, username, player_unit_ques[i].unit_id], async function(err) {
                     if (err) {
                         reject(err);
                         return;
                     };
-                    console.log(timestamp - time_remainder);
                     query = `UPDATE player_units pu
                     INNER JOIN players p ON p.player_id = pu.player_id
                     SET pu.count = pu.count + ?
@@ -509,7 +508,6 @@ class DbManager {
                             reject(err);
                             return;
                         };
-                        console.log(timestamp - time_remainder);
                         resolve();
                     });
                 }.bind(this));
@@ -518,7 +516,7 @@ class DbManager {
     }
 
     async get_player_unit_ques(username, p_unit) {
-        var query = `SELECT puq.unit_id, puq.count, UNIX_TIMESTAMP(puq.calculated_timestamp) AS calculated_timestamp
+        var query = `SELECT puq.unit_id, puq.count, puq.calculated_timestamp AS calculated_timestamp
         FROM player_unit_ques puq
         INNER JOIN players p ON p.player_id = puq.player_id
         WHERE p.username = ?`;
@@ -633,7 +631,7 @@ class DbManager {
                 for (var i = 0; i < p_units.length; i++) {
                     query = `UPDATE player_unit_ques puq
                     INNER JOIN players p ON p.player_id = puq.player_id 
-                    SET puq.count = puq.count + ?, puq.calculated_timestamp = IF (puq.count = 0, NOW(), puq.calculated_timestamp)
+                    SET puq.count = puq.count + ?, puq.calculated_timestamp = IF (puq.count = 0, UNIX_TIMESTAMP(), puq.calculated_timestamp)
                     WHERE p.username = ? AND puq.unit_id = ?`;
                     promises.push(new Promise( async function ( resolve, reject ) {
                         this.con.query(query, [p_units[i].count, username, p_units[i].unit_id], async function(err) {
