@@ -114,11 +114,11 @@ class Game {
                 var rads = await utils.angleToRad(this.space_objects[i].rot * 256);
                 var [origin_x, origin_y] = [this.space_objects[i].x, this.space_objects[i].y];
                 var [center_x, center_y] = [this.system_center_object.x, this.system_center_object.y];
-                var object_x = origin_x + (origin_x - center_x) * Math.cos(rads) - (origin_y - center_y) * Math.sin(rads);
+                var object_x = center_x + (origin_x - center_x) * Math.cos(rads) - (origin_y - center_y) * Math.sin(rads);
                 var object_y = center_y + (origin_x - center_x) * Math.sin(rads) + (origin_y - center_y) * Math.cos(rads);
 
+                var vector = new Vector(this.fleet, new Vector(object_x, object_y));
                 if (this.move_point.x !== undefined && this.fleet.x !== undefined) {
-                    var vector = new Vector(this.fleet, new Vector(object_x, object_y));
                     //Expect all the space objects to be squares (circles) = same width and height - for now
                     var object_radius = this.space_objects[i].width/2;
                     var g_strength = Math.pow(object_radius/await vector.length(), 2);
@@ -130,7 +130,6 @@ class Game {
 
                 if (this.fleet.x !== undefined) {
                     var object_radius = this.space_objects[i].width/2;
-                    var vector = new Vector(this.fleet, this.space_objects[i]);
                     if (await vector.length() <= object_radius) {
                         this.fleet = {speed: 2};
                         this.move_point = {};
