@@ -476,10 +476,7 @@ class DbManager {
             WHERE p.username = ? AND puq.unit_id = ?`;
             promises.push(this.execute_query(query, [p_units[i].count, username, p_units[i].unit_id]));
         }
-        Promise.all(promises).then(() => {
-            resolve();
-            return;
-        });
+        await Promise.all(promises);
     }
 }
 
