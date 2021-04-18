@@ -1,6 +1,6 @@
 "use strict"
 
-import { Utils } from './utils.js';
+import { Utils } from './misc_modules/utils.js';
 var utils = new Utils();
 
 class Game {
