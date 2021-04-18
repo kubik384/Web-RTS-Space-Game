@@ -1,6 +1,7 @@
 "use strict"
 
 import { Utils } from '../misc_modules/utils.js';
+import { Vector } from '../misc_modules/vector.js';
 var utils = new Utils();
 
 class Game {
@@ -20,7 +21,6 @@ class Game {
         this.center_galaxy;
         this.fleet = {speed: 2};
         this.move_point = {};
-        this.gravitational_pull = 2;
         
         const query_string = window.location.search;
         const url_parameters = new URLSearchParams(query_string);
@@ -34,7 +34,7 @@ class Game {
     async setup_game(p_datapack) {
         return new Promise((resolve, reject) => {
             var datapack = JSON.parse(p_datapack);
-            console.log(datapack);
+            console.log(JSON.parse(p_datapack));
             this.map_canvas = document.getElementById("map");
             this.map_ctx = this.map_canvas.getContext("2d");
             window.onresize = this.window_resize_handler();
@@ -83,52 +83,24 @@ class Game {
 
     async update(progress) {
         if (this.layout === 'system') {
-            if (this.move_point.x !== undefined && this.fleet.x !== undefined) {
-                if (this.fleet.x != this.move_point.x || this.fleet.y != this.move_point.y) {
-                    var x_diff = this.move_point.x - this.fleet.x;
-                    var y_diff = this.move_point.y - this.fleet.y;
-                    var vector_length = Math.sqrt(Math.pow(x_diff, 2) + Math.pow(y_diff, 2));
-                    var x_vector = x_diff/vector_length;
-                    var y_vector = y_diff/vector_length;
-                    var move_x = this.fleet.speed * x_vector;
-                    var move_y = this.fleet.speed * y_vector;
-                    if (Math.abs(move_x) > Math.abs(x_diff)) {
-                        this.fleet.x = this.move_point.x;
-                    } else {
-                        this.fleet.x += move_x;
-                    }
-                    if (Math.abs(move_y) > Math.abs(y_diff)) {
-                        this.fleet.y = this.move_point.y;
-                    } else {
-                        this.fleet.y += move_y;
-                    }
-                } else {
+            if (this.fleet.x !== undefined) {
+                var object_radius = this.system_center_object.width/2;
+                var vector = new Vector(this.fleet, this.system_center_object);
+                if (await vector.length() <= object_radius) {
+                    this.fleet = {speed: 2};
                     this.move_point = {};
                 }
             }
 
             if (this.move_point.x !== undefined && this.fleet.x !== undefined) {
-                var x_diff = this.system_center_object.x - this.fleet.x;
-                var y_diff = this.system_center_object.y - this.fleet.y;
-                var vector_length = Math.sqrt(Math.pow(x_diff, 2) + Math.pow(y_diff, 2));
-                var x_vector = x_diff/vector_length;
-                var y_vector = y_diff/vector_length;
-                //Expect all the space objects to be squares - for now
+                var vector = new Vector(this.fleet, this.system_center_object);
+                //Expect all the space objects to be squares (circles) = same width and height - for now
                 var object_radius = this.system_center_object.width/2;
-                var g_strength = Math.pow(vector_length/object_radius, 2);
-                var pull = this.gravitational_pull * g_strength;
-                var move_x = pull * x_vector;
-                var move_y = pull * y_vector;
-                //this.fleet.x += move_x;
-                //this.fleet.y += move_y;
-
-                var x_diff = this.system_center_object.x - this.fleet.x;
-                var y_diff = this.system_center_object.y - this.fleet.y;
-                var vector_length = Math.pow(x_diff, 2) + Math.pow(y_diff, 2);
-                if (vector_length <= Math.pow(object_radius, 2)) {
-                    this.fleet = {speed: 2};
-                    this.move_point = {};
-                }
+                var g_strength = Math.pow(object_radius/await vector.length(), 2);
+                var pull = g_strength * object_radius / 100;
+                var move = await (await vector.normalize()).multiply(pull);
+                this.fleet.x += move.x;
+                this.fleet.y += move.y;
             }
 
             for (var i = 0; i < this.space_objects.length; i++) {
@@ -139,34 +111,50 @@ class Game {
                     this.space_objects[i].rot -= 360;
                 }
 
+                var rads = await utils.angleToRad(this.space_objects[i].rot * 256);
+                var [origin_x, origin_y] = [this.space_objects[i].x, this.space_objects[i].y];
+                var [center_x, center_y] = [this.system_center_object.x, this.system_center_object.y];
+                var object_x = origin_x + (origin_x - center_x) * Math.cos(rads) - (origin_y - center_y) * Math.sin(rads);
+                var object_y = center_y + (origin_x - center_x) * Math.sin(rads) + (origin_y - center_y) * Math.cos(rads);
+
                 if (this.move_point.x !== undefined && this.fleet.x !== undefined) {
-                    var rads = await utils.angleToRad(this.space_objects[i].rot * 256);
-                    var [planetX, planetY] = [this.space_objects[i].x, this.space_objects[i].y];
-                    var [pointX, pointY] = [this.system_center_object.x, this.system_center_object.y];
-                    var object_x = pointX + (planetX - pointX) * Math.cos(rads) - (planetY - pointY) * Math.sin(rads);
-                    var object_y = pointY + (planetX - pointX) * Math.sin(rads) + (planetY - pointY) * Math.cos(rads);
-
-                    var x_diff = object_x - this.fleet.x;
-                    var y_diff = object_y - this.fleet.y;
-                    var vector_length = Math.sqrt(Math.pow(x_diff, 2) + Math.pow(y_diff, 2));
-                    var x_vector = x_diff/vector_length;
-                    var y_vector = y_diff/vector_length;
-                    //Expect all the space objects to be squares - for now
+                    var vector = new Vector(this.fleet, new Vector(object_x, object_y));
+                    //Expect all the space objects to be squares (circles) = same width and height - for now
                     var object_radius = this.space_objects[i].width/2;
-                    var g_strength = Math.pow(vector_length/object_radius, 2);
-                    var pull = this.gravitational_pull * g_strength;
-                    var move_x = pull * x_vector;
-                    var move_y = pull * y_vector;
-                    //this.fleet.x += move_x;
-                    //this.fleet.y += move_y;
+                    var g_strength = Math.pow(object_radius/await vector.length(), 2);
+                    var pull = g_strength * object_radius / 100;
+                    var move = await (await vector.normalize()).multiply(pull);
+                    this.fleet.x += move.x;
+                    this.fleet.y += move.y;
+                }
 
-                    var x_diff = object_x - this.fleet.x;
-                    var y_diff = object_y - this.fleet.y;
-                    var vector_length = Math.pow(x_diff, 2) + Math.pow(y_diff, 2);
-                    if (vector_length <= Math.pow(object_radius, 2)) {
+                if (this.fleet.x !== undefined) {
+                    var object_radius = this.space_objects[i].width/2;
+                    var vector = new Vector(this.fleet, this.space_objects[i]);
+                    if (await vector.length() <= object_radius) {
                         this.fleet = {speed: 2};
                         this.move_point = {};
                     }
+                }
+            }
+
+            
+            if (this.move_point.x !== undefined && this.fleet.x !== undefined) {
+                if (this.fleet.x != this.move_point.x || this.fleet.y != this.move_point.y) {
+                    var vector = new Vector(this.fleet, this.move_point);
+                    var move = await (await vector.normalize()).multiply(this.fleet.speed);
+                    if (Math.abs(move.x) > Math.abs(vector.x)) {
+                        this.fleet.x = this.move_point.x;
+                    } else {
+                        this.fleet.x += move.x;
+                    }
+                    if (Math.abs(move.y) > Math.abs(vector.y)) {
+                        this.fleet.y = this.move_point.y;
+                    } else {
+                        this.fleet.y += move.y;
+                    }
+                } else {
+                    this.move_point = {};
                 }
             }
         }
