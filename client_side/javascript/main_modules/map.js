@@ -19,7 +19,7 @@ class Game {
         this.system_center_object;
         this.galaxies = [];
         this.center_galaxy;
-        this.fleet = {speed: 2};
+        this.fleet = {};
         this.move_point = {};
         
         const query_string = window.location.search;
@@ -87,20 +87,18 @@ class Game {
                 var object_radius = this.system_center_object.width/2;
                 var vector = new Vector(this.fleet, this.system_center_object);
                 if (await vector.length() <= object_radius) {
-                    this.fleet = {speed: 2};
+                    this.fleet = {};
                     this.move_point = {};
                 }
             }
 
-            if (this.move_point.x !== undefined && this.fleet.x !== undefined) {
+            if (this.fleet.x !== undefined) {
                 var vector = new Vector(this.fleet, this.system_center_object);
                 //Expect all the space objects to be squares (circles) = same width and height - for now
                 var object_radius = this.system_center_object.width/2;
                 var g_strength = Math.pow(object_radius/await vector.length(), 2);
-                var pull = g_strength * object_radius / 100;
-                var move = await (await vector.normalize()).multiply(pull);
-                this.fleet.x += move.x;
-                this.fleet.y += move.y;
+                var pull = g_strength * object_radius / 25000;
+                this.fleet.velocity = await this.fleet.velocity.add(await (await vector.normalize()).multiply(pull));
             }
 
             for (var i = 0; i < this.space_objects.length; i++) {
@@ -116,22 +114,21 @@ class Game {
                 var [center_x, center_y] = [this.system_center_object.x, this.system_center_object.y];
                 var object_x = center_x + (origin_x - center_x) * Math.cos(rads) - (origin_y - center_y) * Math.sin(rads);
                 var object_y = center_y + (origin_x - center_x) * Math.sin(rads) + (origin_y - center_y) * Math.cos(rads);
-
-                var vector = new Vector(this.fleet, new Vector(object_x, object_y));
-                if (this.move_point.x !== undefined && this.fleet.x !== undefined) {
+                
+                var vector;
+                if (this.fleet.x !== undefined) {
+                    vector = new Vector(this.fleet, new Vector(object_x, object_y));
                     //Expect all the space objects to be squares (circles) = same width and height - for now
                     var object_radius = this.space_objects[i].width/2;
                     var g_strength = Math.pow(object_radius/await vector.length(), 2);
-                    var pull = g_strength * object_radius / 100;
-                    var move = await (await vector.normalize()).multiply(pull);
-                    this.fleet.x += move.x;
-                    this.fleet.y += move.y;
+                    var pull = g_strength * object_radius / 25000;
+                    this.fleet.velocity = await this.fleet.velocity.add(await (await vector.normalize()).multiply(pull));
                 }
 
                 if (this.fleet.x !== undefined) {
                     var object_radius = this.space_objects[i].width/2;
                     if (await vector.length() <= object_radius) {
-                        this.fleet = {speed: 2};
+                        this.fleet = {};
                         this.move_point = {};
                     }
                 }
@@ -141,20 +138,26 @@ class Game {
             if (this.move_point.x !== undefined && this.fleet.x !== undefined) {
                 if (this.fleet.x != this.move_point.x || this.fleet.y != this.move_point.y) {
                     var vector = new Vector(this.fleet, this.move_point);
-                    var move = await (await vector.normalize()).multiply(this.fleet.speed);
-                    if (Math.abs(move.x) > Math.abs(vector.x)) {
-                        this.fleet.x = this.move_point.x;
+                    if (Math.sign(vector.x) == Math.sign(this.fleet.velocity.x) && Math.sign(vector.y) == Math.sign(this.fleet.velocity.y)) {
+                        var reach_vector = await vector.divide(this.fleet.velocity);
+                        var reach_time = Math.max(reach_vector.x, reach_vector.y);
+                        var slowdown_time = (await this.fleet.velocity.reverse()).x/this.fleet.acceleration;
+                        if (reach_time > slowdown_time) {
+                            this.fleet.velocity = await this.fleet.velocity.add(await (await vector.normalize()).multiply(this.fleet.acceleration));
+                        } else {
+                            this.fleet.velocity = await this.fleet.velocity.subtract(await (await vector.normalize()).multiply(this.fleet.acceleration));
+                        }
                     } else {
-                        this.fleet.x += move.x;
-                    }
-                    if (Math.abs(move.y) > Math.abs(vector.y)) {
-                        this.fleet.y = this.move_point.y;
-                    } else {
-                        this.fleet.y += move.y;
+                        this.fleet.velocity = await this.fleet.velocity.add(await (await vector.normalize()).multiply(this.fleet.acceleration));
                     }
                 } else {
                     this.move_point = {};
                 }
+            }
+
+            if (this.fleet.x !== undefined) {
+                this.fleet.x += this.fleet.velocity.x;
+                this.fleet.y += this.fleet.velocity.y;
             }
         }
     }
@@ -220,7 +223,7 @@ class Game {
         var map_height = +getComputedStyle(this.map_canvas).getPropertyValue("height").slice(0, -2);
         var map_width = +getComputedStyle(this.map_canvas).getPropertyValue("width").slice(0, -2);
         this.map_width = map_width; //* dpi;
-        this.map_height =  map_height; //* dpi;
+        this.map_height = map_height; //* dpi;
         this.xOffset = map_width/2;
         this.yOffset = map_height/2;
         this.map_canvas.setAttribute('height', this.map_height);
@@ -232,8 +235,10 @@ class Game {
         var rads = await utils.angleToRad(this.space_objects[0].rot * 256);
         var [planetX, planetY] = [this.space_objects[0].x, this.space_objects[0].y];
         var [pointX, pointY] = [this.system_center_object.x, this.system_center_object.y];
-        this.fleet.x = pointX + (planetX - pointX) * Math.cos(rads) - (planetY - pointY) * Math.sin(rads);
-        this.fleet.y = pointY + (planetX - pointX) * Math.sin(rads) + (planetY - pointY) * Math.cos(rads);
+        this.fleet.x = pointX + (planetX - pointX) * Math.cos(rads) - (planetY - pointY) * Math.sin(rads) - 10;
+        this.fleet.y = pointY + (planetX - pointX) * Math.sin(rads) + (planetY - pointY) * Math.cos(rads) - 10;
+        this.fleet.acceleration = 0.005;
+        this.fleet.velocity = new Vector(0, 0);
     }
 }
 
