@@ -82,6 +82,10 @@ class Vector {
     async reverse() {
         return new Vector(-this.x, -this.y);
     };
+
+    async isNull() {
+        return (this.x == 0 && this.y == 0);
+    }
     
 }
 

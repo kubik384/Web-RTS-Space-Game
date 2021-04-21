@@ -138,6 +138,11 @@ class Game {
             if (this.move_point.x !== undefined && this.fleet.x !== undefined) {
                 if (this.fleet.x != this.move_point.x || this.fleet.y != this.move_point.y) {
                     var vector = new Vector(this.fleet, this.move_point);
+                    var normalized_vector = await vector.normalize();
+                    var normalized_velocity = await this.fleet.velocity.isNull() ? await this.fleet.velocity.normalize() : this.fleet.velocity;
+                    var calculated_vector = await (new Vector(normalized_velocity, normalized_vector)).normalize();
+                    this.fleet.velocity = await this.fleet.velocity.add(await calculated_vector.multiply(this.fleet.acceleration));
+                    /*
                     if (Math.sign(vector.x) == Math.sign(this.fleet.velocity.x) && Math.sign(vector.y) == Math.sign(this.fleet.velocity.y)) {
                         var reach_vector = await vector.divide(this.fleet.velocity);
                         var reach_time = Math.max(reach_vector.x, reach_vector.y);
@@ -148,8 +153,9 @@ class Game {
                             this.fleet.velocity = await this.fleet.velocity.subtract(await (await vector.normalize()).multiply(this.fleet.acceleration));
                         }
                     } else {
-                        this.fleet.velocity = await this.fleet.velocity.add(await (await vector.normalize()).multiply(this.fleet.acceleration));
+                        this.fleet.velocity = await this.fleet.velocity.add(await (await (await this.fleet.velocity.normalize()).reverse()).multiply(this.fleet.acceleration)); 
                     }
+                    */
                 } else {
                     this.move_point = {};
                 }
