@@ -139,7 +139,7 @@ class Game {
                 if (this.fleet.x != this.move_point.x || this.fleet.y != this.move_point.y) {
                     var vector = new Vector(this.fleet, this.move_point);
                     var normalized_vector = await vector.normalize();
-                    var normalized_velocity = await this.fleet.velocity.isNull() ? await this.fleet.velocity.normalize() : this.fleet.velocity;
+                    var normalized_velocity = await this.fleet.velocity.isNull() ? this.fleet.velocity : await this.fleet.velocity.normalize();
                     var calculated_vector = await (new Vector(normalized_velocity, normalized_vector)).normalize();
                     this.fleet.velocity = await this.fleet.velocity.add(await calculated_vector.multiply(this.fleet.acceleration));
                     /*
