@@ -76,6 +76,7 @@ class Vector {
 
     async divide(a) {
         if (typeof a === "object") return new Vector(this.x/a.x, this.y/a.y);
+        else if (typeof a === "number") return new Vector(this.x/a, this.y/a);
         else throw new Error("Invalid divide parameters!");
     };
 

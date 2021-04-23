@@ -74,6 +74,10 @@ class Game {
                     const rect = this.map_canvas.getBoundingClientRect();
                     this.move_point.x = e.clientX - this.xOffset - rect.left - this.map_canvas_border;
                     this.move_point.y = e.clientY - this.yOffset - rect.top - this.map_canvas_border;
+                    //this is to prevent the move_point x and y being 0, which would result in an error when normalizing the point's vector
+                    if (this.move_point.x == 0) {
+                        this.move_point.x++;
+                    }
                 }
             });
             window.requestAnimationFrame(this.loop.bind(this));
@@ -138,24 +142,27 @@ class Game {
             if (this.move_point.x !== undefined && this.fleet.x !== undefined) {
                 if (this.fleet.x != this.move_point.x || this.fleet.y != this.move_point.y) {
                     var vector = new Vector(this.fleet, this.move_point);
-                    var normalized_vector = await vector.normalize();
-                    var normalized_velocity = await this.fleet.velocity.isNull() ? this.fleet.velocity : await this.fleet.velocity.normalize();
-                    var calculated_vector = await (new Vector(normalized_velocity, normalized_vector)).normalize();
-                    this.fleet.velocity = await this.fleet.velocity.add(await calculated_vector.multiply(this.fleet.acceleration));
-                    /*
-                    if (Math.sign(vector.x) == Math.sign(this.fleet.velocity.x) && Math.sign(vector.y) == Math.sign(this.fleet.velocity.y)) {
-                        var reach_vector = await vector.divide(this.fleet.velocity);
-                        var reach_time = Math.max(reach_vector.x, reach_vector.y);
+                    var velocity_length = await this.fleet.velocity.length();
+                    var acceleration_input = velocity_length/this.fleet.acceleration;
+                    var adjusted_vector = await vector.divide(acceleration_input);
+                    var calculated_vector;
+                    if (await adjusted_vector.length() > velocity_length) {
+                        calculated_vector = await (new Vector(this.fleet.velocity, adjusted_vector)).normalize();
+                    } else {
+                        /*
+                        var reach_time = Math.max(vector.x, vector.y);
                         var slowdown_time = (await this.fleet.velocity.reverse()).x/this.fleet.acceleration;
                         if (reach_time > slowdown_time) {
                             this.fleet.velocity = await this.fleet.velocity.add(await (await vector.normalize()).multiply(this.fleet.acceleration));
                         } else {
                             this.fleet.velocity = await this.fleet.velocity.subtract(await (await vector.normalize()).multiply(this.fleet.acceleration));
                         }
-                    } else {
-                        this.fleet.velocity = await this.fleet.velocity.add(await (await (await this.fleet.velocity.normalize()).reverse()).multiply(this.fleet.acceleration)); 
+                        */
+
+                        var normalized_velocity = await this.fleet.velocity.isNull() ? this.fleet.velocity : await this.fleet.velocity.normalize();
+                        calculated_vector = await (new Vector(normalized_velocity, await vector.normalize())).normalize();
                     }
-                    */
+                    this.fleet.velocity = await this.fleet.velocity.add(await calculated_vector.multiply(this.fleet.acceleration));
                 } else {
                     this.move_point = {};
                 }
