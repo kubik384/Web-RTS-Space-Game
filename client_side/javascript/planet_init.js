@@ -1,6 +1,6 @@
 "use strict";
 
-import { Game } from './modules/planet.js';
+import { Game } from './main_modules/planet.js';
 
 var game;
 var socket = io();

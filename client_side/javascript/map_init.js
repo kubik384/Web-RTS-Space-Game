@@ -1,6 +1,6 @@
 "use strict";
 
-import { Game } from './modules/map.js';
+import { Game } from './main_modules/map.js';
 
 var game;
 var socket = io();

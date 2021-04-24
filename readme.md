@@ -13,4 +13,4 @@ MySQL will most likely require a certain databse with set tables, etc.
 
 *Server currently lacks any means of security and enables all sorts of attacks. It's intended use is for localhost testing purposes only
 
-For documentation refer to documentation/documentantion.html
+For documentation refer to documentation/documentantion.html (outdated, no longer the case)

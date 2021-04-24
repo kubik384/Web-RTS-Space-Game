@@ -1,6 +1,6 @@
 "use strict"
 
-import { Utils } from './utils.js';
+import { Utils } from '../misc_modules/utils.js';
 var utils = new Utils();
 
 class Game {
@@ -113,7 +113,7 @@ class Game {
         document.getElementById('create_units_wrapper').innerHTML = create_units_html;
         document.getElementById('create_units_form').addEventListener('submit', event => { 
             event.preventDefault();
-            this.build_units(event.currentTarget) 
+            this.build_units(event.currentTarget) ;
         });
 
         var units_table_html = '<table id="units_table"><tbody>';

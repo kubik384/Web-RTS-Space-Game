@@ -36,39 +36,22 @@ class DbManager {
         FROM player_buildings pb
         INNER JOIN players p ON p.player_id = pb.player_id
         WHERE p.username = ? AND pb.building_id = ?`;
-        return new Promise( async function ( resolve, reject ) {
-            this.con.query(query, [username, resource_generator.building_id], async function(err, results) {
-                if (err) {
-                    reject(err);
-                    return;
-                };
-                if (results[0] === undefined) {
-                    console.log(results);
-                }
-                var res_production = resource_generator.level_details.find(ld => ld.level == results[0].level).production;
-                var resources = p_resources == 'all' ? resourceTable : p_resources;
-                var set_to = '';
-                
-                if (!Array.isArray(resources)) {
-                    resources = resources.split(', ');
-                }
-                
-                for (var i = 0; i < resources.length; i++) {
-                    set_to += resources[i] + ' = ' + resources[i] + ' + ' + ((res_production[resources[i]] === undefined ? 0 : res_production[resources[i]]) * (await utils.get_timestamp() - results[0].last_update) + amount) + ' , ';
-                }
-                set_to += 'res_last_update = NOW()';
+        var results = await this.execute_query(query, [username, resource_generator.building_id]);
+        var res_production = resource_generator.level_details.find(ld => ld.level == results[0].level).production;
+        var resources = p_resources == 'all' ? resourceTable : p_resources;
+        var set_to = '';
+        
+        if (!Array.isArray(resources)) {
+            resources = resources.split(', ');
+        }
+        
+        for (var i = 0; i < resources.length; i++) {
+            set_to += resources[i] + ' = ' + resources[i] + ' + ' + ((res_production[resources[i]] === undefined ? 0 : res_production[resources[i]]) * (await utils.get_timestamp() - results[0].last_update) + amount) + ' , ';
+        }
+        set_to += 'res_last_update = NOW()';
 
-                var query = "UPDATE players SET " + set_to + " WHERE player_id = ?";
-                this.con.query(query, [results[0].player_id], async function(err, results) {
-                    if (err) { 
-                        reject(err);
-                        return;
-                    };
-                    resolve(results);
-                    return;
-                });
-            }.bind(this));
-        }.bind(this));
+        var query = "UPDATE players SET " + set_to + " WHERE player_id = ?";
+        return this.execute_query(query, [results[0].player_id]);
     }
 
     /**
@@ -84,17 +67,7 @@ class DbManager {
         }
 
         var query = 'SELECT ' + resources + ' FROM players WHERE username = ?';
-
-        return new Promise( async function ( resolve, reject ) {
-            this.con.query(query, [username], async function (err, results) {
-                if (err) { 
-                    reject(err);
-                    return;
-                };
-                resolve(results[0]);
-                return;
-            });
-        }.bind(this));
+        return (await this.execute_query(query, [username]))[0];
     }
 
     async upgrade_building(username, p_building) {
@@ -105,55 +78,34 @@ class DbManager {
         FROM player_buildings pb
         INNER JOIN players p ON p.player_id = pb.player_id
         WHERE p.username = ? AND pb.building_id = ?`;
-        return new Promise( async function ( resolve, reject ) {
-            this.con.query(query, [username, buildings[b_index].building_id], async function(err, results) {
-                if (err) { 
-                    reject(err);
-                    return;
-                };
-                if (results.length < 1) {
-                    resolve();
-                    return;
-                }
-                var l_index;
-                if (buildings[b_index].level_details[results[0].level] == results[0].level) {
-                    l_index = results[0].level;
-                } else {
-                    l_index = buildings[b_index].level_details.findIndex(level_detail => level_detail.level == results[0].level)
-                }
-                query = `UPDATE player_buildings pb 
-                    INNER JOIN players p ON p.player_id = pb.player_id
-                    SET `;
-                for (const resource in buildings[b_index].level_details[l_index].upgrade_cost) {
-                    if (results[0][resource] < buildings[b_index].level_details[l_index].upgrade_cost[resource]) {
-                        reject('Not enough resources to upgrade building');
-                        return;
-                    }
-                    if (buildings[b_index].level_details[l_index + 1] === undefined) {
-                        reject('Trying to update building past the max level');
-                        return;
-                    }
-                    query += `p.${resource} = p.${resource} - ${buildings[b_index].level_details[l_index].upgrade_cost[resource]}, 
-                    pb.update_start = NOW()
-                    WHERE p.player_id = ? AND pb.building_id = ? AND pb.update_start IS NULL`;
-                }
-                if (results[0].update_start === null) {
-                    this.con.query(query, [results[0].player_id, buildings[b_index].building_id], async function(err) {
-                        if (err) { 
-                            reject(err);
-                            return;
-                        };
-                        resolve();
-                        return;
-                    });
-                } else {
-                    resolve();
-                    return;
-                }
-            }.bind(this));
-        }.bind(this)).catch(function(e) {
-            throw e;
-        });
+        var results = await this.execute_query(query, [username, buildings[b_index].building_id]);
+        if (results.length < 1) {
+            return;
+        }
+        var l_index;
+        if (buildings[b_index].level_details[results[0].level] == results[0].level) {
+            l_index = results[0].level;
+        } else {
+            l_index = buildings[b_index].level_details.findIndex(level_detail => level_detail.level == results[0].level)
+        }
+
+        query = `UPDATE player_buildings pb 
+            INNER JOIN players p ON p.player_id = pb.player_id
+            SET `;
+        for (const resource in buildings[b_index].level_details[l_index].upgrade_cost) {
+            if (results[0][resource] < buildings[b_index].level_details[l_index].upgrade_cost[resource]) {
+                throw new Error('Not enough resources to upgrade building');
+            }
+            if (buildings[b_index].level_details[l_index + 1] === undefined) {
+                throw new Error('Trying to update building past the max level');
+            }
+            query += `p.${resource} = p.${resource} - ${buildings[b_index].level_details[l_index].upgrade_cost[resource]}, 
+            pb.update_start = NOW()
+            WHERE p.player_id = ? AND pb.building_id = ? AND pb.update_start IS NULL`;
+        }
+        if (results[0].update_start === null) {
+            await this.execute_query(query, [results[0].player_id, buildings[b_index].building_id]);
+        }
     }
 
     async cancel_building_update(username, p_building) {
@@ -163,58 +115,36 @@ class DbManager {
         FROM player_buildings pb
         INNER JOIN players p ON p.player_id = pb.player_id
         WHERE p.username = ? AND pb.building_id = ?`;
-        return new Promise( async function ( resolve, reject ) {
-            this.con.query(query, [username, buildings[b_index].building_id], async function(err, results) {
-                if (err) {
-                    reject(err);
-                    return;
-                };
-                if (results.length < 1 || results[0].update_start === null) {
-                    resolve();
-                    return;
-                }
-                if (results[0].downgrade) {
-                    query = `UPDATE player_buildings pb 
-                    INNER JOIN players p ON p.player_id = pb.player_id
-                    SET 
-                        pb.update_start = NULL,
-                        pb.downgrade = 0
-                        WHERE p.player_id = ? AND pb.building_id = ? AND pb.level > 0 AND pb.update_start IS NOT NULL AND pb.downgrade = 1`;
-                    this.con.query(query, [results[0].player_id, buildings[b_index].building_id, results[0].level], async function(err, results) {
-                        if (err) { 
-                            reject(err);
-                            return;
-                        };
-                        resolve(results);
-                        return;
-                    });
-                } else {
-                    var l_index;
-                    if (buildings[b_index].level_details[results[0].level] == results[0].level) {
-                        l_index = results[0].level;
-                    } else {
-                        l_index = buildings[b_index].level_details.findIndex(level_detail => level_detail.level == results[0].level)
-                    }
-                    query = `UPDATE player_buildings pb 
-                    INNER JOIN players p ON p.player_id = pb.player_id
-                    SET `;
+        var results = await this.execute_query(query, [username, buildings[b_index].building_id]);
+        if (results.length < 1 || results[0].update_start === null) {
+            return;
+        }
+        if (results[0].downgrade) {
+            query = `UPDATE player_buildings pb 
+            INNER JOIN players p ON p.player_id = pb.player_id
+            SET 
+                pb.update_start = NULL,
+                pb.downgrade = 0
+                WHERE p.player_id = ? AND pb.building_id = ? AND pb.level > 0 AND pb.update_start IS NOT NULL AND pb.downgrade = 1`;
+            await this.execute_query(query, [results[0].player_id, buildings[b_index].building_id, results[0].level]);
+        } else {
+            var l_index;
+            if (buildings[b_index].level_details[results[0].level] == results[0].level) {
+                l_index = results[0].level;
+            } else {
+                l_index = buildings[b_index].level_details.findIndex(level_detail => level_detail.level == results[0].level)
+            }
+            query = `UPDATE player_buildings pb 
+            INNER JOIN players p ON p.player_id = pb.player_id
+            SET `;
 
-                    for (const resource in buildings[b_index].level_details[l_index].upgrade_cost) {
-                        query += `p.${resource} = p.${resource} + ${buildings[b_index].level_details[l_index].upgrade_cost[resource]}, `;
-                    }
-                    query += `pb.update_start = NULL
-                    WHERE p.player_id = ? AND pb.building_id = ? AND pb.level = ? AND pb.update_start IS NOT NULL`;
-                    this.con.query(query, [results[0].player_id, buildings[b_index].building_id, results[0].level], async function(err, results) {
-                        if (err) { 
-                            reject(err);
-                            return;
-                        };
-                        resolve(results);
-                        return;
-                    });
-                }
-            }.bind(this));
-        }.bind(this));
+            for (const resource in buildings[b_index].level_details[l_index].upgrade_cost) {
+                query += `p.${resource} = p.${resource} + ${buildings[b_index].level_details[l_index].upgrade_cost[resource]}, `;
+            }
+            query += `pb.update_start = NULL
+            WHERE p.player_id = ? AND pb.building_id = ? AND pb.level = ? AND pb.update_start IS NOT NULL`;
+            await this.execute_query(query, [results[0].player_id, buildings[b_index].building_id, results[0].level]);
+        }
     }
 
     async downgrade_building(username, p_building) {
@@ -226,16 +156,7 @@ class DbManager {
             pb.update_start = NOW(),
             pb.downgrade = 1
         WHERE p.username = ? AND pb.building_id = ? AND pb.level > 0 AND pb.update_start IS NULL`;
-        return new Promise( async function ( resolve, reject ) {
-            this.con.query(query, [username, buildings[b_index].building_id], async function(err, results) {
-                if (err) { 
-                    reject(err);
-                    return;
-                };
-                resolve(results);
-                return;
-            });
-        }.bind(this));
+        await this.execute_query(query, [username, buildings[b_index].building_id]);
     }
 
     /**
@@ -259,20 +180,12 @@ class DbManager {
             }
             query += ' AND pb.building_id = ?';
         }
-        return new Promise( async function ( resolve, reject ) {
-            this.con.query(query, [username, building_id], async function(err, results) {
-                if (err) { 
-                    reject(err);
-                    return;
-                };
-                if (p_building != 'all') {
-                    resolve(results[0]);
-                    return;
-                }
-                resolve(results);
-                return;
-            });
-        }.bind(this));
+
+        var results = await this.execute_query(query, [username, building_id]);
+        if (p_building != 'all') {
+            return results[0];
+        }
+        return results;
     }
 
     async update_building_level(username, p_building, passingId = false) {
@@ -288,60 +201,43 @@ class DbManager {
                 query += ' AND pb.building_id = ' + (b_index + 1);
             }
         }
-        return new Promise( async function ( resolve, reject ) {
-            this.con.query(query, [username], async function(err, results) {
-                if (err) { 
-                    reject(err);
-                    return;
-                };
-                if (results.length < 1) {
-                    resolve();
-                    return;
-                }
-                var execute_query = false;
-                var query = `UPDATE player_buildings pb
-                INNER JOIN players p ON p.player_id = pb.player_id
-                    SET 
-                    pb.level = IF (pb.downgrade = 0, pb.level + 1, pb.level - 1),
-                    pb.update_start = NULL,
-                    pb.downgrade = 0
-                WHERE p.player_id = ? AND pb.building_id IN (`;
-                for (var i = 0; i < results.length; i++) {
-                    var b_index;
-                    var l_index;
-                    if (buildings[results[i].building_id - 1].building_id == results[i].building_id) {
-                        b_index = results[i].building_id - 1;
-                    } else {
-                        b_index = buildings.findIndex(building => building.building_id == results[i].building_id);
-                    }
+        var results = await this.execute_query(query, [username]);
+        if (results.length < 1) {
+            return;
+        }
+        var execute_query = false;
+        var query = `UPDATE player_buildings pb
+        INNER JOIN players p ON p.player_id = pb.player_id
+            SET 
+            pb.level = IF (pb.downgrade = 0, pb.level + 1, pb.level - 1),
+            pb.update_start = NULL,
+            pb.downgrade = 0
+        WHERE p.player_id = ? AND pb.building_id IN (`;
+        for (var i = 0; i < results.length; i++) {
+            var b_index;
+            var l_index;
+            if (buildings[results[i].building_id - 1].building_id == results[i].building_id) {
+                b_index = results[i].building_id - 1;
+            } else {
+                b_index = buildings.findIndex(building => building.building_id == results[i].building_id);
+            }
 
-                    if (buildings[b_index].level_details[results[i].level] == (results[i].level - results[i].downgrade)) {
-                        l_index = results[i].level;
-                    } else {
-                        l_index = buildings[b_index].level_details.findIndex(level_detail => level_detail.level == (results[i].level - results[i].downgrade));
-                    }
-                    if ((await utils.get_timestamp() - results[i].update_start - buildings[b_index].level_details[l_index].upgrade_time) >= 0) {
-                        query += results[i].building_id + ',';
-                        execute_query = true;
-                    }
-                }
-                if (execute_query) {
-                    query = query.slice(0, query.length - 1);
-                    query += ')';
-                    this.con.query(query, [results[0].player_id], async function(err, results) {
-                        if (err) { 
-                            reject(err);
-                            return;
-                        };
-                        resolve(results);
-                        return;
-                    });
-                } else {
-                    resolve();
-                    return;
-                }
-            }.bind(this));
-        }.bind(this));
+            if (buildings[b_index].level_details[results[i].level] == (results[i].level - results[i].downgrade)) {
+                l_index = results[i].level;
+            } else {
+                l_index = buildings[b_index].level_details.findIndex(level_detail => level_detail.level == (results[i].level - results[i].downgrade));
+            }
+            if ((await utils.get_timestamp() - results[i].update_start - buildings[b_index].level_details[l_index].upgrade_time) >= 0) {
+                query += results[i].building_id + ',';
+                execute_query = true;
+            }
+        }
+        
+        if (execute_query) {
+            query = query.slice(0, query.length - 1);
+            query += ')';
+            await this.execute_query(query, [results[0].player_id]);
+        }
     }
 
     /**
@@ -379,25 +275,17 @@ class DbManager {
     async get_space_objects() {
         var query = `SELECT space_object_id, x, y, rot, width, height, image_id
         FROM space_objects`;
-        return new Promise( async function ( resolve, reject ) {
-            this.con.query(query, [], async function(err, results) {
-                if (err) { 
-                    reject(err);
-                    return;
-                };
-                var b_index = -1;
-                for (var i = 0; i < results.length; i++) {
-                    if (space_objects[results[i].image_id - 1].space_object_id == results[i].image_id) {
-                        b_index = results[i].image_id - 1;
-                    } else {
-                        b_index = space_objects.findIndex(space_object => space_object.space_object_id == results[i].image_id);
-                    }
-                    results[i].image = space_objects[b_index].image;
-                }
-                resolve(results);
-                return;
-            }.bind(this));
-        }.bind(this));
+        var results = await this.execute_query(query, []);
+        var b_index = -1;
+        for (var i = 0; i < results.length; i++) {
+            if (space_objects[results[i].image_id - 1].space_object_id == results[i].image_id) {
+                b_index = results[i].image_id - 1;
+            } else {
+                b_index = space_objects.findIndex(space_object => space_object.space_object_id == results[i].image_id);
+            }
+            results[i].image = space_objects[b_index].image;
+        }
+        return results;
     }
 
     /**
@@ -405,25 +293,17 @@ class DbManager {
      */
     async get_galaxies() {
         var query = `SELECT * FROM galaxies`;
-        return new Promise( async function ( resolve, reject ) {
-            this.con.query(query, [], async function(err, results) {
-                if (err) { 
-                    reject(err);
-                    return;
-                };
-                var b_index = -1;
-                for (var i = 0; i < results.length; i++) {
-                    if (galaxies[results[i].image_id - 1].galaxy_id == results[i].image_id) {
-                        b_index = results[i].image_id - 1;
-                    } else {
-                        b_index = galaxies.findIndex(galaxy => galaxy.galaxy_id == results[i].image_id);
-                    }
-                    results[i].image = galaxies[b_index].image;
-                }
-                resolve(results);
-                return;
-            }.bind(this));
-        }.bind(this));
+        var results = await this.execute_query(query, []);
+        var b_index = -1;
+        for (var i = 0; i < results.length; i++) {
+            if (galaxies[results[i].image_id - 1].galaxy_id == results[i].image_id) {
+                b_index = results[i].image_id - 1;
+            } else {
+                b_index = galaxies.findIndex(galaxy => galaxy.galaxy_id == results[i].image_id);
+            }
+            results[i].image = galaxies[b_index].image;
+        }
+        return results;
     }
 
     /**
@@ -459,16 +339,7 @@ class DbManager {
             var u_index = units.findIndex(unit => unit.name == p_unit);
             query += ' AND pu.unit_id = ' + (u_index + 1);
         }
-        return new Promise( async function ( resolve, reject ) {
-            this.con.query(query, [username], async function(err, results) {
-                if (err) { 
-                    reject(err);
-                    return;
-                };
-                resolve(results);
-                return;
-            });
-        }.bind(this));
+        return this.execute_query(query, [username]);
     }
 
     async update_player_unit_que(username) {
@@ -493,25 +364,12 @@ class DbManager {
                 puq.calculated_timestamp = ?
             WHERE p.username = ? AND puq.unit_id = ?`;
 
-            await new Promise( async function ( resolve, reject ) {
-                this.con.query(query, [updated_count, timestamp - time_remainder, username, player_unit_ques[i].unit_id], async function(err) {
-                    if (err) {
-                        reject(err);
-                        return;
-                    };
-                    query = `UPDATE player_units pu
-                    INNER JOIN players p ON p.player_id = pu.player_id
-                    SET pu.count = pu.count + ?
-                    WHERE p.username = ? AND pu.unit_id = ?`;
-                    this.con.query(query, [created_units, username, player_unit_ques[i].unit_id], async function(err) {
-                        if (err) {
-                            reject(err);
-                            return;
-                        };
-                        resolve();
-                    });
-                }.bind(this));
-            }.bind(this));
+            await this.execute_query(query, [updated_count, timestamp - time_remainder, username, player_unit_ques[i].unit_id]);
+            query = `UPDATE player_units pu
+            INNER JOIN players p ON p.player_id = pu.player_id
+            SET pu.count = pu.count + ?
+            WHERE p.username = ? AND pu.unit_id = ?`;
+            return this.execute_query(query, [created_units, username, player_unit_ques[i].unit_id]);
         }
     }
 
@@ -524,16 +382,7 @@ class DbManager {
             var u_index = units.findIndex(unit => unit.name == p_unit);
             query += ' AND puq.unit_id = ' + (u_index + 1);
         }
-        return new Promise( async function ( resolve, reject ) {
-            this.con.query(query, [username], async function(err, results) {
-                if (err) { 
-                    reject(err);
-                    return;
-                };
-                resolve(results);
-                return;
-            });
-        }.bind(this));
+        return this.execute_query(query, [username]);
     }
 
     async execute_query(query, argumentArr) {
@@ -541,10 +390,8 @@ class DbManager {
             this.con.query(query, argumentArr, async function(err, results) {
                 if (err) { 
                     reject(err);
-                    return;
                 };
                 resolve(results);
-                return;
             });
         }.bind(this));
     }
@@ -572,7 +419,6 @@ class DbManager {
     async get_map_datapack(layout) {
         if (layout === 'system') {
             var space_objects = await this.get_space_objects();
-            console.log(space_objects);
             return {space_objects: space_objects};
         } else if(layout === 'galaxy') {
             var galaxies = await this.get_galaxies();
@@ -621,35 +467,16 @@ class DbManager {
         await this.update_player_unit_que(username);
         //remove the ", " part
         query = query.slice(0, query.length - 2) + ' WHERE username = ?';
-        return new Promise( async function ( resolve, reject ) {
-            this.con.query(query, [username], async function(err) {
-                if (err) { 
-                    reject(err);
-                    return;
-                };
-                var promises = [];
-                for (var i = 0; i < p_units.length; i++) {
-                    query = `UPDATE player_unit_ques puq
-                    INNER JOIN players p ON p.player_id = puq.player_id 
-                    SET puq.count = puq.count + ?, puq.calculated_timestamp = IF (puq.count = 0, UNIX_TIMESTAMP(), puq.calculated_timestamp)
-                    WHERE p.username = ? AND puq.unit_id = ?`;
-                    promises.push(new Promise( async function ( resolve, reject ) {
-                        this.con.query(query, [p_units[i].count, username, p_units[i].unit_id], async function(err) {
-                            if (err) { 
-                                reject(err);
-                                return;
-                            };
-                            resolve();
-                            return;
-                        });
-                    }.bind(this)));
-                }
-                Promise.all(promises).then(() => {
-                    resolve();
-                    return;
-                })
-            }.bind(this));
-        }.bind(this));
+        await this.execute_query(query, [username]);
+        var promises = [];
+        for (var i = 0; i < p_units.length; i++) {
+            query = `UPDATE player_unit_ques puq
+            INNER JOIN players p ON p.player_id = puq.player_id 
+            SET puq.count = puq.count + ?, puq.calculated_timestamp = IF (puq.count = 0, UNIX_TIMESTAMP(), puq.calculated_timestamp)
+            WHERE p.username = ? AND puq.unit_id = ?`;
+            promises.push(this.execute_query(query, [p_units[i].count, username, p_units[i].unit_id]));
+        }
+        await Promise.all(promises);
     }
 }
 
