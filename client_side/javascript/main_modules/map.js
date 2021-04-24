@@ -142,26 +142,19 @@ class Game {
             if (this.move_point.x !== undefined && this.fleet.x !== undefined) {
                 if (this.fleet.x != this.move_point.x || this.fleet.y != this.move_point.y) {
                     var vector = new Vector(this.fleet, this.move_point);
-                    var velocity_length = await this.fleet.velocity.length();
-                    var acceleration_input = velocity_length/this.fleet.acceleration;
+                    var distance = await vector.length();
+                    var speed = await this.fleet.velocity.length();
+                    var acceleration_input = speed/this.fleet.acceleration;
                     var adjusted_vector = await vector.divide(acceleration_input);
+                    var slowdown_time = distance/speed;
                     var calculated_vector;
-                    if (await adjusted_vector.length() > velocity_length) {
+                    if ((await adjusted_vector.length() > speed) || (slowdown_time < acceleration_input)) {
                         calculated_vector = await (new Vector(this.fleet.velocity, adjusted_vector)).normalize();
                     } else {
-                        /*
-                        var reach_time = Math.max(vector.x, vector.y);
-                        var slowdown_time = (await this.fleet.velocity.reverse()).x/this.fleet.acceleration;
-                        if (reach_time > slowdown_time) {
-                            this.fleet.velocity = await this.fleet.velocity.add(await (await vector.normalize()).multiply(this.fleet.acceleration));
-                        } else {
-                            this.fleet.velocity = await this.fleet.velocity.subtract(await (await vector.normalize()).multiply(this.fleet.acceleration));
-                        }
-                        */
-
                         var normalized_velocity = await this.fleet.velocity.isNull() ? this.fleet.velocity : await this.fleet.velocity.normalize();
                         calculated_vector = await (new Vector(normalized_velocity, await vector.normalize())).normalize();
                     }
+
                     this.fleet.velocity = await this.fleet.velocity.add(await calculated_vector.multiply(this.fleet.acceleration));
                 } else {
                     this.move_point = {};
