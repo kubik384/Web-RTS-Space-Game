@@ -100,24 +100,6 @@ class Game {
         var time_passed = timestamp - this.last_tick;
         this.tick_time_passed = time_passed;
         if (this.layout === 'system') {
-            if (this.fleet.x !== undefined) {
-                var object_radius = this.system_center_object.width/2;
-                var vector = new Vector(this.fleet, this.system_center_object);
-                if (await vector.length() <= object_radius) {
-                    this.fleet = {};
-                    this.move_point = {};
-                }
-            }
-
-            if (this.fleet.x !== undefined) {
-                var vector = new Vector(this.fleet, this.system_center_object);
-                //Expect all the space objects to be squares (circles) = same width and height - for now
-                var object_radius = this.system_center_object.width/2;
-                var g_strength = Math.pow(object_radius/await vector.length(), 2);
-                var pull = g_strength * object_radius / 2000 / time_passed;
-                this.fleet.velocity = await this.fleet.velocity.add(await (await vector.normalize()).multiply(pull));
-            }
-
             for (var i = 0; i < this.space_objects.length; i++) {
                 //changes the speed of the planet according to how far it is from the sun
                 //TODO: Assign rotation speed to space objects? Make it possible to go into negative values -> rotate other way (does that happen in space? do all planets rotate the same direction?)
@@ -130,7 +112,17 @@ class Game {
                     this.space_objects[i].last_rot -= 360;
                 }
 
+                if (this.fleet.deleted !== undefined) {
+                    this.fleet = {};
+                }
+                if (this.move_point.deleted !== undefined) {
+                    this.move_point = {};
+                }
+
                 if (this.fleet.x !== undefined) {
+                    Object.assign(this.fleet.last_velocity, this.fleet.velocity);
+                    this.fleet.last_x = this.fleet.x;
+                    this.fleet.last_y = this.fleet.y;
                     var rads = await utils.angleToRad(this.space_objects[i].rot);
                     var [origin_x, origin_y] = [this.space_objects[i].x, this.space_objects[i].y];
                     var [center_x, center_y] = [this.system_center_object.x, this.system_center_object.y];
@@ -142,37 +134,52 @@ class Game {
                     //Expect all the space objects to be squares (circles) = same width and height - for now
                     var object_radius = this.space_objects[i].width/2;
                     var g_strength = Math.pow(object_radius/await vector.length(), 2);
-                    var pull = g_strength * object_radius / 2000 / time_passed;
-                    this.fleet.velocity = await this.fleet.velocity.add(await (await vector.normalize()).multiply(pull));
+                    var pull = g_strength * object_radius / 2500;
+                    this.fleet.velocity = await this.fleet.last_velocity.add(await (await vector.normalize()).multiply(pull));
 
                     var object_radius = this.space_objects[i].width/2;
                     if (await vector.length() <= object_radius) {
-                        this.fleet = {};
-                        this.move_point = {};
+                        this.fleet.deleted = true;
+                        this.move_point.deleted = true;
                     }
                 }
             }
 
-            
-            if (this.move_point.x !== undefined && this.fleet.x !== undefined) {
-                if (this.fleet.x != this.move_point.x || this.fleet.y != this.move_point.y) {
-                    var vector = new Vector(this.fleet, this.move_point);
-                    var distance = await vector.length();
-                    var speed = await this.fleet.velocity.length();
-                    var acceleration_input = speed/this.fleet.acceleration;
-                    var adjusted_vector = await vector.divide(acceleration_input);
-                    var slowdown_time = distance/speed;
-                    var calculated_vector;
-                    if ((await adjusted_vector.length() > speed) || (slowdown_time < acceleration_input)) {
-                        calculated_vector = await (new Vector(this.fleet.velocity, adjusted_vector)).normalize();
-                    } else {
-                        var normalized_velocity = await this.fleet.velocity.isNull() ? this.fleet.velocity : await this.fleet.velocity.normalize();
-                        calculated_vector = await (new Vector(normalized_velocity, await vector.normalize())).normalize();
-                    }
-
-                    this.fleet.velocity = await this.fleet.velocity.add(await calculated_vector.multiply(this.fleet.acceleration));
+            if (this.fleet.x !== undefined) {
+                var object_radius = this.system_center_object.width/2;
+                var vector = new Vector(this.fleet, this.system_center_object);
+                if (await vector.length() <= object_radius) {
+                    this.fleet.deleted = true;
+                    this.move_point.deleted = true;
                 } else {
-                    this.move_point = {};
+                    var vector = new Vector(this.fleet, this.system_center_object);
+                    //Expect all the space objects to be squares (circles) = same width and height - for now
+                    var object_radius = this.system_center_object.width/2;
+                    var g_strength = Math.pow(object_radius/await vector.length(), 2);
+                    var pull = g_strength * object_radius / 2500;
+                    this.fleet.velocity = await this.fleet.velocity.add(await (await vector.normalize()).multiply(pull));
+
+                    if (this.move_point.x !== undefined) {
+                        if (this.fleet.x != this.move_point.x || this.fleet.y != this.move_point.y) {
+                            var vector = new Vector(this.fleet, this.move_point);
+                            var distance = await vector.length();
+                            var speed = await this.fleet.velocity.length();
+                            var acceleration_input = speed/this.fleet.acceleration;
+                            var adjusted_vector = await vector.divide(acceleration_input);
+                            var slowdown_time = distance/speed;
+                            var calculated_vector;
+                            if ((await adjusted_vector.length() > speed) || (slowdown_time < acceleration_input)) {
+                                calculated_vector = await (new Vector(this.fleet.velocity, adjusted_vector)).normalize();
+                            } else {
+                                var normalized_velocity = await this.fleet.velocity.isNull() ? this.fleet.velocity : await this.fleet.velocity.normalize();
+                                calculated_vector = await (new Vector(normalized_velocity, await vector.normalize())).normalize();
+                            }
+
+                            this.fleet.velocity = await this.fleet.velocity.add(await calculated_vector.multiply(this.fleet.acceleration));
+                        } else {
+                            this.move_point.deleted = true;
+                        }
+                    }
                 }
             }
 
@@ -203,24 +210,26 @@ class Game {
             this.map_ctx.drawImage(this.system_center_object.image, this.system_center_object.x + this.xOffset - this.system_center_object.width/2, this.system_center_object.y + this.yOffset - this.system_center_object.width/2, this.system_center_object.width, this.system_center_object.height);
 
             if (this.fleet.x !== undefined) {
+                var x_position = ((this.fleet.x - this.fleet.last_x) * interpolation_coefficient + this.fleet.last_x);
+                var y_position = ((this.fleet.y - this.fleet.last_y) * interpolation_coefficient + this.fleet.last_y);
                 this.map_ctx.save();
                 this.map_ctx.translate(this.xOffset, this.yOffset);
                 this.map_ctx.beginPath();
                 this.map_ctx.fillStyle = "red";
-                this.map_ctx.rect(this.fleet.x - 5, this.fleet.y - 5, 10, 10);
+                this.map_ctx.rect(x_position - 5, y_position - 5, 10, 10);
                 this.map_ctx.fill();
                 this.map_ctx.restore();
-            }
 
-            if (this.fleet.x !== undefined && this.move_point.x !== undefined) {
-                this.map_ctx.save();
-                this.map_ctx.translate(this.xOffset, this.yOffset);
-                this.map_ctx.beginPath();
-                this.map_ctx.moveTo(this.fleet.x, this.fleet.y);
-                this.map_ctx.lineTo(this.move_point.x, this.move_point.y);
-                this.map_ctx.strokeStyle = "red";
-                this.map_ctx.stroke();
-                this.map_ctx.restore();
+                if (this.move_point.x !== undefined) {
+                    this.map_ctx.save();
+                    this.map_ctx.translate(this.xOffset, this.yOffset);
+                    this.map_ctx.beginPath();
+                    this.map_ctx.moveTo(x_position, y_position);
+                    this.map_ctx.lineTo(this.move_point.x, this.move_point.y);
+                    this.map_ctx.strokeStyle = "red";
+                    this.map_ctx.stroke();
+                    this.map_ctx.restore();
+                }
             }
         } else if (this.layout = 'galaxy') {
             for (var i = 0; i < this.galaxies.length; i++) {
@@ -249,13 +258,18 @@ class Game {
     }
 
     async assemble_fleet() {
-        var rads = await utils.angleToRad(this.space_objects[0].rot * 256);
+        var interpolation_coefficient = (Date.now() - this.last_tick)/this.tick_time_passed;
+        var rotation = ((this.space_objects[0].rot - this.space_objects[0].last_rot) * interpolation_coefficient + this.space_objects[0].last_rot);
+        var rads = await utils.angleToRad(rotation);
         var [planetX, planetY] = [this.space_objects[0].x, this.space_objects[0].y];
         var [pointX, pointY] = [this.system_center_object.x, this.system_center_object.y];
         this.fleet.x = pointX + (planetX - pointX) * Math.cos(rads) - (planetY - pointY) * Math.sin(rads) - 10;
         this.fleet.y = pointY + (planetX - pointX) * Math.sin(rads) + (planetY - pointY) * Math.cos(rads) - 10;
-        this.fleet.acceleration = 0.005;
+        this.fleet.last_x = this.fleet.x;
+        this.fleet.last_y = this.fleet.y;
+        this.fleet.acceleration = 0.03;
         this.fleet.velocity = new Vector(0, 0);
+        this.fleet.last_velocity = this.fleet.velocity;
     }
 }
 
