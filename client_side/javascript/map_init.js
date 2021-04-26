@@ -13,6 +13,8 @@ async function start() {
 	//socket events
 	socket.on('map_datapack', game.setup_game.bind(game));
 
+	socket.on('fleet_assembled', game.assemble_fleet.bind(game));
+
     game.request_data();
 }
 

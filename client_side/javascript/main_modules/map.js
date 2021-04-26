@@ -75,7 +75,7 @@ class Game {
             this.map_canvas_border = +getComputedStyle(this.map_canvas).getPropertyValue('border-top-width').slice(0, -2);
 
             document.getElementById('assemble_fleet').addEventListener('click', e => { 
-                this.assemble_fleet();
+                this.request_fleet_assembly();
             });
 
             document.getElementById('map').addEventListener('contextmenu', e => { 
@@ -257,7 +257,21 @@ class Game {
         return this.window_resize_handler.bind(this);
     }
 
-    async assemble_fleet() {
+    async request_fleet_assembly() {
+        this.socket.emit('assemble_fleet');
+    }
+
+    async assemble_fleet(fleet) {
+        console.log(fleet);
+        var fleet_data = JSON.parse(fleet);
+        this.fleet.x = fleet_data.x;
+        this.fleet.y = fleet_data.y;
+        this.fleet.last_x = this.fleet.x;
+        this.fleet.last_y = this.fleet.y;
+        this.fleet.velocity = new Vector(fleet_data.velocity_x, fleet_data.velocity_y);
+        this.fleet.last_velocity = this.fleet.velocity;
+        this.fleet.acceleration = fleet_data.acceleration;
+        /*
         var interpolation_coefficient = (Date.now() - this.last_tick)/this.tick_time_passed;
         var rotation = ((this.space_objects[0].rot - this.space_objects[0].last_rot) * interpolation_coefficient + this.space_objects[0].last_rot);
         var rads = await utils.angleToRad(rotation);
@@ -270,6 +284,7 @@ class Game {
         this.fleet.acceleration = 0.03;
         this.fleet.velocity = new Vector(0, 0);
         this.fleet.last_velocity = this.fleet.velocity;
+        */
     }
 }
 

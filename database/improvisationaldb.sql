@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3308
--- Generation Time: Apr 18, 2021 at 06:19 PM
+-- Generation Time: Apr 26, 2021 at 07:02 PM
 -- Server version: 8.0.18
 -- PHP Version: 7.3.12
 
@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS `players` (
 --
 
 INSERT INTO `players` (`player_id`, `username`, `password`, `res_last_update`, `pop`, `food`, `timber`, `metals`, `coal`, `oil`, `kerosene`, `hydrogen`, `uranium`) VALUES
-(23, 'Newstory', '$2b$10$3gMrZj1izC5qobr9qWiMvOsTOZlA.Pgwv1ieljZQhoD3zaKkdat22', '2021-04-18 12:43:49', 100, 100.0000, 21167.8871, 100.0000, 100.0000, 100.0000, 100.0000, 0.0000, 0.0000);
+(23, 'Newstory', '$2b$10$3gMrZj1izC5qobr9qWiMvOsTOZlA.Pgwv1ieljZQhoD3zaKkdat22', '2021-04-26 19:00:25', 100, 100.0000, 21596.1647, 100.0000, 100.0000, 100.0000, 100.0000, 0.0000, 0.0000);
 
 --
 -- Triggers `players`
@@ -120,8 +120,8 @@ CREATE TABLE IF NOT EXISTS `player_buildings` (
   `level` int(11) NOT NULL,
   `update_start` timestamp NULL DEFAULT NULL,
   `downgrade` tinyint(1) NOT NULL,
-  PRIMARY KEY (`building_id`,`player_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+  PRIMARY KEY (`player_id`,`building_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=5 DEFAULT CHARSET=utf8;
 
 --
 -- Dumping data for table `player_buildings`
@@ -142,12 +142,24 @@ INSERT INTO `player_buildings` (`player_id`, `building_id`, `level`, `update_sta
 DROP TABLE IF EXISTS `player_fleets`;
 CREATE TABLE IF NOT EXISTS `player_fleets` (
   `player_id` mediumint(9) UNSIGNED NOT NULL,
-  `fleet_id` int(11) NOT NULL,
-  `x` int(8) NOT NULL,
-  `y` int(8) NOT NULL,
-  `move_x` int(8) NOT NULL,
-  `move_y` int(8) NOT NULL
+  `fleet_id` int(11) UNSIGNED NOT NULL,
+  `x` double NOT NULL,
+  `y` double NOT NULL,
+  `acceleration` double NOT NULL,
+  `velocity_x` double NOT NULL,
+  `velocity_y` double NOT NULL,
+  `move_x` double DEFAULT NULL,
+  `move_y` double DEFAULT NULL,
+  `destroyed` tinyint(1) NOT NULL,
+  PRIMARY KEY (`player_id`,`fleet_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `player_fleets`
+--
+
+INSERT INTO `player_fleets` (`player_id`, `fleet_id`, `x`, `y`, `acceleration`, `velocity_x`, `velocity_y`, `move_x`, `move_y`, `destroyed`) VALUES
+(23, 1, 161.6836764274832, 55.672154412173796, 0.03, 0, 0, NULL, NULL, 0);
 
 -- --------------------------------------------------------
 

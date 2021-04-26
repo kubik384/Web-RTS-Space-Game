@@ -190,6 +190,11 @@ io.on('connection', socket => {
 		});
 	});
 
+	socket.on('assemble_fleet', () => {
+		var token = socketTable[socket.id];
+		dbManager.assemble_fleet(token).then((result) => { socket.emit('fleet_assembled', JSON.stringify(result));});
+	});
+
 	socket.on('disconnect', () => {
 		tokens.slice(tokens.findIndex(token => { if (token == socketTable[socket.id]) { return true; } }), 1);
 		delete socketTable[socket.id];

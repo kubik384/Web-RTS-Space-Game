@@ -272,10 +272,10 @@ class DbManager {
     /**
      * Returns results in following format [{space_object_id, image, x, y, rot, width, height}, ..]
      */
-    async get_space_objects() {
+    async get_space_objects(galaxy_id) {
         var query = `SELECT space_object_id, x, y, rot, width, height, image_id
-        FROM space_objects`;
-        var results = await this.execute_query(query, []);
+        FROM space_objects WHERE galaxy_id = ?`;
+        var results = await this.execute_query(query, [galaxy_id]);
         var b_index = -1;
         for (var i = 0; i < results.length; i++) {
             if (space_objects[results[i].image_id - 1].space_object_id == results[i].image_id) {
@@ -385,6 +385,24 @@ class DbManager {
         return this.execute_query(query, [username]);
     }
 
+    async assemble_fleet(username) {
+        var space_objects = await this.get_space_objects(1);
+        var player_planet = space_objects[1];
+        var system_center_object = space_objects[0];
+        var rads = await utils.angleToRad(player_planet.rot);
+        var [origin_x, origin_y] = [player_planet.x, player_planet.y];
+        var [center_x, center_y] = [system_center_object.x, system_center_object.y];
+        var object_x = center_x + (origin_x - center_x) * Math.cos(rads) - (origin_y - center_y) * Math.sin(rads);
+        var object_y = center_y + (origin_x - center_x) * Math.sin(rads) + (origin_y - center_y) * Math.cos(rads);
+
+        var query = `UPDATE player_fleets pf
+            INNER JOIN players p ON p.player_id = pf.player_id
+            SET pf.x = ?, pf.y = ?, pf.acceleration = 0.03, pf.velocity_x = 0, pf.velocity_y = 0, move_x = NULL, move_y = NULL, pf.destroyed = 0
+            WHERE p.username = ? AND pf.fleet_id = 1`;
+        await this.execute_query(query, [object_x, object_y, username]);
+        return {x: object_x, y: object_y, acceleration: 0.03, velocity_x: 0, velocity_y: 0};
+    }
+
     async execute_query(query, argumentArr) {
         return new Promise( async function ( resolve, reject ) {
             this.con.query(query, argumentArr, async function(err, results) {
@@ -418,7 +436,7 @@ class DbManager {
 
     async get_map_datapack(layout) {
         if (layout === 'system') {
-            var space_objects = await this.get_space_objects();
+            var space_objects = await this.get_space_objects(1);
             return {space_objects: space_objects};
         } else if(layout === 'galaxy') {
             var galaxies = await this.get_galaxies();
