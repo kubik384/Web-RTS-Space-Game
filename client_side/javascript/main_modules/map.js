@@ -259,18 +259,7 @@ class Game {
 
     async request_fleet_assembly() {
         this.socket.emit('assemble_fleet');
-    }
 
-    async assemble_fleet(fleet) {
-        console.log(fleet);
-        var fleet_data = JSON.parse(fleet);
-        this.fleet.x = fleet_data.x;
-        this.fleet.y = fleet_data.y;
-        this.fleet.last_x = this.fleet.x;
-        this.fleet.last_y = this.fleet.y;
-        this.fleet.velocity = new Vector(fleet_data.velocity_x, fleet_data.velocity_y);
-        this.fleet.last_velocity = this.fleet.velocity;
-        this.fleet.acceleration = fleet_data.acceleration;
         /*
         var interpolation_coefficient = (Date.now() - this.last_tick)/this.tick_time_passed;
         var rotation = ((this.space_objects[0].rot - this.space_objects[0].last_rot) * interpolation_coefficient + this.space_objects[0].last_rot);
@@ -285,6 +274,17 @@ class Game {
         this.fleet.velocity = new Vector(0, 0);
         this.fleet.last_velocity = this.fleet.velocity;
         */
+    }
+
+    async assemble_fleet(fleet) {
+        var fleet_data = JSON.parse(fleet);
+        this.fleet.x = fleet_data.x;
+        this.fleet.y = fleet_data.y;
+        this.fleet.last_x = this.fleet.x;
+        this.fleet.last_y = this.fleet.y;
+        this.fleet.velocity = new Vector(fleet_data.velocity_x, fleet_data.velocity_y);
+        this.fleet.last_velocity = this.fleet.velocity;
+        this.fleet.acceleration = fleet_data.acceleration;
     }
 }
 

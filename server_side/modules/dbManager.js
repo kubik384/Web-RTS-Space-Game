@@ -2,6 +2,7 @@
 
 var mysql = require('mysql');
 var Utils = require('./utils.js');
+var Vector =  require('./vector.js');
 var utils = new Utils();
 var all_resource_types = 'pop, food, timber, metals, coal, oil, kerosene, hydrogen, uranium';
 var resourceTable = all_resource_types.split(', ');
