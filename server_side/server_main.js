@@ -10,7 +10,8 @@ var cookieParser = require('cookie-parser');
 var bcrypt = require('bcrypt');
 var io = require('socket.io')(server, {pingInterval: 1500});
 
-const DbManager = require('./modules/dbManager.js');
+const DbManager = require('./main_modules/dbManager.js');
+const Game = require('./main_modules/Game.js');
 
 const saltRounds = 10;
 const gameURL = '/game';
@@ -19,6 +20,7 @@ const mapURL = gameURL + '/map';
 const messageURL = gameURL + '/message';
 const researchURL = gameURL + '/research';
 const dbManager = new DbManager();
+var game = new Game();
 const root = path.resolve(__dirname, '..');
 var tokens = [];
 var socketTable = {};
@@ -192,7 +194,12 @@ io.on('connection', socket => {
 
 	socket.on('assemble_fleet', () => {
 		var token = socketTable[socket.id];
-		dbManager.assemble_fleet(token).then((result) => { socket.emit('fleet_assembled', JSON.stringify(result));});
+		dbManager.assemble_fleet(token).then((result) => { socket.emit('fleet_assembled', JSON.stringify(result)); });
+	});
+
+	socket.on('set_movepoint', (x, y) => {
+		var token = socketTable[socket.id];
+		dbManager.set_movepoint(token, x, y).then((result) => { socket.emit('movepoint_set', JSON.stringify(result)); });
 	});
 
 	socket.on('disconnect', () => {

@@ -82,12 +82,9 @@ class Game {
                 e.preventDefault();
                 if (this.fleet.x !== undefined) {
                     const rect = this.map_canvas.getBoundingClientRect();
-                    this.move_point.x = e.clientX - this.xOffset - rect.left - this.map_canvas_border;
-                    this.move_point.y = e.clientY - this.yOffset - rect.top - this.map_canvas_border;
-                    //this is to prevent the move_point x and y being 0, which would result in an error when normalizing the point's vector
-                    if (this.move_point.x == 0) {
-                        this.move_point.x++;
-                    }
+                    var x = e.clientX - this.xOffset - rect.left - this.map_canvas_border;
+                    var y = e.clientY - this.yOffset - rect.top - this.map_canvas_border;
+                    this.generate_movepoint(x, y);
                 }
             });
             window.requestAnimationFrame(this.draw.bind(this));
@@ -285,6 +282,18 @@ class Game {
         this.fleet.velocity = new Vector(fleet_data.velocity_x, fleet_data.velocity_y);
         this.fleet.last_velocity = this.fleet.velocity;
         this.fleet.acceleration = fleet_data.acceleration;
+    }
+
+    async generate_movepoint(x, y) {
+        this.socket.emit('set_movepoint', x, y);
+    }
+
+    async set_movepoint(coordinates) {
+        var coordinates = JSON.parse(coordinates);
+        if (coordinates !== undefined) {
+            this.move_point.x = coordinates.x;
+            this.move_point.y = coordinates.y;
+        }
     }
 }
 

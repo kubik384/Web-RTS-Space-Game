@@ -1,8 +1,7 @@
 "use strict"
 
 var mysql = require('mysql');
-var Utils = require('./utils.js');
-var Vector =  require('./vector.js');
+var Utils = require('./../misc_modules/utils.js');
 var utils = new Utils();
 var all_resource_types = 'pop, food, timber, metals, coal, oil, kerosene, hydrogen, uranium';
 var resourceTable = all_resource_types.split(', ');
@@ -11,7 +10,7 @@ var space_objects = require('./../game_properties/space_objects.json');
 var galaxies = require('./../game_properties/galaxies.json');
 var units = require('./../game_properties/units.json');
 
-class DbManager {
+module.exports = class DbManager {
     constructor() {
         //Credentials for connecting to the db 
         this.con = mysql.createConnection({
@@ -404,6 +403,26 @@ class DbManager {
         return {x: object_x, y: object_y, acceleration: 0.03, velocity_x: 0, velocity_y: 0};
     }
 
+    async set_movepoint(username, x, y) {
+        var query = `SELECT pf.destroyed
+            FROM player_fleets pf
+            INNER JOIN players p ON p.player_id = pf.player_id
+            WHERE p.username = ? AND pf.fleet_id = 1`;
+        var results = await this.execute_query(query, [username]);
+        if (!results[0].destroyed) {
+            //this is to prevent the move_point x and y being 0, which would result in an error when normalizing the point's vector (client or server side)
+            if (x == 0) {
+                x++;
+            }
+            var query = `UPDATE player_fleets pf
+                INNER JOIN players p ON p.player_id = pf.player_id
+                SET move_x = ?, move_y = ?
+                WHERE p.username = ? AND pf.fleet_id = 1`;
+            await this.execute_query(query, [x, y, username]);
+            return {x:x, y:y};
+        }
+    }
+
     async execute_query(query, argumentArr) {
         return new Promise( async function ( resolve, reject ) {
             this.con.query(query, argumentArr, async function(err, results) {
@@ -498,5 +517,3 @@ class DbManager {
         await Promise.all(promises);
     }
 }
-
-module.exports = DbManager;

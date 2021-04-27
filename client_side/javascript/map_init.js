@@ -15,6 +15,8 @@ async function start() {
 
 	socket.on('fleet_assembled', game.assemble_fleet.bind(game));
 
+	socket.on('movepoint_set', game.set_movepoint.bind(game));
+
     game.request_data();
 }
 
