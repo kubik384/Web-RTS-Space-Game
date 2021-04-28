@@ -19,7 +19,7 @@ const planetURL = gameURL + '/planet';
 const mapURL = gameURL + '/map';
 const messageURL = gameURL + '/message';
 const researchURL = gameURL + '/research';
-const dbManager = new DbManager();
+var dbManager = new DbManager();
 var game = new Game();
 const root = path.resolve(__dirname, '..');
 var tokens = [];
@@ -146,6 +146,7 @@ app.use(function(req, res){
 // Starts the server
 server.listen(8080, function() {
 	console.log('Starting server on port 8080');
+	game.setup_game();
 });
 
 // Add the WebSocket handlers

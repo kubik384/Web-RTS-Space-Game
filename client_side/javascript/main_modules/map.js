@@ -94,6 +94,7 @@ class Game {
     }
 
     async update(timestamp) {
+        this.logic_loop = setTimeout(this.update.bind(this), this.tick_time, Date.now());
         var time_passed = timestamp - this.last_tick;
         this.tick_time_passed = time_passed;
         if (this.layout === 'system') {
@@ -186,7 +187,6 @@ class Game {
             }
         }
         this.last_tick = timestamp;
-        this.logic_loop = setTimeout(this.update.bind(this), this.tick_time, Date.now());
     }
     
     draw(timestamp) {
