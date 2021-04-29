@@ -272,9 +272,11 @@ module.exports = class DbManager {
     /**
      * Returns results in following format [{space_object_id, image, x, y, rot, width, height}, ..]
      */
-    async get_space_objects(galaxy_id) {
-        var query = `SELECT space_object_id, x, y, rot, width, height, image_id
-        FROM space_objects WHERE galaxy_id = ?`;
+    async get_space_objects(galaxy_id = 'all') {
+        var query = 'SELECT space_object_id, x, y, rot, width, height, image_id FROM space_objects';
+        if (galaxy_id != 'all') {
+            query += 'WHERE galaxy_id = ?';
+        }
         var results = await this.execute_query(query, [galaxy_id]);
         var b_index = -1;
         for (var i = 0; i < results.length; i++) {

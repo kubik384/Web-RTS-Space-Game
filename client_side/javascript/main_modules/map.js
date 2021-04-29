@@ -99,7 +99,6 @@ class Game {
         this.tick_time_passed = time_passed;
         if (this.layout === 'system') {
             for (var i = 0; i < this.space_objects.length; i++) {
-                //changes the speed of the planet according to how far it is from the sun
                 //TODO: Assign rotation speed to space objects? Make it possible to go into negative values -> rotate other way (does that happen in space? do all planets rotate the same direction?)
 
                 //Calculates the distance from the center - the further away, the slower rotation. Rotation is sped up by 128 times for debugging purposes
