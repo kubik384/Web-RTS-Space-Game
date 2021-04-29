@@ -12,6 +12,7 @@ module.exports = class Game {
         this.last_secondary_save = Date.now();
         this.secondary_save_time = 300000;
         this.saving = false;
+        this.updating = false;
     }
 
     async setup_game() {
@@ -26,17 +27,24 @@ module.exports = class Game {
 
     async update() {
         this.logic_loop = setTimeout(this.update.bind(this), this.tick_time);
-        var timestamp = Date.now();
-        var time_passed = timestamp - this.last_tick;
-        if (time_passed > this.tick_time + Math.floor(this.tick_time/5)) {
-            console.log('Massive time delay detected - tick took: ' + time_passed + 's instead of ' + this.tick_time + 's');
+        if (!this.saving && !this.updating) {
+            this.updating = true;
+            var timestamp = Date.now();
+            var time_passed = timestamp - this.last_tick;
+
+
+
+            this.attempt_game_save(timestamp);
+            if (time_passed > this.tick_time + Math.floor(this.tick_time/10)) {
+                console.log('Massive time delay detected - tick took: ' + time_passed + 's instead of ' + this.tick_time + 's');
+            }
+            this.last_tick = timestamp;
+            this.updating = false;
+        } else {
+            console.log('Skipped 1 tick');
+            this.logic_loop = setTimeout(this.update.bind(this), this.tick_time);
+            this.last_tick = Date.now();
         }
-
-
-
-        await this.attempt_game_save(timestamp);
-        this.last_tick = timestamp;
-        this.logic_loop = setTimeout(this.update.bind(this), this.tick_time);
     }
 
     async attempt_game_save(timestamp) {
