@@ -42,7 +42,6 @@ module.exports = class Game {
             this.updating = false;
         } else {
             console.log('Skipped 1 tick');
-            this.logic_loop = setTimeout(this.update.bind(this), this.tick_time);
             this.last_tick = Date.now();
         }
     }
