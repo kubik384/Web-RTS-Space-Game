@@ -1,11 +1,10 @@
 var Vector = require('../misc_modules/vector.js');
-var Precision_SetTimeout = require('../misc_modules/precision_setTimeout.js');
 var fs = require('fs');
 
 module.exports = class Game {
     constructor(dbManager) {
         this.dbManager = dbManager;
-        this.tick_time = 100;
+        this.tick_time = 90;
         this.save_time = 120000;
         this.secondary_save_time = 300000;
         this.saving = false;
@@ -23,14 +22,14 @@ module.exports = class Game {
         this.last_tick = timestamp;
         this.last_save = timestamp;
         this.last_secondary_save = timestamp;
-        this.next_logic_run = new Precision_SetTimeout(this.update.bind(this), this.tick_time);
+        this.next_logic_run = setTimeout(this.update.bind(this), this.tick_time);
     }
 
     async update() {
         if (!this.saving && !this.updating) {
             this.updating = true;
             //a race condition should never occur, since the functions should be running at minimal this.tick_time apart, which makes it impossible for the function that was ran before to not have set this.updating to true in this time to prevent the second function from executing
-            this.next_logic_run = new Precision_SetTimeout(this.update.bind(this), this.tick_time);
+            this.next_logic_run = setTimeout(this.update.bind(this), this.tick_time);
             const timestamp = Date.now();
             const time_passed = timestamp - this.last_tick;
 
@@ -48,13 +47,13 @@ module.exports = class Game {
             }
 
             this.attempt_game_save(timestamp);
-            if (time_passed >= this.tick_time + Math.floor(this.tick_time/10)) {
+            if (time_passed >= this.tick_time + Math.floor(this.tick_time/6)) {
                 console.log('Significant time delay detected - tick took: ' + time_passed + 's instead of ' + this.tick_time + 's');
             }
             this.last_tick = timestamp;
             this.updating = false;
         } else {
-            setImmediate(this.update.bind(this));
+            setTimeout(this.update.bind(this), 0);
             if (Date.now() - this.last_tick > this.tick_time * 3) {
                 throw new Error("More than 3 ticks have been skipped at once, check the code u dum dum");
             }
