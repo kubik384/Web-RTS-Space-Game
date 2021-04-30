@@ -25,8 +25,9 @@ module.exports = class Game {
     }
 
     async update() {
-        var timestamp = Date.now();
+        //a race condition should never occur, since the functions should be running at minimal this.tick_time apart, which makes it impossible for the function that was ran before to not have set this.updating to true in this time to prevent the second function from executing
         this.logic_loop = setTimeout(this.update.bind(this), this.tick_time);
+        var timestamp = Date.now();
         if (!this.saving && !this.updating) {
             this.updating = true;
             var time_passed = timestamp - this.last_tick;
