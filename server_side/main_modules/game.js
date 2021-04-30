@@ -48,7 +48,7 @@ module.exports = class Game {
             }
 
             this.attempt_game_save(timestamp);
-            if (time_passed >= this.tick_time + 1) {//Math.floor(this.tick_time/10)) {
+            if (time_passed >= this.tick_time + Math.floor(this.tick_time/10)) {
                 console.log('Significant time delay detected - tick took: ' + time_passed + 's instead of ' + this.tick_time + 's');
             }
             this.last_tick = timestamp;
