@@ -388,9 +388,8 @@ module.exports = class DbManager {
     }
 
     async assemble_fleet(username) {
-        var space_objects = await this.get_space_objects(1);
-        var player_planet = space_objects[1];
-        var system_center_object = space_objects[0];
+        var player_planet = this.space_objects[1];
+        var system_center_object = this.space_objects[0];
         var rads = await utils.angleToRad(player_planet.rot);
         var [origin_x, origin_y] = [player_planet.x, player_planet.y];
         var [center_x, center_y] = [system_center_object.x, system_center_object.y];

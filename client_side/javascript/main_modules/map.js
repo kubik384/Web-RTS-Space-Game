@@ -294,6 +294,14 @@ class Game {
             this.move_point.y = coordinates.y;
         }
     }
+
+    async fleet_update(update) {
+        console.log(update);
+    }
+
+    async destroy_fleet() {
+        console.log('TODO: Destroy fleet needs to be implemented');
+    }
 }
 
 export { Game };

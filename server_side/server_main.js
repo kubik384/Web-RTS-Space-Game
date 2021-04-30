@@ -194,8 +194,7 @@ io.on('connection', socket => {
 	});
 
 	socket.on('assemble_fleet', () => {
-		var token = socketTable[socket.id];
-		dbManager.assemble_fleet(token).then((result) => { socket.emit('fleet_assembled', JSON.stringify(result)); });
+		game.assemble_fleet(socket).then((result) => { socket.emit('fleet_assembled', JSON.stringify(result)); });
 	});
 
 	socket.on('set_movepoint', (x, y) => {
