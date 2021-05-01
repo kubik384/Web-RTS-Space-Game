@@ -62,7 +62,6 @@ module.exports = class Game {
                     var object_radius = this.space_objects[i].width/2;
                     var g_strength = Math.pow(object_radius/await vector.length(), 2);
                     var pull = g_strength * object_radius / 2500;
-                    console.log(this.fleets[j]);
                     this.fleets[j].velocity = await this.fleets[j].velocity.add(await (await vector.normalize()).multiply(pull));
 
                     var object_radius = this.space_objects[i].width/2;
@@ -143,7 +142,11 @@ module.exports = class Game {
     }
 
     async extract_game_data() {
-        return {space_objects: this.space_objects, fleets: this.fleets};
+        var fleets_without_socket = JSON.parse(JSON.stringify(this.fleets));
+        for (var i = 0 ; i < fleets_without_socket.length; i++) {
+            delete fleets_without_socket[i].socket;
+        }
+        return {space_objects: this.space_objects, fleets: this.fleets_without_socket};
     }
     
     async attempt_game_load(file = 'server_side/save_files/save.txt') {

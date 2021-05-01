@@ -295,7 +295,7 @@ class Game {
         }
     }
 
-    async fleet_update(update) {
+    async update_fleet(update) {
         console.log(update);
     }
 
