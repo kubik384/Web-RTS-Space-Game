@@ -1,1 +1,1 @@
-{"space_objects":[{"space_object_id":1,"x":0,"y":0,"rot":0,"width":160,"height":160,"image_id":1,"image":"star"},{"space_object_id":2,"x":171,"y":0,"rot":93.11996658318094,"width":10,"height":10,"image_id":2,"image":"planet2"}],"fleets":[]}
+{"space_objects":[{"space_object_id":1,"x":0,"y":0,"rot":0,"width":160,"height":160,"image_id":1,"image":"star"},{"space_object_id":2,"x":171,"y":0,"rot":326.6571428571423,"width":10,"height":10,"image_id":2,"image":"planet2"}],"fleets":[]}

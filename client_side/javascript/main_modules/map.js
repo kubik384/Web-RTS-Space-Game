@@ -26,7 +26,6 @@ class Game {
         this.galaxies = [];
         this.center_galaxy;
         this.fleet = {};
-        this.move_point = {};
         this.time_passed;
         
         const query_string = window.location.search;
@@ -100,12 +99,6 @@ class Game {
         var time_passed = timestamp - this.last_fe_tick;
         this.tick_fe_time_passed = time_passed;
         if (this.layout === 'system') {
-            if (this.fleet.deleted !== undefined) {
-                this.fleet = {};
-            }
-            if (this.move_point.deleted !== undefined) {
-                this.move_point = {};
-            }
             for (var i = 0; i < this.space_objects.length; i++) {
                 //TODO: Assign rotation speed to space objects? Make it possible to go into negative values -> rotate other way (does that happen in space? do all planets rotate the same direction?)
 
@@ -221,12 +214,12 @@ class Game {
                 this.map_ctx.fill();
                 this.map_ctx.restore();
 
-                if (this.move_point.x !== undefined) {
+                if (this.fleet.move_point !== undefined) {
                     this.map_ctx.save();
                     this.map_ctx.translate(this.xOffset, this.yOffset);
                     this.map_ctx.beginPath();
                     this.map_ctx.moveTo(x_position, y_position);
-                    this.map_ctx.lineTo(this.move_point.x, this.move_point.y);
+                    this.map_ctx.lineTo(this.fleet.move_point.x, this.fleet.move_point.y);
                     this.map_ctx.strokeStyle = "red";
                     this.map_ctx.stroke();
                     this.map_ctx.restore();
@@ -276,27 +269,8 @@ class Game {
         */
     }
 
-    async assemble_fleet(fleet) {
-        var fleet_data = JSON.parse(fleet).fleet;
-        this.fleet.x = fleet_data.x;
-        this.fleet.y = fleet_data.y;
-        this.fleet.last_x = this.fleet.x;
-        this.fleet.last_y = this.fleet.y;
-        this.fleet.velocity = new Vector(fleet_data.velocity.x, fleet_data.velocity.y);
-        this.fleet.last_velocity = this.fleet.velocity;
-        this.fleet.acceleration = fleet_data.acceleration;
-    }
-
     async generate_movepoint(x, y) {
         this.socket.emit('set_movepoint', x, y);
-    }
-
-    async set_movepoint(coordinates) {
-        var coordinates = JSON.parse(coordinates);
-        if (coordinates !== undefined) {
-            this.move_point.x = coordinates.x;
-            this.move_point.y = coordinates.y;
-        }
     }
 
     async update_fleets(fleets) {
@@ -305,6 +279,15 @@ class Game {
         this.tick_be_time_passed = time_passed;
         var fleet_data = fleets[0];
         if (fleet_data !== undefined) {
+            if (fleet_data.move_point !== undefined) {
+                this.fleet.move_point = fleet_data.move_point;
+            } else if (this.fleet.move_point !== undefined) {
+                if (this.fleet.move_point.deleted !== undefined) {
+                    this.fleet.move_point = {};
+                } else {
+                    this.fleet.move_point.deleted == true;
+                }
+            }
             this.fleet.last_x = this.fleet.x;
             this.fleet.last_y = this.fleet.y;
             this.fleet.x = fleet_data.x;
@@ -312,8 +295,13 @@ class Game {
             this.fleet.last_velocity = this.fleet.velocity;
             this.fleet.velocity = new Vector(fleet_data.velocity.x, fleet_data.velocity.y);
         } else if (this.fleet !== undefined) {
-            this.fleet.deleted = true;
+            if (this.fleet.deleted !== undefined) {
+                this.fleet = {};
+            } else {
+                this.fleet.deleted = true;
+            }
         }
+        
         this.last_be_tick = timestamp;
     }
 }

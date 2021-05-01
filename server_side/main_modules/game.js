@@ -165,6 +165,11 @@ module.exports = class Game {
         var object_y = center_y + (origin_x - center_x) * Math.sin(rads) + (origin_y - center_y) * Math.cos(rads);
         var fleet = {x: object_x, y: object_y, acceleration: 0.03, velocity: new Vector(0, 0)};
         this.fleets = [fleet];
-        return {fleet};
+    }
+
+    async set_movepoint(x, y) {
+        if (this.fleets[0] !== undefined) {
+            this.fleets[0].move_point = {x:x, y:y};
+        }
     }
 }
