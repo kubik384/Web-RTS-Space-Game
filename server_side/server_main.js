@@ -202,7 +202,7 @@ io.on('connection', socket => {
 	});
 
 	socket.on('disconnect', () => {
-		tokens.slice(tokens.findIndex(token => { if (token == socketTable[socket.id]) { return true; } }), 1);
+		tokens.slice(tokens.findIndex(token => { return token == socketTable[socket.id] }), 1);
 		delete socketTable[socket.id];
 	});
 });

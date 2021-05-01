@@ -62,7 +62,7 @@ module.exports = class Game {
                     //Expect all the space objects to be squares (circles) = same width and height - for now
                     var object_radius = this.space_objects[i].width/2;
                     var g_strength = Math.pow(object_radius/await vector.length(), 2);
-                    var pull = g_strength * object_radius / 2500;
+                    var pull = time_passed * g_strength * object_radius / 10000000;
                     this.fleets[j].velocity = await this.fleets[j].velocity.add(await (await vector.normalize()).multiply(pull));
 
                     var object_radius = this.space_objects[i].width/2;
@@ -77,8 +77,8 @@ module.exports = class Game {
                     if (this.fleets[i].x != this.fleets[i].move_point.x || this.fleets[i].y != this.fleets[i].move_point.y) {
                         var vector = new Vector(this.fleets[i], this.fleets[i].move_point);
                         var distance = await vector.length();
-                        var speed = await this.fleets[i].velocity.length();
-                        var acceleration_input = speed/this.fleets[i].acceleration;
+                        var speed = await this.fleets[i].velocity.length() * time_passed;
+                        var acceleration_input = speed/(this.fleets[i].acceleration * time_passed);
                         var adjusted_vector = await vector.divide(acceleration_input);
                         var slowdown_time = distance/speed;
                         var calculated_vector;
@@ -89,14 +89,14 @@ module.exports = class Game {
                             calculated_vector = await (new Vector(normalized_velocity, await vector.normalize())).normalize();
                         }
 
-                        this.fleets[i].velocity = await this.fleets[i].velocity.add(await calculated_vector.multiply(this.fleets[i].acceleration));
+                        this.fleets[i].velocity = await this.fleets[i].velocity.add(await calculated_vector.multiply(this.fleets[i].acceleration * time_passed));
                     } else {
                         delete this.fleets[i].move_point;
                     }
                 }
 
-                this.fleets[i].x += this.fleets[i].velocity.x;
-                this.fleets[i].y += this.fleets[i].velocity.y;
+                this.fleets[i].x += this.fleets[i].velocity.x * time_passed;
+                this.fleets[i].y += this.fleets[i].velocity.y * time_passed;
             }
             this.server.sockets.emit('fleets_update', this.fleets);
 
@@ -163,7 +163,7 @@ module.exports = class Game {
         var [center_x, center_y] = [system_center_object.x, system_center_object.y];
         var object_x = center_x + (origin_x - center_x) * Math.cos(rads) - (origin_y - center_y) * Math.sin(rads);
         var object_y = center_y + (origin_x - center_x) * Math.sin(rads) + (origin_y - center_y) * Math.cos(rads);
-        var fleet = {x: object_x, y: object_y, acceleration: 0.03, velocity: new Vector(0, 0)};
+        var fleet = {x: object_x, y: object_y, acceleration: 0.000005, velocity: new Vector(0, 0)};
         this.fleets = [fleet];
     }
 
