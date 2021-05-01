@@ -20,7 +20,7 @@ const mapURL = gameURL + '/map';
 const messageURL = gameURL + '/message';
 const researchURL = gameURL + '/research';
 var dbManager = new DbManager();
-var game = new Game(dbManager);
+var game = new Game(dbManager, io);
 const root = path.resolve(__dirname, '..');
 var tokens = [];
 var socketTable = {};
@@ -194,7 +194,7 @@ io.on('connection', socket => {
 	});
 
 	socket.on('assemble_fleet', () => {
-		game.assemble_fleet(socket).then((result) => { socket.emit('fleet_assembled', JSON.stringify(result)); });
+		game.assemble_fleet().then((result) => { socket.emit('fleet_assembled', JSON.stringify(result)); });
 	});
 
 	socket.on('set_movepoint', (x, y) => {

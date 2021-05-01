@@ -4,8 +4,9 @@ var utils = new Utils();
 var fs = require('fs');
 
 module.exports = class Game {
-    constructor(dbManager) {
+    constructor(dbManager, server) {
         this.dbManager = dbManager;
+        this.server = server;
         this.tick_time = 90;
         this.save_time = 120000;
         this.secondary_save_time = 300000;
@@ -66,7 +67,6 @@ module.exports = class Game {
 
                     var object_radius = this.space_objects[i].width/2;
                     if (await vector.length() <= object_radius) {
-                        this.fleets[j].socket.emit('fleet_destroyed');
                         this.fleets.splice(j, 1);
                     }
                 }
@@ -97,9 +97,8 @@ module.exports = class Game {
 
                 this.fleets[i].x += this.fleets[i].velocity.x;
                 this.fleets[i].y += this.fleets[i].velocity.y;
-
-                this.fleets[i].socket.emit('fleet_update', JSON.stringify({x: this.fleets[i].x, y: this.fleets[i].y, velocity_x: this.fleets[i].velocity.x, velocity_y: this.fleets[i].velocity.y}));
             }
+            this.server.sockets.emit('fleets_update', this.fleets);
 
             this.attempt_game_save(timestamp);
             if (time_passed >= this.tick_time + Math.floor(this.tick_time/6)) {
@@ -142,11 +141,7 @@ module.exports = class Game {
     }
 
     async extract_game_data() {
-        var fleets_without_socket = JSON.parse(JSON.stringify(this.fleets));
-        for (var i = 0 ; i < fleets_without_socket.length; i++) {
-            delete fleets_without_socket[i].socket;
-        }
-        return {space_objects: this.space_objects, fleets: this.fleets_without_socket};
+        return {space_objects: this.space_objects, fleets: this.fleets};
     }
     
     async attempt_game_load(file = 'server_side/save_files/save.txt') {
@@ -160,7 +155,7 @@ module.exports = class Game {
         });
     }
 
-    async assemble_fleet(socket) {
+    async assemble_fleet() {
         var player_planet = this.space_objects[1];
         var system_center_object = this.space_objects[0];
         var rads = await utils.angleToRad(player_planet.rot);
@@ -169,7 +164,7 @@ module.exports = class Game {
         var object_x = center_x + (origin_x - center_x) * Math.cos(rads) - (origin_y - center_y) * Math.sin(rads);
         var object_y = center_y + (origin_x - center_x) * Math.sin(rads) + (origin_y - center_y) * Math.cos(rads);
 
-        this.fleets.push({x: object_x, y: object_y, acceleration: 0.03, velocity: new Vector(0, 0), socket: socket});
+        this.fleets.push({x: object_x, y: object_y, acceleration: 0.03, velocity: new Vector(0, 0)});
         return {x: object_x, y: object_y, acceleration: 0.03, velocity_x: 0, velocity_y: 0};
     }
 }
