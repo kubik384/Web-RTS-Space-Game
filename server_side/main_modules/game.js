@@ -163,8 +163,8 @@ module.exports = class Game {
         var [center_x, center_y] = [system_center_object.x, system_center_object.y];
         var object_x = center_x + (origin_x - center_x) * Math.cos(rads) - (origin_y - center_y) * Math.sin(rads);
         var object_y = center_y + (origin_x - center_x) * Math.sin(rads) + (origin_y - center_y) * Math.cos(rads);
-
-        this.fleets.push({x: object_x, y: object_y, acceleration: 0.03, velocity: new Vector(0, 0)});
-        return {x: object_x, y: object_y, acceleration: 0.03, velocity_x: 0, velocity_y: 0};
+        var fleet = {x: object_x, y: object_y, acceleration: 0.03, velocity: new Vector(0, 0)};
+        this.fleets = [fleet];
+        return {fleet};
     }
 }

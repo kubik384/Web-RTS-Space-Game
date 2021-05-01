@@ -7,8 +7,8 @@ var utils = new Utils();
 class Game {
     constructor(socket) {
         this.socket = socket;
-        this.last_render = 0;
-        this.last_tick = 0;
+        this.last_fe_tick = 0;
+        this.last_be_tick = 0;
         this.map_canvas;
         this.map_canvas_border;
         this.map_width;
@@ -16,7 +16,8 @@ class Game {
         this.map_ctx;
         this.logic_loop;
         this.tick_time = 50;
-        this.tick_time_passed;
+        this.tick_fe_time_passed;
+        this.tick_be_time_passed;
 
         this.xOffset = 0;
         this.yOffset = 0;
@@ -88,16 +89,23 @@ class Game {
                 }
             });
             window.requestAnimationFrame(this.draw.bind(this));
-            this.logic_loop = setTimeout(this.update.bind(this), this.tick_time, Date.now());
+            this.logic_loop = setTimeout(this.update.bind(this), this.tick_time);
             resolve();
         });
     }
 
     async update(timestamp) {
-        this.logic_loop = setTimeout(this.update.bind(this), this.tick_time, Date.now());
-        var time_passed = timestamp - this.last_tick;
-        this.tick_time_passed = time_passed;
+        var timestamp = Date.now();
+        this.logic_loop = setTimeout(this.update.bind(this), this.tick_time);
+        var time_passed = timestamp - this.last_fe_tick;
+        this.tick_fe_time_passed = time_passed;
         if (this.layout === 'system') {
+            if (this.fleet.deleted !== undefined) {
+                this.fleet = {};
+            }
+            if (this.move_point.deleted !== undefined) {
+                this.move_point = {};
+            }
             for (var i = 0; i < this.space_objects.length; i++) {
                 //TODO: Assign rotation speed to space objects? Make it possible to go into negative values -> rotate other way (does that happen in space? do all planets rotate the same direction?)
 
@@ -109,14 +117,8 @@ class Game {
                     this.space_objects[i].last_rot -= 360;
                 }
 
-                if (this.fleet.deleted !== undefined) {
-                    this.fleet = {};
-                }
-                if (this.move_point.deleted !== undefined) {
-                    this.move_point = {};
-                }
-
-                if (this.fleet.x !== undefined) {
+                /*
+                if (this.fleet !== undefined) {
                     Object.assign(this.fleet.last_velocity, this.fleet.velocity);
                     this.fleet.last_x = this.fleet.x;
                     this.fleet.last_y = this.fleet.y;
@@ -140,9 +142,10 @@ class Game {
                         this.move_point.deleted = true;
                     }
                 }
+                */
             }
-
-            if (this.fleet.x !== undefined) {
+            /*
+            if (this.fleet !== undefined) {
                 var object_radius = this.system_center_object.width/2;
                 var vector = new Vector(this.fleet, this.system_center_object);
                 if (await vector.length() <= object_radius) {
@@ -180,23 +183,25 @@ class Game {
                 }
             }
 
-            if (this.fleet.x !== undefined) {
+            if (this.fleet !== undefined) {
                 this.fleet.x += this.fleet.velocity.x;
                 this.fleet.y += this.fleet.velocity.y;
             }
+            */
         }
-        this.last_tick = timestamp;
+        this.last_fe_tick = timestamp;
     }
     
-    draw(timestamp) {
-        var time_passed = timestamp - this.last_render;
-        var interpolation_coefficient = (Date.now() - this.last_tick)/this.tick_time_passed;
+    draw() {
+        var timestamp = Date.now();
+        var be_interpolation_coefficient = (timestamp - this.last_be_tick)/this.tick_be_time_passed;
+        var fe_interpolation_coefficient = (timestamp - this.last_fe_tick)/this.tick_fe_time_passed;
         this.map_ctx.clearRect(0, 0, this.map_width, this.map_height);
         if (this.layout === 'system') {
             for (var i = 0; i < this.space_objects.length; i++) {
                 this.map_ctx.save();
                 this.map_ctx.translate(this.xOffset, this.yOffset);
-                var rotation = ((this.space_objects[i].rot - this.space_objects[i].last_rot) * interpolation_coefficient + this.space_objects[i].last_rot);
+                var rotation = ((this.space_objects[i].rot - this.space_objects[i].last_rot) * fe_interpolation_coefficient + this.space_objects[i].last_rot);
                 this.map_ctx.rotate(utils.syncAngleToRad(rotation));
                 var x_position = this.space_objects[i].x - this.space_objects[i].width/2;
                 var y_position = this.space_objects[i].y - this.space_objects[i].width/2;
@@ -206,8 +211,8 @@ class Game {
             this.map_ctx.drawImage(this.system_center_object.image, this.system_center_object.x + this.xOffset - this.system_center_object.width/2, this.system_center_object.y + this.yOffset - this.system_center_object.width/2, this.system_center_object.width, this.system_center_object.height);
 
             if (this.fleet.x !== undefined) {
-                var x_position = ((this.fleet.x - this.fleet.last_x) * interpolation_coefficient + this.fleet.last_x);
-                var y_position = ((this.fleet.y - this.fleet.last_y) * interpolation_coefficient + this.fleet.last_y);
+                var x_position = ((this.fleet.x - this.fleet.last_x) * be_interpolation_coefficient + this.fleet.last_x);
+                var y_position = ((this.fleet.y - this.fleet.last_y) * be_interpolation_coefficient + this.fleet.last_y);
                 this.map_ctx.save();
                 this.map_ctx.translate(this.xOffset, this.yOffset);
                 this.map_ctx.beginPath();
@@ -236,7 +241,6 @@ class Game {
             }
             this.map_ctx.drawImage(this.center_galaxy.image, this.center_galaxy.x + this.xOffset - this.center_galaxy.width/2, this.center_galaxy.y + this.yOffset - this.center_galaxy.width/2, this.center_galaxy.width, this.center_galaxy.height);
         }
-        this.last_render = timestamp;
         window.requestAnimationFrame(this.draw.bind(this));
     }
 
@@ -273,12 +277,12 @@ class Game {
     }
 
     async assemble_fleet(fleet) {
-        var fleet_data = JSON.parse(fleet);
+        var fleet_data = JSON.parse(fleet).fleet;
         this.fleet.x = fleet_data.x;
         this.fleet.y = fleet_data.y;
         this.fleet.last_x = this.fleet.x;
         this.fleet.last_y = this.fleet.y;
-        this.fleet.velocity = new Vector(fleet_data.velocity_x, fleet_data.velocity_y);
+        this.fleet.velocity = new Vector(fleet_data.velocity.x, fleet_data.velocity.y);
         this.fleet.last_velocity = this.fleet.velocity;
         this.fleet.acceleration = fleet_data.acceleration;
     }
@@ -295,12 +299,22 @@ class Game {
         }
     }
 
-    async update_fleet(update) {
-        console.log(update);
-    }
-
-    async destroy_fleet() {
-        console.log('TODO: Destroy fleet needs to be implemented');
+    async update_fleets(fleets) {
+        var timestamp = Date.now();
+        var time_passed = timestamp - this.last_be_tick;
+        this.tick_be_time_passed = time_passed;
+        var fleet_data = fleets[0];
+        if (fleet_data !== undefined) {
+            this.fleet.last_x = this.fleet.x;
+            this.fleet.last_y = this.fleet.y;
+            this.fleet.x = fleet_data.x;
+            this.fleet.y = fleet_data.y;
+            this.fleet.last_velocity = this.fleet.velocity;
+            this.fleet.velocity = new Vector(fleet_data.velocity.x, fleet_data.velocity.y);
+        } else if (this.fleet !== undefined) {
+            this.fleet.deleted = true;
+        }
+        this.last_be_tick = timestamp;
     }
 }
 
