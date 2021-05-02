@@ -19,9 +19,14 @@ module.exports = class Vector {
                 this.x = c-a;
                 this.y = d-b;
             }
-        } else if (typeof a === 'object' && typeof b === 'object') {
-            this.x = b.x-a.x;
-            this.y = b.y-a.y;
+        } else if (typeof a === 'object') {
+            if (typeof b === 'object') {
+                this.x = b.x-a.x;
+                this.y = b.y-a.y;
+            } else {
+                this.x = a.x;
+                this.y = a.y;
+            }
         } else throw new Error("Cannot create Vector - Invalid value!");
     }
 

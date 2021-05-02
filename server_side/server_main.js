@@ -181,7 +181,7 @@ io.on('connection', socket => {
 
 	socket.on('map_datapack_request', (token, layout) => {
 		socketTable[socket.id] = token;
-		dbManager.get_map_datapack(layout).then(result => {socket.emit('map_datapack', JSON.stringify(result))});
+		game.get_map_datapack(layout).then(result => {socket.emit('map_datapack', JSON.stringify(result))});
 	});
 
 	socket.on('build_units', (units) => {

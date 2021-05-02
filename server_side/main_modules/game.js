@@ -151,6 +151,9 @@ module.exports = class Game {
             }
             var parsed_data = JSON.parse(data);
             this.space_objects = parsed_data.space_objects;
+            for (var i = 0; i < parsed_data.fleets.length; i++) {
+                parsed_data.fleets[i].velocity = new Vector(parsed_data.fleets[i].velocity)
+            }
             this.fleets = parsed_data.fleets;
         });
     }
@@ -161,8 +164,8 @@ module.exports = class Game {
         var rads = await utils.angleToRad(player_planet.rot);
         var [origin_x, origin_y] = [player_planet.x, player_planet.y];
         var [center_x, center_y] = [system_center_object.x, system_center_object.y];
-        var object_x = center_x + (origin_x - center_x) * Math.cos(rads) - (origin_y - center_y) * Math.sin(rads);
-        var object_y = center_y + (origin_x - center_x) * Math.sin(rads) + (origin_y - center_y) * Math.cos(rads);
+        var object_x = center_x + (origin_x - center_x) * Math.cos(rads) - (origin_y - center_y) * Math.sin(rads) - 10;
+        var object_y = center_y + (origin_x - center_x) * Math.sin(rads) + (origin_y - center_y) * Math.cos(rads) - 10;
         var fleet = {x: object_x, y: object_y, acceleration: 0.000005, velocity: new Vector(0, 0)};
         this.fleets = [fleet];
     }
@@ -170,6 +173,14 @@ module.exports = class Game {
     async set_movepoint(x, y) {
         if (this.fleets[0] !== undefined) {
             this.fleets[0].move_point = {x:x, y:y};
+        }
+    }
+
+    async get_map_datapack(layout) {
+        if (layout === 'galaxy') {
+            return {galaxies: this.dbManager.get_map_datapack()};
+        } else if (layout === 'system') {
+            return {space_objects: this.space_objects, last_update: this.last_tick};
         }
     }
 }

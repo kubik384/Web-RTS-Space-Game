@@ -7,8 +7,6 @@ var utils = new Utils();
 class Game {
     constructor(socket) {
         this.socket = socket;
-        this.last_fe_tick = 0;
-        this.last_be_tick = 0;
         this.map_canvas;
         this.map_canvas_border;
         this.map_width;
@@ -40,12 +38,12 @@ class Game {
     async setup_game(p_datapack) {
         return new Promise((resolve, reject) => {
             var datapack = JSON.parse(p_datapack);
-            console.log(JSON.parse(p_datapack));
             this.map_canvas = document.getElementById("map");
             this.map_ctx = this.map_canvas.getContext("2d");
             window.onresize = this.window_resize_handler();
             if (this.layout === 'system') {
                 this.space_objects = datapack.space_objects;
+                this.last_fe_tick = datapack.last_update;
                 var system_center_object_index;
                 for (var i = 0; i < this.space_objects.length; i++) {
                     this.space_objects[i].image = document.getElementById(this.space_objects[i].image);
@@ -68,6 +66,7 @@ class Game {
                     }
                 }
                 this.center_galaxy = this.galaxies.splice(center_galaxy_index, 1)[0];
+                this.last_fe_tick = Date.now();
             }
             this.xOffset = this.map_width/2;
             this.yOffset = this.map_height/2;
@@ -89,6 +88,7 @@ class Game {
             });
             window.requestAnimationFrame(this.draw.bind(this));
             this.logic_loop = setTimeout(this.update.bind(this), this.tick_time);
+            this.last_be_tick = Date.now();
             resolve();
         });
     }
@@ -283,9 +283,9 @@ class Game {
                 this.fleet.move_point = fleet_data.move_point;
             } else if (this.fleet.move_point !== undefined) {
                 if (this.fleet.move_point.deleted !== undefined) {
-                    this.fleet.move_point = {};
+                    delete this.fleet.move_point;
                 } else {
-                    this.fleet.move_point.deleted == true;
+                    this.fleet.move_point.deleted = true;
                 }
             }
             this.fleet.last_x = this.fleet.x;

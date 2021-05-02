@@ -455,14 +455,8 @@ module.exports = class DbManager {
         return {resources: resources, buildings: building_details, units: unit_results, unit_ques: player_ques, building_details: building_results};
     }
 
-    async get_map_datapack(layout) {
-        if (layout === 'system') {
-            var space_objects = await this.get_space_objects(1);
-            return {space_objects: space_objects};
-        } else if(layout === 'galaxy') {
-            var galaxies = await this.get_galaxies();
-            return {galaxies: galaxies};
-        }
+    async get_map_datapack() {
+        return this.get_galaxies();
     }
 
     async build_units(username, p_units) {
