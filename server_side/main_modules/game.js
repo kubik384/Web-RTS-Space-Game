@@ -12,6 +12,7 @@ module.exports = class Game {
         this.secondary_save_time = 300000;
         this.saving = false;
         this.updating = false;
+        this.players = [];
     }
 
     async setup_game() {
@@ -98,6 +99,11 @@ module.exports = class Game {
                 this.fleets[i].x += this.fleets[i].velocity.x * time_passed;
                 this.fleets[i].y += this.fleets[i].velocity.y * time_passed;
             }
+            /*
+            for (var i = 0; i < this.players.length; i++) {
+                this.players[i].socket.emit('fleets_update', this.fleets);
+            }
+            */
             this.server.sockets.emit('fleets_update', this.fleets);
 
             this.attempt_game_save(timestamp);
@@ -158,9 +164,31 @@ module.exports = class Game {
         });
     }
 
-    async assemble_fleet() {
-        var player_planet = this.space_objects[1];
-        var system_center_object = this.space_objects[0];
+    async assemble_fleet(socket) {
+        var player_planet;
+        var system_center_object;
+        var break_loop = false;
+        for (var i = 0; i < this.players.length; i++) {
+            if (this.players[i].socket.id == socket.id) {
+                for (var j = 0; j < this.space_objects.length; j++) {
+                    if (this.players[i].space_object_id == this.space_objects[j].space_object_id) {
+                        player_planet = this.space_objects[j];
+                        if (!break_loop)
+                            break_loop = true; 
+                        else
+                            break;
+                    }
+                    if (this.players[i].galaxy_id == this.space_objects[j].galaxy_id && this.space_objects[j].x == 0 && this.space_objects[j].y == 0) {
+                        system_center_object = this.space_objects[j];
+                        if (!break_loop)
+                            break_loop = true; 
+                        else
+                            break;
+                    }
+                }
+                break;
+            }
+        }
         var rads = await utils.angleToRad(player_planet.rot);
         var [origin_x, origin_y] = [player_planet.x, player_planet.y];
         var [center_x, center_y] = [system_center_object.x, system_center_object.y];
@@ -182,5 +210,20 @@ module.exports = class Game {
         } else if (layout === 'system') {
             return {space_objects: this.space_objects, last_update: this.last_tick};
         }
+    }
+
+    async addPlayer(socket) {
+        //socket remains a reference - isn't deep copied
+        this.players.push({socket: socket, galaxy_id: 1, space_object_id: 2});
+    }
+
+    async removePlayer(socket) {
+        for (var i = 0; i < this.players.length; i++) {
+            if (this.players[i].socket.id == socket.id) {
+                this.players.splice(i, 1);
+                return;
+            }
+        }
+        throw new Error('Did not find player to get them removed from the players array');
     }
 }

@@ -10,8 +10,8 @@ var cookieParser = require('cookie-parser');
 var bcrypt = require('bcrypt');
 var io = require('socket.io')(server, {pingInterval: 1500});
 
-const DbManager = require('.server_side/main_modules/dbManager.js');
-const Game = require('.server_side/main_modules/Game.js');
+const DbManager = require('./server_side/main_modules/dbManager.js');
+const Game = require('./server_side/main_modules/Game.js');
 
 const saltRounds = 10;
 const gameURL = '/game';
@@ -21,7 +21,7 @@ const messageURL = gameURL + '/message';
 const researchURL = gameURL + '/research';
 var dbManager = new DbManager();
 var game = new Game(dbManager, io);
-const root = path.resolve(__dirname, '..');
+const root = __dirname;
 var tokens = [];
 var socketTable = {};
 
@@ -151,58 +151,63 @@ server.listen(8080, function() {
 
 // Add the WebSocket handlers
 io.on('connection', socket => {
-	socket.on('planet_datapack_request', token => {
-		socketTable[socket.id] = token;
-		dbManager.get_starter_datapack(token).then(datapack => { socket.emit('starter_datapack', JSON.stringify(datapack)); });
-	});
-
-	socket.on('upgrade_building', building => {
-		var token = socketTable[socket.id];
-		dbManager.upgrade_building(token, building).catch(e => {
-			if (e != 'Not enough resources to upgrade building') {
-				throw e;
-			}
+	console.log(socket.id);
+	game.addPlayer(socket).then(() => {
+		socket.on('planet_datapack_request', token => {
+			socketTable[socket.id] = token;
+			dbManager.get_starter_datapack(token).then(datapack => { socket.emit('starter_datapack', JSON.stringify(datapack)); });
 		});
-	});
 
-	socket.on('fetch_building_details', data => {
-		dbManager.get_building_details(data).then(results => { socket.emit('building_fetch_result', results[0]);});
-	});
-
-	socket.on('cancel_building_update', building => {
-		var token = socketTable[socket.id];
-		dbManager.cancel_building_update(token, building);
-	});
-
-	socket.on('downgrade_building', building => {
-		var token = socketTable[socket.id];
-		dbManager.downgrade_building(token, building);
-	});
-
-	socket.on('map_datapack_request', (token, layout) => {
-		socketTable[socket.id] = token;
-		game.get_map_datapack(layout).then(result => {socket.emit('map_datapack', JSON.stringify(result))});
-	});
-
-	socket.on('build_units', (units) => {
-		var token = socketTable[socket.id];
-		dbManager.build_units(token, units).catch(e => {
-			if (e != 'Not enough resources to build all units' && e != 'Invalid units input received') {
-				throw e;
-			}
+		socket.on('upgrade_building', building => {
+			var token = socketTable[socket.id];
+			dbManager.upgrade_building(token, building).catch(e => {
+				if (e != 'Not enough resources to upgrade building') {
+					throw e;
+				}
+			});
 		});
-	});
 
-	socket.on('assemble_fleet', () => {
-		game.assemble_fleet();
-	});
+		socket.on('fetch_building_details', data => {
+			dbManager.get_building_details(data).then(results => { socket.emit('building_fetch_result', results[0]);});
+		});
 
-	socket.on('set_movepoint', (x, y) => {
-		game.set_movepoint(x, y);
-	});
+		socket.on('cancel_building_update', building => {
+			var token = socketTable[socket.id];
+			dbManager.cancel_building_update(token, building);
+		});
 
-	socket.on('disconnect', () => {
-		tokens.slice(tokens.findIndex(token => { return token == socketTable[socket.id] }), 1);
-		delete socketTable[socket.id];
+		socket.on('downgrade_building', building => {
+			var token = socketTable[socket.id];
+			dbManager.downgrade_building(token, building);
+		});
+
+		socket.on('map_datapack_request', (token, layout) => {
+			socketTable[socket.id] = token;
+			game.get_map_datapack(layout).then(result => {socket.emit('map_datapack', JSON.stringify(result))});
+		});
+
+		socket.on('build_units', (units) => {
+			var token = socketTable[socket.id];
+			dbManager.build_units(token, units).catch(e => {
+				if (e != 'Not enough resources to build all units' && e != 'Invalid units input received') {
+					throw e;
+				}
+			});
+		});
+
+		socket.on('assemble_fleet', () => {
+			game.assemble_fleet(socket);
+		});
+
+		socket.on('set_movepoint', (x, y) => {
+			game.set_movepoint(x, y);
+		});
+
+		socket.on('disconnect', () => {
+			console.log(socket.id);
+			tokens.splice(tokens.findIndex(token => { return token == socketTable[socket.id] }), 1);
+			delete socketTable[socket.id];
+			game.removePlayer(socket);
+		});
 	});
 });
