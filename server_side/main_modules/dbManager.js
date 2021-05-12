@@ -23,6 +23,11 @@ module.exports = class DbManager {
         this.con.connect( err => { if (err) throw err; });
     }
 
+    async get_basic_player_map_info(username) {
+        var query = 'SELECT space_object_id, galaxy_id FROM players WHERE username = ?';
+        return this.execute_query(query, [username]);
+    }
+
     /**
      * 
      * @param {String} username 

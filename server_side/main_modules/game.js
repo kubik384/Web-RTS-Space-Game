@@ -181,7 +181,7 @@ module.exports = class Game {
                     if (this.players[i].galaxy_id == this.space_objects[j].galaxy_id && this.space_objects[j].x == 0 && this.space_objects[j].y == 0) {
                         system_center_object = this.space_objects[j];
                         if (!break_loop)
-                            break_loop = true; 
+                            break_loop = true;
                         else
                             break;
                     }
@@ -212,9 +212,10 @@ module.exports = class Game {
         }
     }
 
-    async addPlayer(socket) {
+    async addPlayer(socket, username) {
         //socket remains a reference - isn't deep copied
-        this.players.push({socket: socket, galaxy_id: 1, space_object_id: 2});
+        var basic_player_map_info = (await this.dbManager.get_basic_player_map_info(username))[0];
+        this.players.push({socket: socket, username: username, galaxy_id: basic_player_map_info.galaxy_id, space_object_id: basic_player_map_info.space_object_id});
     }
 
     async removePlayer(socket) {

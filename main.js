@@ -89,7 +89,7 @@ app.post('/login', function(req, res) {
 
 app.get(planetURL, function(req,res) {
 	if (req.cookies.token !== undefined) {
-		if (tokens.findIndex(token => { if (token == req.cookies.token) { return true; } }) != -1) {
+		if (tokens.findIndex(token => { return token == req.cookies.token }) != -1) {
 			res.sendFile(path.join(root + '/client_side', 'pages/planet.html'));
 		} else {
 			res.clearCookie('token');
@@ -151,63 +151,64 @@ server.listen(8080, function() {
 
 // Add the WebSocket handlers
 io.on('connection', socket => {
-	console.log(socket.id);
-	game.addPlayer(socket).then(() => {
-		socket.on('planet_datapack_request', token => {
-			socketTable[socket.id] = token;
-			dbManager.get_starter_datapack(token).then(datapack => { socket.emit('starter_datapack', JSON.stringify(datapack)); });
-		});
+	socket.on('planet_datapack_request', token => {
+		socketTable[socket.id] = token;
+		dbManager.get_starter_datapack(token).then(datapack => { socket.emit('starter_datapack', JSON.stringify(datapack)); });
+	});
 
-		socket.on('upgrade_building', building => {
-			var token = socketTable[socket.id];
-			dbManager.upgrade_building(token, building).catch(e => {
-				if (e != 'Not enough resources to upgrade building') {
-					throw e;
-				}
-			});
+	socket.on('upgrade_building', building => {
+		var token = socketTable[socket.id];
+		dbManager.upgrade_building(token, building).catch(e => {
+			if (e != 'Not enough resources to upgrade building') {
+				throw e;
+			}
 		});
+	});
 
-		socket.on('fetch_building_details', data => {
-			dbManager.get_building_details(data).then(results => { socket.emit('building_fetch_result', results[0]);});
+	socket.on('fetch_building_details', data => {
+		dbManager.get_building_details(data).then(results => { socket.emit('building_fetch_result', results[0]);});
+	});
+
+	socket.on('cancel_building_update', building => {
+		var token = socketTable[socket.id];
+		dbManager.cancel_building_update(token, building);
+	});
+
+	socket.on('downgrade_building', building => {
+		var token = socketTable[socket.id];
+		dbManager.downgrade_building(token, building);
+	});
+
+	socket.on('map_datapack_request', (token, layout) => {
+		game.addPlayer(socket, token);
+		socket.gameAdded = true;
+		socketTable[socket.id] = token;
+		game.get_map_datapack(layout).then(result => {socket.emit('map_datapack', JSON.stringify(result))});
+	});
+
+	socket.on('build_units', (units) => {
+		var token = socketTable[socket.id];
+		dbManager.build_units(token, units).catch(e => {
+			if (e != 'Not enough resources to build all units' && e != 'Invalid units input received') {
+				throw e;
+			}
 		});
+	});
 
-		socket.on('cancel_building_update', building => {
-			var token = socketTable[socket.id];
-			dbManager.cancel_building_update(token, building);
-		});
+	socket.on('assemble_fleet', () => {
+		game.assemble_fleet(socket);
+	});
 
-		socket.on('downgrade_building', building => {
-			var token = socketTable[socket.id];
-			dbManager.downgrade_building(token, building);
-		});
+	socket.on('set_movepoint', (x, y) => {
+		game.set_movepoint(x, y);
+	});
 
-		socket.on('map_datapack_request', (token, layout) => {
-			socketTable[socket.id] = token;
-			game.get_map_datapack(layout).then(result => {socket.emit('map_datapack', JSON.stringify(result))});
-		});
-
-		socket.on('build_units', (units) => {
-			var token = socketTable[socket.id];
-			dbManager.build_units(token, units).catch(e => {
-				if (e != 'Not enough resources to build all units' && e != 'Invalid units input received') {
-					throw e;
-				}
-			});
-		});
-
-		socket.on('assemble_fleet', () => {
-			game.assemble_fleet(socket);
-		});
-
-		socket.on('set_movepoint', (x, y) => {
-			game.set_movepoint(x, y);
-		});
-
-		socket.on('disconnect', () => {
-			console.log(socket.id);
-			tokens.splice(tokens.findIndex(token => { return token == socketTable[socket.id] }), 1);
-			delete socketTable[socket.id];
+	socket.on('disconnect', () => {
+		//doing this "logs out" the user every time they try to switch pages (e.g. go from planet to map - causes disconnect and is removed from the tokens, which causes them to end up the next time on the login page)
+		//tokens.splice(tokens.findIndex(token => { return token == socketTable[socket.id] }), 1);
+		delete socketTable[socket.id];
+		if (socket.gameAdded !== undefined) {
 			game.removePlayer(socket);
-		});
+		}
 	});
 });
