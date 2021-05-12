@@ -89,7 +89,7 @@ app.post('/login', function(req, res) {
 
 app.get(planetURL, function(req,res) {
 	if (req.cookies.token !== undefined) {
-		if (tokens.findIndex(token => { return token == req.cookies.token }) != -1) {
+		if (tokens.findIndex(token => token == req.cookies.token) != -1) {
 			res.sendFile(path.join(root + '/client_side', 'pages/planet.html'));
 		} else {
 			res.clearCookie('token');
@@ -102,7 +102,7 @@ app.get(planetURL, function(req,res) {
 
 app.get(mapURL, function(req,res) {
 	if (req.cookies.token !== undefined) {
-		if (tokens.findIndex(token => { if (token == req.cookies.token) { return true; } }) != -1) {
+		if (tokens.findIndex(token => token == req.cookies.token) != -1) {
 			res.sendFile(path.join(root + '/client_side', 'pages/map.html'));
 		} else {
 			res.clearCookie('token');
@@ -115,7 +115,7 @@ app.get(mapURL, function(req,res) {
 
 app.get(messageURL, function(req,res) {
 	if (req.cookies.token !== undefined) {
-		if (tokens.findIndex(token => { if (token == req.cookies.token) { return true; } }) != -1) {
+		if (tokens.findIndex(token => token == req.cookies.token) != -1) {
 			res.sendFile(path.join(root + '/client_side', 'pages/message.html'));
 		} else {
 			res.clearCookie('token');
@@ -128,7 +128,7 @@ app.get(messageURL, function(req,res) {
 
 app.get(researchURL, function(req,res) {
 	if (req.cookies.token !== undefined) {
-		if (tokens.findIndex(token => { if (token == req.cookies.token) { return true; } }) != -1) {
+		if (tokens.findIndex(token => token == req.cookies.token) != -1) {
 			res.sendFile(path.join(root + '/client_side', 'pages/research.html'));
 		} else {
 			res.clearCookie('token');
@@ -197,16 +197,16 @@ io.on('connection', socket => {
 	});
 
 	socket.on('assemble_fleet', () => {
-		game.assemble_fleet(socket);
+		game.assemble_fleet(socket.id);
 	});
 
 	socket.on('set_movepoint', (x, y) => {
-		game.set_movepoint(x, y);
+		game.set_movepoint(socket.id, x, y);
 	});
 
 	socket.on('disconnect', () => {
 		//doing this "logs out" the user every time they try to switch pages (e.g. go from planet to map - causes disconnect and is removed from the tokens, which causes them to end up the next time on the login page)
-		//tokens.splice(tokens.findIndex(token => { return token == socketTable[socket.id] }), 1);
+		//tokens.splice(tokens.findIndex(token => token == socketTable[socket.id]), 1);
 		delete socketTable[socket.id];
 		if (socket.gameAdded !== undefined) {
 			game.removePlayer(socket);

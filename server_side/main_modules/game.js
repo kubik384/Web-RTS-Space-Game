@@ -164,29 +164,25 @@ module.exports = class Game {
         });
     }
 
-    async assemble_fleet(socket) {
+    async assemble_fleet(socket_id) {
         var player_planet;
         var system_center_object;
+        var player = this.players.find( player => player.socket.id == socket_id );
         var break_loop = false;
-        for (var i = 0; i < this.players.length; i++) {
-            if (this.players[i].socket.id == socket.id) {
-                for (var j = 0; j < this.space_objects.length; j++) {
-                    if (this.players[i].space_object_id == this.space_objects[j].space_object_id) {
-                        player_planet = this.space_objects[j];
-                        if (!break_loop)
-                            break_loop = true;
-                        else
-                            break;
-                    }
-                    if (this.players[i].galaxy_id == this.space_objects[j].galaxy_id && this.space_objects[j].x == 0 && this.space_objects[j].y == 0) {
-                        system_center_object = this.space_objects[j];
-                        if (!break_loop)
-                            break_loop = true;
-                        else
-                            break;
-                    }
-                }
-                break;
+        for (var j = 0; j < this.space_objects.length; j++) {
+            if (player.space_object_id == this.space_objects[j].space_object_id) {
+                player_planet = this.space_objects[j];
+                if (!break_loop)
+                    break_loop = true;
+                else
+                    break;
+            }
+            if (player.galaxy_id == this.space_objects[j].galaxy_id && this.space_objects[j].x == 0 && this.space_objects[j].y == 0) {
+                system_center_object = this.space_objects[j];
+                if (!break_loop)
+                    break_loop = true;
+                else
+                    break;
             }
         }
         var rads = await utils.angleToRad(player_planet.rot);
@@ -194,14 +190,18 @@ module.exports = class Game {
         var [center_x, center_y] = [system_center_object.x, system_center_object.y];
         var object_x = center_x + (origin_x - center_x) * Math.cos(rads) - (origin_y - center_y) * Math.sin(rads) - 10;
         var object_y = center_y + (origin_x - center_x) * Math.sin(rads) + (origin_y - center_y) * Math.cos(rads) - 10;
-        var fleet = {x: object_x, y: object_y, acceleration: 0.000005, velocity: new Vector(0, 0)};
-        this.fleets = [fleet];
+        var fleet = {player: player.username, x: object_x, y: object_y, acceleration: 0.000005, velocity: new Vector(0, 0)};
+        var f_index = this.fleets.findIndex( fleet => fleet.player == player.username);
+        if (f_index == -1) {
+            this.fleets.push(fleet);
+        } else {
+            this.fleets[f_index] = fleet;
+        }
     }
 
-    async set_movepoint(x, y) {
-        if (this.fleets[0] !== undefined) {
-            this.fleets[0].move_point = {x:x, y:y};
-        }
+    async set_movepoint(socket_id, x, y) {
+        var username = this.players.find( player => player.socket.id == socket_id ).username;
+        this.fleets.find( fleet => fleet.player == username ).move_point = {x:x, y:y};
     }
 
     async get_map_datapack(layout, socket_id) {
