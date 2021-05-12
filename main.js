@@ -180,10 +180,11 @@ io.on('connection', socket => {
 	});
 
 	socket.on('map_datapack_request', (token, layout) => {
-		game.addPlayer(socket, token);
-		socket.gameAdded = true;
-		socketTable[socket.id] = token;
-		game.get_map_datapack(layout).then(result => {socket.emit('map_datapack', JSON.stringify(result))});
+		game.addPlayer(socket, token).then(() => {
+			socket.gameAdded = true;
+			socketTable[socket.id] = token;
+			game.get_map_datapack(layout, socket.id).then(result => {socket.emit('map_datapack', JSON.stringify(result))});
+		});
 	});
 
 	socket.on('build_units', (units) => {

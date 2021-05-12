@@ -174,7 +174,7 @@ module.exports = class Game {
                     if (this.players[i].space_object_id == this.space_objects[j].space_object_id) {
                         player_planet = this.space_objects[j];
                         if (!break_loop)
-                            break_loop = true; 
+                            break_loop = true;
                         else
                             break;
                     }
@@ -204,12 +204,23 @@ module.exports = class Game {
         }
     }
 
-    async get_map_datapack(layout) {
+    async get_map_datapack(layout, socket_id) {
         if (layout === 'galaxy') {
             return {galaxies: this.dbManager.get_map_datapack()};
         } else if (layout === 'system') {
-            return {space_objects: this.space_objects, last_update: this.last_tick};
+            for (var i = 0; i < this.players.length; i++) {
+                if (this.players[i].socket.id == socket_id) {
+                    var space_objects = [];
+                    for (var j = 0; j < this.space_objects.length; j++) {
+                        if (this.space_objects[j].galaxy_id == this.players[i].galaxy_id) {
+                            space_objects.push(this.space_objects[j]);
+                        }
+                    }
+                    return {space_objects: space_objects, last_update: this.last_tick};
+                }
+            }
         }
+        throw new Error('Player was not found to return map datapack');
     }
 
     async addPlayer(socket, username) {
