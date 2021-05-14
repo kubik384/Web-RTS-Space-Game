@@ -49,8 +49,8 @@ app.post('/register', function(req, res) {
 					if (err) {
 						throw err;
 					}
-					query = "INSERT INTO players (username, password) VALUES ( ? , ? )";
-					dbManager.execute_query(query, [username, hash]).then(() => {
+					query = "INSERT INTO players (username, password, galaxy_id, space_object_id) VALUES ( ? , ? , ?, ? )";
+					dbManager.execute_query(query, [username, hash, 1, 2]).then(() => {
 						res.sendStatus(200);
 					}).catch(err => { throw err });
 				});
