@@ -294,8 +294,8 @@ class Game {
                     this.fleets[i].last_y = this.fleets[i].y;
                     this.fleets[i].x = fleets[i].x;
                     this.fleets[i].y = fleets[i].y;
-                    this.fleets[i].last_velocity = this.fleets[i].velocity;
-                    this.fleets[i].velocity = new Vector(fleets[i].velocity.x, fleets[i].velocity.y);
+                    //this.fleets[i].last_velocity = this.fleets[i].velocity;
+                    //this.fleets[i].velocity = new Vector(fleets[i].velocity.x, fleets[i].velocity.y);
                 } else {
                     this.fleets.splice(i, 1);
                 }
