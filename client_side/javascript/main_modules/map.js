@@ -277,31 +277,32 @@ class Game {
         var timestamp = Date.now();
         var time_passed = timestamp - this.last_be_tick;
         this.tick_be_time_passed = time_passed;
-        var fleet_data = fleets[0];
-        if (fleet_data !== undefined) {
-            if (fleet_data.move_point !== undefined) {
-                this.fleet.move_point = fleet_data.move_point;
-            } else if (this.fleet.move_point !== undefined) {
-                if (this.fleet.move_point.deleted !== undefined) {
-                    delete this.fleet.move_point;
+        for(var i = 0; i < fleets.length; i++) {
+            var fleet_data = fleets[0];
+            if (fleet_data !== undefined) {
+                if (fleet_data.move_point !== undefined) {
+                    this.fleet.move_point = fleet_data.move_point;
+                } else if (this.fleet.move_point !== undefined) {
+                    if (this.fleet.move_point.deleted !== undefined) {
+                        delete this.fleet.move_point;
+                    } else {
+                        this.fleet.move_point.deleted = true;
+                    }
+                }
+                this.fleet.last_x = this.fleet.x;
+                this.fleet.last_y = this.fleet.y;
+                this.fleet.x = fleet_data.x;
+                this.fleet.y = fleet_data.y;
+                this.fleet.last_velocity = this.fleet.velocity;
+                this.fleet.velocity = new Vector(fleet_data.velocity.x, fleet_data.velocity.y);
+            } else if (this.fleet !== undefined) {
+                if (this.fleet.deleted !== undefined) {
+                    this.fleet = {};
                 } else {
-                    this.fleet.move_point.deleted = true;
+                    this.fleet.deleted = true;
                 }
             }
-            this.fleet.last_x = this.fleet.x;
-            this.fleet.last_y = this.fleet.y;
-            this.fleet.x = fleet_data.x;
-            this.fleet.y = fleet_data.y;
-            this.fleet.last_velocity = this.fleet.velocity;
-            this.fleet.velocity = new Vector(fleet_data.velocity.x, fleet_data.velocity.y);
-        } else if (this.fleet !== undefined) {
-            if (this.fleet.deleted !== undefined) {
-                this.fleet = {};
-            } else {
-                this.fleet.deleted = true;
-            }
         }
-        
         this.last_be_tick = timestamp;
     }
 }

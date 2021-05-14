@@ -22,6 +22,7 @@ module.exports = class Game {
         } else {
             this.space_objects = await this.dbManager.get_space_objects();
             this.fleets = [];
+            this.hidden_fleets_info = [];
         }
         const timestamp = Date.now();
         this.last_tick = timestamp;
@@ -99,12 +100,10 @@ module.exports = class Game {
                 this.fleets[i].x += this.fleets[i].velocity.x * time_passed;
                 this.fleets[i].y += this.fleets[i].velocity.y * time_passed;
             }
-            /*
+
             for (var i = 0; i < this.players.length; i++) {
                 this.players[i].socket.emit('fleets_update', this.fleets);
             }
-            */
-            this.server.sockets.emit('fleets_update', this.fleets);
 
             this.attempt_game_save(timestamp);
             if (time_passed >= this.tick_time + Math.floor(this.tick_time/6)) {
@@ -190,18 +189,22 @@ module.exports = class Game {
         var [center_x, center_y] = [system_center_object.x, system_center_object.y];
         var object_x = center_x + (origin_x - center_x) * Math.cos(rads) - (origin_y - center_y) * Math.sin(rads) - 10;
         var object_y = center_y + (origin_x - center_x) * Math.sin(rads) + (origin_y - center_y) * Math.cos(rads) - 10;
-        var fleet = {player: player.username, x: object_x, y: object_y, acceleration: 0.000005, velocity: new Vector(0, 0)};
+        var fleet = {x: object_x, y: object_y, velocity: new Vector(0, 0)};
+        var hidden_fleet_info = {username: player.username, acceleration: 0.000005};
         var f_index = this.fleets.findIndex( fleet => fleet.player == player.username);
         if (f_index == -1) {
             this.fleets.push(fleet);
+            this.hidden_fleets_info.push(hidden_fleet_info);
         } else {
             this.fleets[f_index] = fleet;
+            this.hidden_fleets_info[f_index] = hidden_fleet_info;
         }
     }
 
     async set_movepoint(socket_id, x, y) {
         var username = this.players.find( player => player.socket.id == socket_id ).username;
-        this.fleets.find( fleet => fleet.player == username ).move_point = {x:x, y:y};
+        var f_index = this.hidden_fleets_info.findIndex( hidden_fleet_info => hidden_fleet_info.username == username );
+        this.hidden_fleets_info[f_index].move_point = {x:x, y:y};
     }
 
     async get_map_datapack(layout, socket_id) {
