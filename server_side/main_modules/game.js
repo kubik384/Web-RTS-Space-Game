@@ -46,7 +46,7 @@ module.exports = class Game {
                     }
                 }
                 
-                for (var j = 0; j < this.fleets.length; j++) {
+                for (var j = this.fleets.length - 1; j >= 0; j--) {
                     var rads = await utils.angleToRad(this.space_objects[i].rot);
                     var system_center_object = this.space_objects[0];
                     var [origin_x, origin_y] = [this.space_objects[i].x, this.space_objects[i].y];
