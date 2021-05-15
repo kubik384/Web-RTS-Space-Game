@@ -24,7 +24,6 @@ class Game {
         this.galaxies = [];
         this.center_galaxy;
         this.fleets = [];
-        this.controlled_fleet = {};
         this.time_passed;
         
         const query_string = window.location.search;
@@ -278,36 +277,52 @@ class Game {
         var timestamp = Date.now();
         var time_passed = timestamp - this.last_be_tick;
         this.tick_be_time_passed = time_passed;
-        for (var i = 0; i < fleets.length; i++) {
-            if (this.fleets[i] !== undefined) {
-                if (this.fleets[i].deleted === undefined) {
-                    if (fleets[i].move_point !== undefined) {
-                        this.fleets[i].move_point = fleets[i].move_point;
-                    } else if (this.fleets[i].move_point !== undefined) {
-                        if (this.fleets[i].move_point.deleted !== undefined) {
-                            delete this.fleets[i].move_point;
-                        } else {
-                            this.fleets[i].move_point.deleted = true;
-                        }
-                    }
-                    this.fleets[i].last_x = this.fleets[i].x;
-                    this.fleets[i].last_y = this.fleets[i].y;
-                    this.fleets[i].x = fleets[i].x;
-                    this.fleets[i].y = fleets[i].y;
-                    //this.fleets[i].last_velocity = this.fleets[i].velocity;
-                    //this.fleets[i].velocity = new Vector(fleets[i].velocity.x, fleets[i].velocity.y);
-                } else {
-                    this.fleets.splice(i, 1);
+        
+        for (var i = this.fleets.length - 1; i >= 0; i--) {
+            if (this.fleets[i].deleted !== undefined) {
+                //if the fleet has a username attribute, it's the controlled fleet - temporary solution
+                if (this.fleets[i].owner !== undefined) {
+                    this.controlled_fleet = undefined;
                 }
-            } else {
-                this.fleets.push(fleets[i]);
-                if (this.fleets[i].username !== undefined) {
-                    controlled_fleet = this.fleets[i];
-                }
+                this.fleets.splice(i, 1);
             }
         }
-        for (var i = 0; i < deleted_fleets.length; i++) {
-            this.fleets[i].deleted = true;
+
+        var no_this_fleets = this.fleets.length;
+        var number_of_fleets = fleets.length + deleted_fleets.length;
+        if (number_of_fleets > no_this_fleets) {
+            this.fleets = this.fleets.concat(fleets.slice(no_this_fleets - number_of_fleets));
+        }
+
+        for (var i = 0; i < this.fleets.length; i++) {
+            //Doesn't seem like a particularly resource efficient solution
+            if (deleted_fleets.includes(i)) {
+                this.fleets[deleted_fleets[i]].deleted = true;
+            } else {
+                //if the fleet has an owner attribute, it's the controlled fleet - temporary solution
+                if (this.fleets[i].owner !== undefined) {
+                    this.controlled_fleet = this.fleets[i];
+                }
+                if (fleets[i].move_point !== undefined) {
+                    this.fleets[i].move_point = fleets[i].move_point;
+                } else if (this.fleets[i].move_point !== undefined) {
+                    if (this.fleets[i].move_point.deleted !== undefined) {
+                        delete this.fleets[i].move_point;
+                    } else {
+                        this.fleets[i].move_point.deleted = true;
+                    }
+                }
+                this.fleets[i].last_x = this.fleets[i].x;
+                this.fleets[i].last_y = this.fleets[i].y;
+                this.fleets[i].x = fleets[i].x;
+                this.fleets[i].y = fleets[i].y;
+                /* Velocity is not currently used anywhere anyway
+                if (this.fleets.velocity !== undefined) {
+                    this.fleets[i].last_velocity = this.fleets[i].velocity;
+                    this.fleets[i].velocity = new Vector(fleets[i].velocity.x, fleets[i].velocity.y);
+                }
+                */
+            }
         }
         this.last_be_tick = timestamp;
     }

@@ -63,12 +63,11 @@ module.exports = class Game {
                     vector = new Vector(this.fleets[j], new Vector(object_x, object_y));
                     //Expect all the space objects to be squares (circles) = same width and height - for now
                     var object_radius = this.space_objects[i].width/2;
-                    var g_strength = Math.pow(object_radius/await vector.length(), 2);
-                    var pull = time_passed * g_strength * object_radius / 10000000;
-                    this.fleets[j].velocity = await this.fleets[j].velocity.add(await (await vector.normalize()).multiply(pull));
-
-                    var object_radius = this.space_objects[i].width/2;
-                    if (await vector.length() <= object_radius) {
+                    if (await vector.length() > object_radius) {
+                        var g_strength = Math.pow(object_radius/await vector.length(), 2);
+                        var pull = time_passed * g_strength * object_radius / 10000000;
+                        this.fleets[j].velocity = await this.fleets[j].velocity.add(await (await vector.normalize()).multiply(pull));
+                    } else {
                         this.deleted_fleets.push(j);
                         this.fleets.splice(j, 1);
                     }
@@ -77,7 +76,7 @@ module.exports = class Game {
 
             for (var i = 0; i < this.fleets.length; i++) {
                 if (this.fleets[i].move_point !== undefined) {
-                    if (this.fleets[i].x != this.fleets[i].move_point.x || this.fleets[i].y != this.fleets[i].move_point.y) {
+                    //if (this.fleets[i].x != this.fleets[i].move_point.x || this.fleets[i].y != this.fleets[i].move_point.y) {
                         var vector = new Vector(this.fleets[i], this.fleets[i].move_point);
                         var distance = await vector.length();
                         var speed = await this.fleets[i].velocity.length() * time_passed;
@@ -93,9 +92,9 @@ module.exports = class Game {
                         }
 
                         this.fleets[i].velocity = await this.fleets[i].velocity.add(await calculated_vector.multiply(this.fleets[i].acceleration * time_passed));
-                    } else {
-                        delete this.fleets[i].move_point;
-                    }
+                    //} else { - else is currently never executed anyway since the fleet cordinates are in decimals and the chance they will get to equal the whole numbers of the move point coordinates are near 0
+                    //    delete this.fleets[i].move_point;
+                    //}
                 }
 
                 this.fleets[i].x += this.fleets[i].velocity.x * time_passed;
