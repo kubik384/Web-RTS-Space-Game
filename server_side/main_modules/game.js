@@ -17,13 +17,8 @@ module.exports = class Game {
     }
 
     async setup_game() {
-        if (process.argv[2].toLowerCase() == 'true') {
-            this.finished_loading = false;
-            await this.attempt_game_load(process.argv[3]);
-        } else {
-            this.space_objects = await this.dbManager.get_space_objects();
-            this.fleets = [];
-        }
+        this.finished_loading = false;
+        await this.attempt_game_load(process.argv[2]);
         const timestamp = Date.now();
         this.last_tick = timestamp;
         this.last_save = timestamp;

@@ -7,8 +7,7 @@ To start the server, start the MySQL server (wamp), then use script start ('npm 
 MySQL will most likely require a certain databse with set tables, etc.
 
 Use the following parameter order for passing command line arguments:
-1 - boolean: set to true to load the game from a file instead of the database
-2 - string: the path to the save file from the root directory (e.g. server_side/save_files/save.txt)
+1 - string: the path to the save file from the root directory (e.g. server_side/save_files/save.txt)
 
 
 
