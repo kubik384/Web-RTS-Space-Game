@@ -209,33 +209,36 @@ class Game {
         if (this.layout === 'system') {
             for (var i = 0; i < this.space_objects.length; i++) {
                 this.map_ctx.save();
-                this.map_ctx.translate(this.xOffset, this.yOffset);
+                this.map_ctx.translate(this.xOffset * this.zoom, this.yOffset * this.zoom);
                 var rotation = ((this.space_objects[i].rot - this.space_objects[i].last_rot) * fe_interpolation_coefficient + this.space_objects[i].last_rot);
                 this.map_ctx.rotate(utils.syncAngleToRad(rotation));
-                var x_position = this.space_objects[i].x - this.space_objects[i].width/2;
-                var y_position = this.space_objects[i].y - this.space_objects[i].width/2;
+                var x_position = this.space_objects[i].x * this.zoom - this.space_objects[i].width/2 * this.zoom;
+                var y_position = this.space_objects[i].y * this.zoom - this.space_objects[i].width/2 * this.zoom;
                 this.map_ctx.drawImage(this.space_objects[i].image, x_position, y_position, this.space_objects[i].width * this.zoom, this.space_objects[i].height * this.zoom);
                 this.map_ctx.restore();
             }
-            this.map_ctx.drawImage(this.system_center_object.image, this.system_center_object.x + this.xOffset - this.system_center_object.width/2, this.system_center_object.y + this.yOffset - this.system_center_object.width/2, this.system_center_object.width * this.zoom, this.system_center_object.height * this.zoom);
+            this.map_ctx.drawImage(this.system_center_object.image,
+                (this.system_center_object.x * this.zoom - this.system_center_object.width/2 * this.zoom) + this.xOffset * this.zoom, 
+                (this.system_center_object.y * this.zoom - this.system_center_object.width/2 * this.zoom) + this.yOffset * this.zoom, 
+                this.system_center_object.width * this.zoom, this.system_center_object.height * this.zoom);
 
             for (var i = 0; i < this.fleets.length; i++) {
                 var x_position = ((this.fleets[i].x - this.fleets[i].last_x) * be_interpolation_coefficient + this.fleets[i].last_x);
                 var y_position = ((this.fleets[i].y - this.fleets[i].last_y) * be_interpolation_coefficient + this.fleets[i].last_y);
                 this.map_ctx.save();
-                this.map_ctx.translate(this.xOffset, this.yOffset);
+                this.map_ctx.translate(this.xOffset  * this.zoom, this.yOffset  * this.zoom);
                 this.map_ctx.beginPath();
                 this.map_ctx.fillStyle = "red";
-                this.map_ctx.rect(x_position - 5, y_position - 5, 10  * this.zoom, 10  * this.zoom);
+                this.map_ctx.rect(x_position  * this.zoom - 5 * this.zoom, y_position  * this.zoom - 5 * this.zoom, 10  * this.zoom, 10  * this.zoom);
                 this.map_ctx.fill();
                 this.map_ctx.restore();
 
                 if (this.fleets[i].move_point !== undefined) {
                     this.map_ctx.save();
-                    this.map_ctx.translate(this.xOffset, this.yOffset);
+                    this.map_ctx.translate(this.xOffset * this.zoom, this.yOffset * this.zoom);
                     this.map_ctx.beginPath();
-                    this.map_ctx.moveTo(x_position, y_position);
-                    this.map_ctx.lineTo(this.fleets[i].move_point.x, this.fleets[i].move_point.y);
+                    this.map_ctx.moveTo(x_position * this.zoom, y_position * this.zoom);
+                    this.map_ctx.lineTo(this.fleets[i].move_point.x * this.zoom, this.fleets[i].move_point.y * this.zoom);
                     this.map_ctx.strokeStyle = "red";
                     this.map_ctx.stroke();
                     this.map_ctx.restore();
@@ -312,6 +315,11 @@ class Game {
             //if the fleet has an owner attribute, it's the controlled fleet - temporary solution
             if (this.fleets[i].owner !== undefined) {
                 this.controlled_fleet = this.fleets[i];
+            }
+            if (fleets[i] === undefined && this.logged === undefined) {
+                console.log(fleets);
+                console.log(this.fleets);
+                this.logged = true;
             }
             if (fleets[i].move_point !== undefined) {
                 this.fleets[i].move_point = fleets[i].move_point;
