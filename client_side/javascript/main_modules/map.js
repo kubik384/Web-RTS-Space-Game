@@ -91,13 +91,23 @@ class Game {
 
             document.getElementById('map').addEventListener('wheel', e => { 
                 e.preventDefault();
+                const deltaZoom = 0.25;
+                const rect = this.map_canvas.getBoundingClientRect();
+                var x = e.clientX - rect.left - this.map_canvas_border;
+                var y = e.clientY - rect.top - this.map_canvas_border;
+                var zoomRatio = deltaZoom/this.zoom;
                 if (e.deltaY < 0) {
                     if (this.zoom < 4) {
-                        this.zoom += 0.25;
+                        this.zoom += deltaZoom;
+                        var deltaXOffset = zoomRatio * this.map_width;
+                        var deltaYOffset = zoomRatio * this.map_height;
+                        console.log((this.map_height/2 - y)/(this.map_height/2) * (deltaYOffset));
+                        this.xOffset += (this.map_width/2 - x)/(this.map_width/2) * (deltaXOffset);
+                        this.yOffset += (this.map_height/2 - y)/(this.map_height/2) * (deltaYOffset);
                     }
                 } else {
                     if (this.zoom > 0.25) {
-                        this.zoom -= 0.25;
+                        this.zoom -= deltaZoom;
                     }
                 }
             });
