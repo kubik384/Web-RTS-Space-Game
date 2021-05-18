@@ -101,8 +101,8 @@ class Game {
                         this.zoom += deltaZoom;
                         var deltaXOffset = zoomRatio * this.map_width;
                         var deltaYOffset = zoomRatio * this.map_height;
-                        //this.xOffset += (this.map_width/2 - x)/(this.map_width/2) * (deltaXOffset) - deltaXOffset/2;
-                        //this.yOffset += (this.map_height/2 - y)/(this.map_height/2) * (deltaYOffset) - deltaYOffset/2;
+                        this.xOffset += (this.map_width/2 - x)/(this.map_width/2) * deltaXOffset/2;
+                        this.yOffset += (this.map_height/2 - y)/(this.map_height/2) * deltaYOffset/2;
                     }
                 } else {
                     if (this.zoom > 0.25) {
@@ -221,15 +221,15 @@ class Game {
                 this.map_ctx.translate(this.xOffset, this.yOffset);
                 var rotation = ((this.space_objects[i].rot - this.space_objects[i].last_rot) * fe_interpolation_coefficient + this.space_objects[i].last_rot);
                 this.map_ctx.rotate(utils.syncAngleToRad(rotation));
-                var x_position = this.space_objects[i].x * this.zoom - this.space_objects[i].width/2;
-                var y_position = this.space_objects[i].y * this.zoom - this.space_objects[i].height/2;
-                this.map_ctx.drawImage(this.space_objects[i].image, x_position, y_position, this.space_objects[i].width, this.space_objects[i].height);
+                var x_position = this.space_objects[i].x * this.zoom - this.space_objects[i].width/2 * this.zoom;
+                var y_position = this.space_objects[i].y * this.zoom - this.space_objects[i].height/2 * this.zoom;
+                this.map_ctx.drawImage(this.space_objects[i].image, x_position, y_position, this.space_objects[i].width * this.zoom, this.space_objects[i].height * this.zoom);
                 this.map_ctx.restore();
             }
             this.map_ctx.drawImage(this.system_center_object.image,
-                (this.system_center_object.x * this.zoom - this.system_center_object.width/2) + this.xOffset, 
-                (this.system_center_object.y * this.zoom - this.system_center_object.height/2) + this.yOffset, 
-                this.system_center_object.width, this.system_center_object.height);
+                (this.system_center_object.x * this.zoom - this.system_center_object.width/2 * this.zoom) + this.xOffset, 
+                (this.system_center_object.y * this.zoom - this.system_center_object.height/2 * this.zoom) + this.yOffset, 
+                this.system_center_object.width * this.zoom, this.system_center_object.height * this.zoom);
 
             for (var i = 0; i < this.fleets.length; i++) {
                 var x_position = ((this.fleets[i].x - this.fleets[i].last_x) * be_interpolation_coefficient + this.fleets[i].last_x);
@@ -238,7 +238,7 @@ class Game {
                 this.map_ctx.translate(this.xOffset, this.yOffset);
                 this.map_ctx.beginPath();
                 this.map_ctx.fillStyle = "red";
-                this.map_ctx.rect(x_position  * this.zoom - 5, y_position  * this.zoom - 5, 10, 10);
+                this.map_ctx.rect(x_position  * this.zoom - 5 * this.zoom, y_position  * this.zoom - 5 * this.zoom, 10 * this.zoom, 10 * this.zoom);
                 this.map_ctx.fill();
                 this.map_ctx.restore();
 
