@@ -101,9 +101,10 @@ class Game {
                         this.zoom += deltaZoom;
                         var deltaXOffset = zoomRatio * this.map_width;
                         var deltaYOffset = zoomRatio * this.map_height;
-                        console.log((this.map_height/2 - y)/(this.map_height/2) * (deltaYOffset));
-                        this.xOffset += (this.map_width/2 - x)/(this.map_width/2) * (deltaXOffset);
-                        this.yOffset += (this.map_height/2 - y)/(this.map_height/2) * (deltaYOffset);
+                        this.xOffset += (this.map_width/2 - x)/(this.map_width/2) * (deltaXOffset) - deltaXOffset/2;
+                        console.log((this.map_width/2 - x)/(this.map_width/2) * (deltaXOffset) - deltaXOffset/2);
+                        console.log(deltaXOffset);
+                        this.yOffset += (this.map_height/2 - y)/(this.map_height/2) * (deltaYOffset) - deltaYOffset/2;
                     }
                 } else {
                     if (this.zoom > 0.25) {
