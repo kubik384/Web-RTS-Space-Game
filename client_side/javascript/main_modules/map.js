@@ -99,14 +99,14 @@ class Game {
                 if (e.deltaY < 0) {
                     if (this.zoom < 4) {
                         this.zoom += deltaZoom;
-                        var deltaXOffset = zoomRatio * this.map_width;
-                        var deltaYOffset = zoomRatio * this.map_height;
-                        this.xOffset += (this.map_width/2 - x)/(this.map_width/2) * deltaXOffset/2;
-                        this.yOffset += (this.map_height/2 - y)/(this.map_height/2) * deltaYOffset/2;
+                        this.xOffset += (this.xOffset - x) * zoomRatio;
+                        this.yOffset += (this.yOffset - y) * zoomRatio;
                     }
                 } else {
                     if (this.zoom > 0.25) {
                         this.zoom -= deltaZoom;
+                        this.xOffset -= (this.xOffset - x) * zoomRatio;
+                        this.yOffset -= (this.yOffset - y) * zoomRatio;
                     }
                 }
             });
