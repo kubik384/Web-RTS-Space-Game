@@ -91,7 +91,6 @@ class Game {
 
             document.getElementById('map').addEventListener('wheel', e => { 
                 e.preventDefault();
-                const deltaZoom = 0.25;
                 const rect = this.map_canvas.getBoundingClientRect();
                 var x = e.clientX - rect.left - this.map_canvas_border;
                 var y = e.clientY - rect.top - this.map_canvas_border;
