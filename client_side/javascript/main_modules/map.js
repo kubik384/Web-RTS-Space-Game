@@ -95,16 +95,21 @@ class Game {
                 const rect = this.map_canvas.getBoundingClientRect();
                 var x = e.clientX - rect.left - this.map_canvas_border;
                 var y = e.clientY - rect.top - this.map_canvas_border;
-                var zoomRatio = deltaZoom/this.zoom;
                 if (e.deltaY < 0) {
-                    if (this.zoom < 4) {
-                        this.zoom += deltaZoom;
+                    if (this.zoom < 6) {
+                        const deltaZoom = 1.25;
+                        var oldZoom = this.zoom;
+                        this.zoom *= deltaZoom;
+                        var zoomRatio = this.zoom - oldZoom;
                         this.xOffset += (this.xOffset - x) * zoomRatio;
                         this.yOffset += (this.yOffset - y) * zoomRatio;
                     }
                 } else {
                     if (this.zoom > 0.25) {
-                        this.zoom -= deltaZoom;
+                        const deltaZoom = 0.8;
+                        var oldZoom = this.zoom;
+                        this.zoom /= deltaZoom;
+                        var zoomRatio = (oldZoom - this.zoom)/oldzoom;
                         this.xOffset -= (this.xOffset - x) * zoomRatio;
                         this.yOffset -= (this.yOffset - y) * zoomRatio;
                     }
