@@ -15,6 +15,10 @@ async function start() {
 
 	socket.on('fleets_update', game.update_fleets.bind(game));
 
+	socket.on('deleted_so', game.delete_so.bind(game));
+
+	socket.on('added_so', game.add_so.bind(game))
+
     game.request_data();
 }
 

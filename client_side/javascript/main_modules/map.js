@@ -384,6 +384,15 @@ class Game {
         }
         this.last_be_tick = timestamp;
     }
+
+    async delete_so(index) {
+        this.space_objects.splice(index, 1);
+    }
+
+    async add_so(space_object) {
+        space_object.velocity = new Velocity(space_object.velocity.x, space_object.velocity.y);
+        this.space_objects.push(space_object);
+    }
 }
 
 export { Game };

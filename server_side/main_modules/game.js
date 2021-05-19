@@ -14,6 +14,8 @@ module.exports = class Game {
         this.updating = false;
         this.players = [];
         this.deleted_fleets = [];
+        //curently not used, planned to be
+        this.deleted_so = [];
     }
 
     async setup_game() {
@@ -34,7 +36,7 @@ module.exports = class Game {
             const timestamp = Date.now();
             const time_passed = timestamp - this.last_tick;
 
-            for (var i = 0; i < this.space_objects.length; i++) {
+            for (var i = this.space_objects.length; i >= 0; i--) {
                 //TODO: Assign rotation speed to space objects? Make it possible to go into negative values -> rotate other way (does that happen in space? do all planets rotate the same direction?)
                 //Calculates the distance from the center - the further away, the slower rotation. Rotation is sped up by 128 times for debugging purposes
                 if (this.space_objects[i].x != 0 || this.space_objects[i].y != 0) {
@@ -44,6 +46,27 @@ module.exports = class Game {
                     while (this.space_objects[i].rot > 360) {
                         this.space_objects[i].rot -= 360;
                     }
+                }
+
+                if (this.space_objects[i].velocity !== undefined) {
+                    this.space_objects[i].x += this.space_objects[i].velocity.x;
+                    this.space_objects[i].y += this.space_objects[i].velocity.y;
+
+                    if (Math.abs(this.space_objects[i].x) > 3000 || Math.abs(this.space_objects[i].x) > 3000) {
+                        this.server.emit('deleted_so', i);
+                        this.deleted_so.push(i);
+                        this.space_objects.splice(i, 1);
+                    }
+
+                    /*
+                    for (var j = 0; j < this.space_objects.length; j++) {
+                        var object_radius = this.space_objects[j].width/2;
+                        vector = new Vector(this.space_objects[i], new Vector(this.space_objects[i].x, this.space_objects[i].y));
+                        var g_strength = Math.pow(object_radius/await vector.length(), 2);
+                        var pull = time_passed * g_strength * object_radius / 10000000;
+                        this.space_objects[i].velocity = await this.space_objects[i].velocity.add(await (await vector.normalize()).multiply(pull));
+                    }
+                    */
                 }
                 
                 for (var j = this.fleets.length - 1; j >= 0; j--) {
@@ -111,7 +134,7 @@ module.exports = class Game {
             }
 
             this.attempt_game_save(timestamp);
-            if (time_passed >= this.tick_time + Math.floor(this.tick_time/6)) {
+            if (time_passed >= this.tick_time + Math.floor(this.tick_time/4)) {
                 console.log('Significant time delay detected - tick took: ' + time_passed + 's instead of ' + this.tick_time + 's');
             }
             this.last_tick = timestamp;
