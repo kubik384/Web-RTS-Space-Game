@@ -27,6 +27,7 @@ class Game {
         this.fleets = [];
         this.time_passed;
         this.lastScrollTop = 0;
+        this.dragging = false;
         
         const query_string = window.location.search;
         const url_parameters = new URLSearchParams(query_string);
@@ -85,17 +86,17 @@ class Game {
                     const rect = this.map_canvas.getBoundingClientRect();
                     var x = e.clientX - this.xOffset - rect.left - this.map_canvas_border;
                     var y = e.clientY - this.yOffset - rect.top - this.map_canvas_border;
-                    this.generate_movepoint(x, y);
+                    this.generate_movepoint(x/this.zoom, y/this.zoom);
                 }
             });
 
-            document.getElementById('map').addEventListener('wheel', e => { 
+            document.getElementById('map').addEventListener('wheel', e => {
                 e.preventDefault();
                 const rect = this.map_canvas.getBoundingClientRect();
                 var x = e.clientX - rect.left - this.map_canvas_border;
                 var y = e.clientY - rect.top - this.map_canvas_border;
                 if (e.deltaY < 0) {
-                    if (this.zoom < 6) {
+                    if (this.zoom < 24) {
                         const deltaZoom = 1.25;
                         var oldZoom = this.zoom;
                         this.zoom *= deltaZoom;
@@ -112,6 +113,33 @@ class Game {
                         this.xOffset -= (this.xOffset - x) * zoomRatio;
                         this.yOffset -= (this.yOffset - y) * zoomRatio;
                     }
+                }
+            });
+
+            document.getElementById('map').addEventListener('mousedown', e => {
+                //left click
+                if (e.button == 0) {
+                    this.dragging = true;
+                }
+            });
+
+            window.addEventListener('mouseup', e => {
+                //left click
+                if (e.button == 0) {
+                    this.dragging = false;
+                }
+            });
+
+            document.addEventListener('mousemove', e => {
+                if (this.dragging) {
+                    this.xOffset += e.movementX;
+                    this.yOffset += e.movementY;
+                }
+            });
+
+            window.addEventListener("visibilitychange", () => {
+                if (document.visibilityState == 'hidden') {
+                    this.dragging = false;
                 }
             });
             
