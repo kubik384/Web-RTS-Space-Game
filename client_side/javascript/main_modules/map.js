@@ -100,7 +100,7 @@ class Game {
                         const deltaZoom = 1.25;
                         var oldZoom = this.zoom;
                         this.zoom *= deltaZoom;
-                        var zoomRatio = this.zoom - oldZoom;
+                        var zoomRatio = (this.zoom - oldZoom)/oldZoom;
                         this.xOffset += (this.xOffset - x) * zoomRatio;
                         this.yOffset += (this.yOffset - y) * zoomRatio;
                     }
@@ -108,8 +108,8 @@ class Game {
                     if (this.zoom > 0.25) {
                         const deltaZoom = 0.8;
                         var oldZoom = this.zoom;
-                        this.zoom /= deltaZoom;
-                        var zoomRatio = (oldZoom - this.zoom)/oldzoom;
+                        this.zoom *= deltaZoom;
+                        var zoomRatio = (oldZoom - this.zoom)/oldZoom;
                         this.xOffset -= (this.xOffset - x) * zoomRatio;
                         this.yOffset -= (this.yOffset - y) * zoomRatio;
                     }
