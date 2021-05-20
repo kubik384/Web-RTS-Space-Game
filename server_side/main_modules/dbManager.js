@@ -6,8 +6,6 @@ var utils = new Utils();
 var all_resource_types = 'pop, food, timber, metals, coal, oil, kerosene, hydrogen, uranium';
 var resourceTable = all_resource_types.split(', ');
 var buildings = require('./../game_properties/buildings.json');
-var space_objects = require('./../game_properties/space_objects.json');
-var galaxies = require('./../game_properties/galaxies.json');
 var units = require('./../game_properties/units.json');
 
 module.exports = class DbManager {
@@ -275,45 +273,6 @@ module.exports = class DbManager {
     }
 
     /**
-     * Returns results in following format [{space_object_id, image, x, y, rot, width, height}, ..]
-     */
-    async get_space_objects(galaxy_id = 'all') {
-        var query = 'SELECT space_object_id, galaxy_id, x, y, rot, width, height, image_id FROM space_objects ';
-        if (galaxy_id != 'all') {
-            query += 'WHERE galaxy_id = ?';
-        }
-        var results = await this.execute_query(query, [galaxy_id]);
-        var b_index = -1;
-        for (var i = 0; i < results.length; i++) {
-            if (space_objects[results[i].image_id - 1].space_object_id == results[i].image_id) {
-                b_index = results[i].image_id - 1;
-            } else {
-                b_index = space_objects.findIndex(space_object => space_object.space_object_id == results[i].image_id);
-            }
-            results[i].image = space_objects[b_index].image;
-        }
-        return results;
-    }
-
-    /**
-     * Returns results in following format [{galaxy_id, image, x, y, width, height}, ..]
-     */
-    async get_galaxies() {
-        var query = `SELECT * FROM galaxies`;
-        var results = await this.execute_query(query, []);
-        var b_index = -1;
-        for (var i = 0; i < results.length; i++) {
-            if (galaxies[results[i].image_id - 1].galaxy_id == results[i].image_id) {
-                b_index = results[i].image_id - 1;
-            } else {
-                b_index = galaxies.findIndex(galaxy => galaxy.galaxy_id == results[i].image_id);
-            }
-            results[i].image = galaxies[b_index].image;
-        }
-        return results;
-    }
-
-    /**
      * Returns results in following format [{unit_id, name, cost, build_time}, ..]
      * @param {Array} p_units in format [{unit_id}]
      */
@@ -458,10 +417,6 @@ module.exports = class DbManager {
             unit_results[i].count = player_units[i].count;
         }
         return {resources: resources, buildings: building_details, units: unit_results, unit_ques: player_ques, building_details: building_results};
-    }
-
-    async get_map_datapack() {
-        return this.get_galaxies();
     }
 
     async build_units(username, p_units) {

@@ -21,6 +21,7 @@ class Game {
         this.xOffset = 0;
         this.yOffset = 0;
         this.space_objects = [];
+        this.moving_space_objects = [];
         this.system_center_object;
         this.galaxies = [];
         this.center_galaxy;
@@ -28,6 +29,7 @@ class Game {
         this.time_passed;
         this.lastScrollTop = 0;
         this.dragging = false;
+        this.boundaries;
         
         const query_string = window.location.search;
         const url_parameters = new URLSearchParams(query_string);
@@ -46,7 +48,9 @@ class Game {
             window.onresize = this.window_resize_handler();
             if (this.layout === 'system') {
                 this.space_objects = datapack.space_objects;
+                this.moving_space_objects = datapack.moving_space_objects
                 this.last_fe_tick = datapack.last_update;
+                this.boundaries = datapack.boundaries;
                 var system_center_object_index;
                 for (var i = 0; i < this.space_objects.length; i++) {
                     this.space_objects[i].image = document.getElementById(this.space_objects[i].image);
@@ -57,6 +61,11 @@ class Game {
                         this.space_objects[i].last_y = this.space_objects[i].y;
                         this.space_objects[i].last_rot = this.space_objects[i].rot;
                     }
+                }
+                for (var i = 0; i < this.moving_space_objects.length; i++) {
+                    this.moving_space_objects[i].image = document.getElementById(this.moving_space_objects[i].image);
+                    this.moving_space_objects[i].last_x = this.moving_space_objects[i].x;
+                    this.moving_space_objects[i].last_y = this.moving_space_objects[i].y;
                 }
                 this.system_center_object = this.space_objects.splice(system_center_object_index, 1)[0];
             } else if (this.layout === 'galaxy') {
@@ -262,7 +271,15 @@ class Game {
                 (this.system_center_object.x * this.zoom - this.system_center_object.width/2 * this.zoom) + this.xOffset, 
                 (this.system_center_object.y * this.zoom - this.system_center_object.height/2 * this.zoom) + this.yOffset, 
                 this.system_center_object.width * this.zoom, this.system_center_object.height * this.zoom);
-
+                
+            for (var i = 0; i < this.moving_space_objects.length; i++) {
+                var x_position = ((this.moving_space_objects[i].x - this.moving_space_objects[i].last_x) * be_interpolation_coefficient + this.moving_space_objects[i].last_x) * this.zoom - this.space_objects[i].width/2 * this.zoom;
+                var y_position = ((this.moving_space_objects[i].y - this.moving_space_objects[i].last_y) * be_interpolation_coefficient + this.moving_space_objects[i].last_y) * this.zoom - this.space_objects[i].height/2 * this.zoom;
+                this.map_ctx.save();
+                this.map_ctx.translate(this.xOffset, this.yOffset);
+                this.map_ctx.drawImage(this.moving_space_objects[i].image, x_position, y_position, this.moving_space_objects[i].width * this.zoom, this.moving_space_objects[i].height * this.zoom);
+                this.map_ctx.restore();
+            }
             for (var i = 0; i < this.fleets.length; i++) {
                 var x_position = ((this.fleets[i].x - this.fleets[i].last_x) * be_interpolation_coefficient + this.fleets[i].last_x);
                 var y_position = ((this.fleets[i].y - this.fleets[i].last_y) * be_interpolation_coefficient + this.fleets[i].last_y);
@@ -285,6 +302,13 @@ class Game {
                     this.map_ctx.restore();
                 }
             }
+            this.map_ctx.save();
+            this.map_ctx.translate(this.xOffset, this.yOffset);
+            this.map_ctx.beginPath();
+            this.map_ctx.strokeStyle = "purple";
+            this.map_ctx.lineWidth = 5;
+            this.map_ctx.strokeRect(-this.boundaries * this.zoom, -this.boundaries * this.zoom, this.boundaries * 2 * this.zoom, this.boundaries * 2 * this.zoom);
+            this.map_ctx.restore();
         } else if (this.layout = 'galaxy') {
             for (var i = 0; i < this.galaxies.length; i++) {
                 this.map_ctx.save();
@@ -333,7 +357,12 @@ class Game {
         this.socket.emit('set_movepoint', x, y);
     }
 
-    async update_fleets(fleets, deleted_fleets) {
+    async process_server_update(data) {
+        var fleets = data[0];
+        var deleted_fleets = data[1];
+        var moving_space_objects = data[2];
+        var deleted_moving_so = data[3];
+        //doesn't make a lot of sense, server should be sending data with timestamps instead of client creating timestamp upon recieval
         var timestamp = Date.now();
         var time_passed = timestamp - this.last_be_tick;
         this.tick_be_time_passed = time_passed;
@@ -357,11 +386,6 @@ class Game {
             if (this.fleets[i].owner !== undefined) {
                 this.controlled_fleet = this.fleets[i];
             }
-            if (fleets[i] === undefined && this.logged === undefined) {
-                console.log(fleets);
-                console.log(this.fleets);
-                this.logged = true;
-            }
             if (fleets[i].move_point !== undefined) {
                 this.fleets[i].move_point = fleets[i].move_point;
             } else if (this.fleets[i].move_point !== undefined) {
@@ -382,16 +406,30 @@ class Game {
             }
             */
         }
+
+        for (var i = deleted_moving_so.length - 1; i >= 0; i--) {
+            this.moving_space_objects.splice(deleted_moving_so[i], 1);
+        }
+
+        var no_this_so = this.moving_space_objects.length;
+        var number_of_so = moving_space_objects.length;
+        if (number_of_so > no_this_so) {
+            this.moving_space_objects = this.moving_space_objects.concat(moving_space_objects.slice(no_this_so - number_of_so));
+        }
+
+        for (var i = 0; i < this.moving_space_objects.length; i++) {
+            this.moving_space_objects[i].last_x = this.moving_space_objects[i].x;
+            this.moving_space_objects[i].last_y = this.moving_space_objects[i].y;
+            this.moving_space_objects[i].x = moving_space_objects[i].x;
+            this.moving_space_objects[i].y = moving_space_objects[i].y;
+            /* Velocity is not currently used anywhere anyway
+            if (this.moving_space_objects.velocity !== undefined) {
+                this.moving_space_objects[i].last_velocity = this.moving_space_objects[i].velocity;
+                this.moving_space_objects[i].velocity = new Vector(moving_space_objects[i].velocity.x, moving_space_objects[i].velocity.y);
+            }
+            */
+        }
         this.last_be_tick = timestamp;
-    }
-
-    async delete_so(index) {
-        this.space_objects.splice(index, 1);
-    }
-
-    async add_so(space_object) {
-        space_object.velocity = new Velocity(space_object.velocity.x, space_object.velocity.y);
-        this.space_objects.push(space_object);
     }
 }
 

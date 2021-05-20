@@ -13,11 +13,7 @@ async function start() {
 	//socket events
 	socket.on('map_datapack', game.setup_game.bind(game));
 
-	socket.on('fleets_update', game.update_fleets.bind(game));
-
-	socket.on('deleted_so', game.delete_so.bind(game));
-
-	socket.on('added_so', game.add_so.bind(game))
+	socket.on('game_update', game.process_server_update.bind(game));
 
     game.request_data();
 }

@@ -14,8 +14,9 @@ module.exports = class Game {
         this.updating = false;
         this.players = [];
         this.deleted_fleets = [];
-        //curently not used, planned to be
-        this.deleted_so = [];
+        this.moving_space_objects = [];
+        this.deleted_moving_so = [];
+        this.boundaries = 3000;
     }
 
     async setup_game() {
@@ -36,7 +37,7 @@ module.exports = class Game {
             const timestamp = Date.now();
             const time_passed = timestamp - this.last_tick;
 
-            for (var i = this.space_objects.length; i >= 0; i--) {
+            for (var i = this.space_objects.length - 1; i >= 0; i--) {
                 //TODO: Assign rotation speed to space objects? Make it possible to go into negative values -> rotate other way (does that happen in space? do all planets rotate the same direction?)
                 //Calculates the distance from the center - the further away, the slower rotation. Rotation is sped up by 128 times for debugging purposes
                 if (this.space_objects[i].x != 0 || this.space_objects[i].y != 0) {
@@ -47,27 +48,6 @@ module.exports = class Game {
                         this.space_objects[i].rot -= 360;
                     }
                 }
-
-                if (this.space_objects[i].velocity !== undefined) {
-                    this.space_objects[i].x += this.space_objects[i].velocity.x;
-                    this.space_objects[i].y += this.space_objects[i].velocity.y;
-
-                    if (Math.abs(this.space_objects[i].x) > 3000 || Math.abs(this.space_objects[i].x) > 3000) {
-                        this.server.emit('deleted_so', i);
-                        this.deleted_so.push(i);
-                        this.space_objects.splice(i, 1);
-                    }
-
-                    /*
-                    for (var j = 0; j < this.space_objects.length; j++) {
-                        var object_radius = this.space_objects[j].width/2;
-                        vector = new Vector(this.space_objects[i], new Vector(this.space_objects[i].x, this.space_objects[i].y));
-                        var g_strength = Math.pow(object_radius/await vector.length(), 2);
-                        var pull = time_passed * g_strength * object_radius / 10000000;
-                        this.space_objects[i].velocity = await this.space_objects[i].velocity.add(await (await vector.normalize()).multiply(pull));
-                    }
-                    */
-                }
                 
                 for (var j = this.fleets.length - 1; j >= 0; j--) {
                     var rads = await utils.angleToRad(this.space_objects[i].rot);
@@ -77,10 +57,49 @@ module.exports = class Game {
                     var object_x = center_x + (origin_x - center_x) * Math.cos(rads) - (origin_y - center_y) * Math.sin(rads);
                     var object_y = center_y + (origin_x - center_x) * Math.sin(rads) + (origin_y - center_y) * Math.cos(rads);
                     
-                    var vector;
-                    vector = new Vector(this.fleets[j], new Vector(object_x, object_y));
+                    var vector = new Vector(this.fleets[j], new Vector(object_x, object_y));
                     //Expect all the space objects to be squares (circles) = same width and height - for now
                     var object_radius = this.space_objects[i].width/2;
+                    if (await vector.length() > object_radius) {
+                        var g_strength = Math.pow(object_radius/await vector.length(), 2);
+                        var pull = time_passed * g_strength * object_radius / 10000000;
+                        this.fleets[j].velocity = await this.fleets[j].velocity.add(await (await vector.normalize()).multiply(pull));
+                    } else {
+                        this.deleted_fleets.push(j);
+                        this.fleets.splice(j, 1);
+                    }
+                }
+            }
+
+            for (var i = this.moving_space_objects.length - 1; i >= 0; i--) {
+                this.moving_space_objects[i].x += this.moving_space_objects[i].velocity.x;
+                this.moving_space_objects[i].y += this.moving_space_objects[i].velocity.y;
+
+                if (Math.abs(this.space_objects[i].x) + this.space_objects[i].width/2 > this.boundaries || Math.abs(this.space_objects[i].x) + this.space_objects[i].height/2 > this.boundaries) {
+                    this.deleted_moving_so.push(i);
+                    this.space_objects.splice(i, 1);
+                }
+
+                for (var j = 0; j < this.space_objects.length; j++) {                        
+                    var vector = new Vector(this.moving_space_objects[i], this.space_objects[j]);
+                    //Expect all the space objects to be squares (circles) = same width and height - for now
+                    var object_radius = this.space_objects[j].width/2;
+                    if (await vector.length() > object_radius) {
+                        /*
+                        var g_strength = Math.pow(object_radius/await vector.length(), 2);
+                        var pull = time_passed * g_strength * object_radius / 10000000;
+                        this.space_objects[i].velocity = await this.space_objects[i].velocity.add(await (await vector.normalize()).multiply(pull))
+                        */
+                    } else {
+                        this.deleted_moving_so.push(i);
+                        this.moving_space_objects.splice(i, 1);
+                    }
+                }
+
+                for (var j = this.fleets.length - 1; j >= 0; j--) {
+                    var vector = new Vector(this.fleets[j], this.moving_space_objects[i]);
+                    //Expect all the space objects to be squares (circles) = same width and height - for now
+                    var object_radius = this.moving_space_objects[i].width/2;
                     if (await vector.length() > object_radius) {
                         var g_strength = Math.pow(object_radius/await vector.length(), 2);
                         var pull = time_passed * g_strength * object_radius / 10000000;
@@ -129,7 +148,7 @@ module.exports = class Game {
                         fleets.push({x: this.fleets[j].x, y: this.fleets[j].y});
                     }
                 }
-                this.players[i].socket.emit('fleets_update', fleets, this.deleted_fleets);
+                this.players[i].socket.emit('game_update', [fleets, this.deleted_fleets, this.moving_space_objects, this.deleted_moving_so]);
                 this.deleted_fleets = [];
             }
 
@@ -174,7 +193,7 @@ module.exports = class Game {
     }
 
     async extract_game_data() {
-        return {space_objects: this.space_objects, fleets: this.fleets};
+        return {space_objects: this.space_objects, moving_space_objects: this.moving_space_objects, fleets: this.fleets};
     }
     
     async attempt_game_load(file = 'server_side/save_files/save.txt') {
@@ -183,6 +202,10 @@ module.exports = class Game {
                 throw new Error(err);
             }
             var parsed_data = JSON.parse(data);
+            for (var i = 0; i < parsed_data.moving_space_objects.length; i++) {
+                    parsed_data.moving_space_objects[i].velocity = new Vector(parsed_data.moving_space_objects[i].velocity);
+            }
+            this.moving_space_objects = parsed_data.moving_space_objects;
             this.space_objects = parsed_data.space_objects;
             for (var i = 0; i < parsed_data.fleets.length; i++) {
                 parsed_data.fleets[i].velocity = new Vector(parsed_data.fleets[i].velocity)
@@ -246,7 +269,13 @@ module.exports = class Game {
                             space_objects.push(this.space_objects[j]);
                         }
                     }
-                    return {space_objects: space_objects, last_update: this.last_tick};
+                    var moving_space_object = [];
+                    for (var j = 0; j < this.moving_space_objects.length; j++) {
+                        if (this.moving_space_objects[j].galaxy_id == this.players[i].galaxy_id) {
+                            moving_space_object.push(this.moving_space_objects[j]);
+                        }
+                    }
+                    return {space_objects: space_objects, moving_space_objects: moving_space_object, last_update: this.last_tick, boundaries: this.boundaries};
                 }
             }
         }
