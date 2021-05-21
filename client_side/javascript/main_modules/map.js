@@ -48,7 +48,7 @@ class Game {
             window.onresize = this.window_resize_handler();
             if (this.layout === 'system') {
                 this.space_objects = datapack.space_objects;
-                this.moving_space_objects = datapack.moving_space_objects
+                this.moving_space_objects = datapack.moving_space_objects;
                 this.last_fe_tick = datapack.last_update;
                 this.boundaries = datapack.boundaries;
                 var system_center_object_index;

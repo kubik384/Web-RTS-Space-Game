@@ -70,30 +70,14 @@ module.exports = class Game {
                     }
                 }
             }
-
+            
+            mso_loop:
             for (var i = this.moving_space_objects.length - 1; i >= 0; i--) {
                 this.moving_space_objects[i].x += this.moving_space_objects[i].velocity.x;
                 this.moving_space_objects[i].y += this.moving_space_objects[i].velocity.y;
-
-                if (Math.abs(this.space_objects[i].x) + this.space_objects[i].width/2 > this.boundaries || Math.abs(this.space_objects[i].x) + this.space_objects[i].height/2 > this.boundaries) {
+                if (Math.abs(this.moving_space_objects[i].x) + this.moving_space_objects[i].width/2 > this.boundaries || Math.abs(this.moving_space_objects[i].x) + this.moving_space_objects[i].height/2 > this.boundaries) {
                     this.deleted_moving_so.push(i);
-                    this.space_objects.splice(i, 1);
-                }
-
-                for (var j = 0; j < this.space_objects.length; j++) {                        
-                    var vector = new Vector(this.moving_space_objects[i], this.space_objects[j]);
-                    //Expect all the space objects to be squares (circles) = same width and height - for now
-                    var object_radius = this.space_objects[j].width/2;
-                    if (await vector.length() > object_radius) {
-                        /*
-                        var g_strength = Math.pow(object_radius/await vector.length(), 2);
-                        var pull = time_passed * g_strength * object_radius / 10000000;
-                        this.space_objects[i].velocity = await this.space_objects[i].velocity.add(await (await vector.normalize()).multiply(pull))
-                        */
-                    } else {
-                        this.deleted_moving_so.push(i);
-                        this.moving_space_objects.splice(i, 1);
-                    }
+                    this.moving_space_objects.splice(i, 1);
                 }
 
                 for (var j = this.fleets.length - 1; j >= 0; j--) {
@@ -107,6 +91,21 @@ module.exports = class Game {
                     } else {
                         this.deleted_fleets.push(j);
                         this.fleets.splice(j, 1);
+                    }
+                }
+
+                for (var j = 0; j < this.space_objects.length; j++) {
+                    var vector = new Vector(this.moving_space_objects[i], this.space_objects[j]);
+                    //Expect all the space objects to be squares (circles) = same width and height - for now
+                    var object_radius = this.space_objects[j].width/2;
+                    if (await vector.length() > object_radius) {
+                        var g_strength = Math.pow(object_radius/await vector.length(), 2);
+                        var pull = time_passed * g_strength * object_radius / 10000000;
+                        this.moving_space_objects[i].velocity = await this.moving_space_objects[i].velocity.add(await (await vector.normalize()).multiply(pull));
+                    } else {
+                        this.deleted_moving_so.push(i);
+                        this.moving_space_objects.splice(i, 1);
+                        continue mso_loop;
                     }
                 }
             }
@@ -168,6 +167,7 @@ module.exports = class Game {
     }
 
     async attempt_game_save(timestamp, retry = false) {
+        /*
         if ((timestamp - this.last_save >= this.save_time && !this.saving) || retry) {
             this.saving = true;
             fs.writeFile("server_side/save_files/save.txt", JSON.stringify(await this.extract_game_data()), function(err) {
@@ -190,6 +190,7 @@ module.exports = class Game {
                 this.saving = false;
             }.bind(this));
         }
+        */
     }
 
     async extract_game_data() {
@@ -269,13 +270,13 @@ module.exports = class Game {
                             space_objects.push(this.space_objects[j]);
                         }
                     }
-                    var moving_space_object = [];
+                    var moving_space_objects = [];
                     for (var j = 0; j < this.moving_space_objects.length; j++) {
                         if (this.moving_space_objects[j].galaxy_id == this.players[i].galaxy_id) {
-                            moving_space_object.push(this.moving_space_objects[j]);
+                            moving_space_objects.push(this.moving_space_objects[j]);
                         }
                     }
-                    return {space_objects: space_objects, moving_space_objects: moving_space_object, last_update: this.last_tick, boundaries: this.boundaries};
+                    return {space_objects: space_objects, moving_space_objects: moving_space_objects, last_update: this.last_tick, boundaries: this.boundaries};
                 }
             }
         }
