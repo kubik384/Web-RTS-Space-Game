@@ -16,13 +16,11 @@ class Game {
         this.tick_time = 50;
         this.tick_fe_time_passed;
         this.tick_be_time_passed;
-        this.zoom = 1;
+        this.zoom = 0.025;
 
         this.xOffset = 0;
         this.yOffset = 0;
         this.space_objects = [];
-        this.moving_space_objects = [];
-        this.system_center_object;
         this.galaxies = [];
         this.center_galaxy;
         this.fleets = [];
@@ -30,6 +28,7 @@ class Game {
         this.lastScrollTop = 0;
         this.dragging = false;
         this.boundaries;
+        this.firstUpdate = true;
         
         const query_string = window.location.search;
         const url_parameters = new URLSearchParams(query_string);
@@ -48,26 +47,14 @@ class Game {
             window.onresize = this.window_resize_handler();
             if (this.layout === 'system') {
                 this.space_objects = datapack.space_objects;
-                this.moving_space_objects = datapack.moving_space_objects;
                 this.last_fe_tick = datapack.last_update;
+                this.last_be_tick = datapack.last_update;
                 this.boundaries = datapack.boundaries;
-                var system_center_object_index;
                 for (var i = 0; i < this.space_objects.length; i++) {
                     this.space_objects[i].image = document.getElementById(this.space_objects[i].image);
-                    if (this.space_objects[i].x == 0 && this.space_objects[i].y == 0) {
-                        system_center_object_index = i;
-                    } else {
-                        this.space_objects[i].last_x = this.space_objects[i].x;
-                        this.space_objects[i].last_y = this.space_objects[i].y;
-                        this.space_objects[i].last_rot = this.space_objects[i].rot;
-                    }
+                    this.space_objects[i].last_x = this.space_objects[i].x;
+                    this.space_objects[i].last_y = this.space_objects[i].y;
                 }
-                for (var i = 0; i < this.moving_space_objects.length; i++) {
-                    this.moving_space_objects[i].image = document.getElementById(this.moving_space_objects[i].image);
-                    this.moving_space_objects[i].last_x = this.moving_space_objects[i].x;
-                    this.moving_space_objects[i].last_y = this.moving_space_objects[i].y;
-                }
-                this.system_center_object = this.space_objects.splice(system_center_object_index, 1)[0];
             } else if (this.layout === 'galaxy') {
                 this.galaxies = datapack.galaxies;
                 var center_galaxy_index;
@@ -114,7 +101,7 @@ class Game {
                         this.yOffset += (this.yOffset - y) * zoomRatio;
                     }
                 } else {
-                    if (this.zoom > 0.25) {
+                    if (this.zoom > 0.01) {
                         const deltaZoom = 0.8;
                         var oldZoom = this.zoom;
                         this.zoom *= deltaZoom;
@@ -154,7 +141,6 @@ class Game {
             
             window.requestAnimationFrame(this.draw.bind(this));
             this.logic_loop = setTimeout(this.update.bind(this), this.tick_time);
-            this.last_be_tick = Date.now();
             resolve();
         });
     }
@@ -165,18 +151,8 @@ class Game {
         var time_passed = timestamp - this.last_fe_tick;
         this.tick_fe_time_passed = time_passed;
         if (this.layout === 'system') {
+            /*
             for (var i = 0; i < this.space_objects.length; i++) {
-                //TODO: Assign rotation speed to space objects? Make it possible to go into negative values -> rotate other way (does that happen in space? do all planets rotate the same direction?)
-
-                //Calculates the distance from the center - the further away, the slower rotation. Rotation is sped up by 128 times for debugging purposes
-                this.space_objects[i].last_rot = this.space_objects[i].rot;
-                this.space_objects[i].rot += time_passed/((Math.abs(this.space_objects[i].x) + Math.abs(this.space_objects[i].y))*35) * 128;
-                while (this.space_objects[i].rot > 360) {
-                    this.space_objects[i].rot -= 360;
-                    this.space_objects[i].last_rot -= 360;
-                }
-
-                /*
                 if (this.controlled_fleet !== undefined) {
                     Object.assign(this.controlled_fleet.last_velocity, this.controlled_fleet.velocity);
                     this.controlled_fleet.last_x = this.controlled_fleet.x;
@@ -201,9 +177,7 @@ class Game {
                         this.move_point.deleted = true;
                     }
                 }
-                */
             }
-            /*
             if (this.controlled_fleet !== undefined) {
                 var object_radius = this.system_center_object.width/2;
                 var vector = new Vector(this.controlled_fleet, this.system_center_object);
@@ -254,30 +228,15 @@ class Game {
     draw() {
         var timestamp = Date.now();
         var be_interpolation_coefficient = (timestamp - this.last_be_tick)/this.tick_be_time_passed;
-        var fe_interpolation_coefficient = (timestamp - this.last_fe_tick)/this.tick_fe_time_passed;
+        //var fe_interpolation_coefficient = (timestamp - this.last_fe_tick)/this.tick_fe_time_passed;
         this.map_ctx.clearRect(0, 0, this.map_width, this.map_height);
-        if (this.layout === 'system') {
+        if (this.layout === 'system') {                
             for (var i = 0; i < this.space_objects.length; i++) {
+                var x_position = ((this.space_objects[i].x - this.space_objects[i].last_x) * be_interpolation_coefficient + this.space_objects[i].last_x) * this.zoom - this.space_objects[i].width/2 * this.zoom;
+                var y_position = ((this.space_objects[i].y - this.space_objects[i].last_y) * be_interpolation_coefficient + this.space_objects[i].last_y) * this.zoom - this.space_objects[i].height/2 * this.zoom;
                 this.map_ctx.save();
                 this.map_ctx.translate(this.xOffset, this.yOffset);
-                var rotation = ((this.space_objects[i].rot - this.space_objects[i].last_rot) * fe_interpolation_coefficient + this.space_objects[i].last_rot);
-                this.map_ctx.rotate(utils.syncAngleToRad(rotation));
-                var x_position = this.space_objects[i].x * this.zoom - this.space_objects[i].width/2 * this.zoom;
-                var y_position = this.space_objects[i].y * this.zoom - this.space_objects[i].height/2 * this.zoom;
                 this.map_ctx.drawImage(this.space_objects[i].image, x_position, y_position, this.space_objects[i].width * this.zoom, this.space_objects[i].height * this.zoom);
-                this.map_ctx.restore();
-            }
-            this.map_ctx.drawImage(this.system_center_object.image,
-                (this.system_center_object.x * this.zoom - this.system_center_object.width/2 * this.zoom) + this.xOffset, 
-                (this.system_center_object.y * this.zoom - this.system_center_object.height/2 * this.zoom) + this.yOffset, 
-                this.system_center_object.width * this.zoom, this.system_center_object.height * this.zoom);
-                
-            for (var i = 0; i < this.moving_space_objects.length; i++) {
-                var x_position = ((this.moving_space_objects[i].x - this.moving_space_objects[i].last_x) * be_interpolation_coefficient + this.moving_space_objects[i].last_x) * this.zoom - this.space_objects[i].width/2 * this.zoom;
-                var y_position = ((this.moving_space_objects[i].y - this.moving_space_objects[i].last_y) * be_interpolation_coefficient + this.moving_space_objects[i].last_y) * this.zoom - this.space_objects[i].height/2 * this.zoom;
-                this.map_ctx.save();
-                this.map_ctx.translate(this.xOffset, this.yOffset);
-                this.map_ctx.drawImage(this.moving_space_objects[i].image, x_position, y_position, this.moving_space_objects[i].width * this.zoom, this.moving_space_objects[i].height * this.zoom);
                 this.map_ctx.restore();
             }
             for (var i = 0; i < this.fleets.length; i++) {
@@ -360,13 +319,13 @@ class Game {
     async process_server_update(data) {
         var fleets = data[0];
         var deleted_fleets = data[1];
-        var moving_space_objects = data[2];
-        var deleted_moving_so = data[3];
-        //doesn't make a lot of sense, server should be sending data with timestamps instead of client creating timestamp upon recieval
-        var timestamp = Date.now();
-        var time_passed = timestamp - this.last_be_tick;
+        var space_objects = data[2];
+        var deleted_space_objects = data[3];
+        var new_last_be_tick = data[data.length-1];
+        var time_passed = new_last_be_tick - this.last_be_tick;
         this.tick_be_time_passed = time_passed;
         
+        //when a player joins, server can send new data, where the fleets are already deleted with what has been deleted from old data - which the user never received, so they cannot remove the fleets from them. Same goes for anything else (space objects)
         for (var i = deleted_fleets.length - 1; i >= 0; i--) {
             //if the fleet has a username attribute, it's the controlled fleet - temporary solution
             if (this.fleets[deleted_fleets[i]].owner !== undefined) {
@@ -407,21 +366,24 @@ class Game {
             */
         }
 
-        for (var i = deleted_moving_so.length - 1; i >= 0; i--) {
-            this.moving_space_objects.splice(deleted_moving_so[i], 1);
+        for (var i = deleted_space_objects.length - 1; i >= 0; i--) {
+            this.space_objects.splice(deleted_space_objects[i], 1);
         }
 
-        var no_this_so = this.moving_space_objects.length;
-        var number_of_so = moving_space_objects.length;
+        var no_this_so = this.space_objects.length;
+        var number_of_so = space_objects.length;
         if (number_of_so > no_this_so) {
-            this.moving_space_objects = this.moving_space_objects.concat(moving_space_objects.slice(no_this_so - number_of_so));
+            for (var i = no_this_so - 1; i < number_of_so; i++) {
+                space_objects[i].image = document.getElementById(this.space_objects[i].image);
+                this.space_objects.push(space_objects[i]);
+            }
         }
 
-        for (var i = 0; i < this.moving_space_objects.length; i++) {
-            this.moving_space_objects[i].last_x = this.moving_space_objects[i].x;
-            this.moving_space_objects[i].last_y = this.moving_space_objects[i].y;
-            this.moving_space_objects[i].x = moving_space_objects[i].x;
-            this.moving_space_objects[i].y = moving_space_objects[i].y;
+        for (var i = 0; i < this.space_objects.length; i++) {
+            this.space_objects[i].last_x = this.space_objects[i].x;
+            this.space_objects[i].last_y = this.space_objects[i].y;
+            this.space_objects[i].x = space_objects[i].x;
+            this.space_objects[i].y = space_objects[i].y;
             /* Velocity is not currently used anywhere anyway
             if (this.moving_space_objects.velocity !== undefined) {
                 this.moving_space_objects[i].last_velocity = this.moving_space_objects[i].velocity;
@@ -429,7 +391,7 @@ class Game {
             }
             */
         }
-        this.last_be_tick = timestamp;
+        this.last_be_tick = new_last_be_tick;
     }
 }
 

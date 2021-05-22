@@ -34,6 +34,9 @@ module.exports = class Vector {
         if (typeof length !== "number") {
             length = await this.length();
         }
+        if (length == 0) {
+            throw new Error('Attempting to normalize a null vector');
+        }
 	    return new Vector(this.x/length, this.y/length);
     }
 
@@ -92,5 +95,4 @@ module.exports = class Vector {
     async isNull() {
         return (this.x == 0 && this.y == 0);
     }
-    
 }
