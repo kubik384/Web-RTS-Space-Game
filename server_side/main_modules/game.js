@@ -45,7 +45,7 @@ module.exports = class Game {
                     var object_radius = this.space_objects[i].width/2;
                     if (await vector.length() > object_radius) {
                         var pull = Math.round(time_passed * Math.pow(object_radius, 4) / Math.pow(await vector.length(), 2) * 1e-5) / 1e6;
-                        this.space_objects[i].velocity = await this.space_objects[i].velocity.add(await (await vector.normalize()).multiply(pull));
+                        this.fleets[j].velocity = await this.space_objects[i].velocity.add(await (await vector.normalize()).multiply(pull));
                     } else {
                         this.deleted_fleets.push(j);
                         this.fleets.splice(j, 1);
@@ -132,6 +132,7 @@ module.exports = class Game {
     }
 
     async attempt_game_save(timestamp, retry = false) {
+        /*
         if ((timestamp - this.last_save >= this.save_time && !this.saving) || retry) {
             this.saving = true;
             fs.writeFile("server_side/save_files/save.txt", JSON.stringify(await this.extract_game_data()), function(err) {
@@ -154,6 +155,7 @@ module.exports = class Game {
                 this.saving = false;
             }.bind(this));
         }
+        */
     }
 
     async extract_game_data() {
@@ -187,7 +189,7 @@ module.exports = class Game {
             }
         }
         if (player_planet !== undefined) {
-            var fleet = {owner: player.username, x: player_planet.x - player_planet.width, y: player_planet.y - player_planet.height, acceleration: 0.000005, velocity: new Vector(player_planet.velocity)};
+            var fleet = {owner: player.username, x: player_planet.x - player_planet.width, y: player_planet.y - player_planet.height, acceleration: 0.00005, velocity: new Vector(player_planet.velocity)};
             var f_index = this.fleets.findIndex( fleet => fleet.owner == player.username);
             if (f_index == -1) {
                 this.fleets.push(fleet);
