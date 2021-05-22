@@ -189,7 +189,7 @@ module.exports = class Game {
             }
         }
         if (player_planet !== undefined) {
-            var fleet = {owner: player.username, x: player_planet.x - player_planet.width, y: player_planet.y - player_planet.height, acceleration: 0.00005, velocity: new Vector(player_planet.velocity)};
+            var fleet = {owner: player.username, x: player_planet.x - player_planet.width, y: player_planet.y - player_planet.height, acceleration: 0.00025, velocity: new Vector(player_planet.velocity)};
             var f_index = this.fleets.findIndex( fleet => fleet.owner == player.username);
             if (f_index == -1) {
                 this.fleets.push(fleet);
