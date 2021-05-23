@@ -29,6 +29,7 @@ class Game {
         this.dragging = false;
         this.boundaries;
         this.firstUpdate = true;
+        this.size_adjustment = 1e15;
         
         const query_string = window.location.search;
         const url_parameters = new URLSearchParams(query_string);
@@ -57,14 +58,6 @@ class Game {
                 }
             } else if (this.layout === 'galaxy') {
                 this.galaxies = datapack.galaxies;
-                var center_galaxy_index;
-                for (var i = 0; i < this.galaxies.length; i++) {
-                    this.galaxies[i].image = document.getElementById(this.galaxies[i].image);
-                    if (this.galaxies[i].x == 0 && this.galaxies[i].y == 0) {
-                        center_galaxy_index = i;
-                    }
-                }
-                this.center_galaxy = this.galaxies.splice(center_galaxy_index, 1)[0];
                 this.last_fe_tick = Date.now();
             }
             this.xOffset = this.map_width/2;

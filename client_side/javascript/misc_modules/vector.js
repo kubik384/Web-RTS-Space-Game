@@ -8,8 +8,8 @@ class Vector {
         if (typeof a === "number" && !isNaN(a)) {
             if (b === undefined) {
                 var angle = Math.toRad(a);
-                this.x = Math.cos(angle).fixedTo(15);
-                this.y = Math.sin(angle).fixedTo(15);
+                this.x = Math.cos(angle);
+                this.y = Math.sin(angle);
             }
             else if (c === undefined || d === undefined) {
                 this.x = a;
