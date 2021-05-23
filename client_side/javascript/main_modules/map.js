@@ -373,8 +373,9 @@ class Game {
         var no_this_so = this.space_objects.length;
         var number_of_so = space_objects.length;
         if (number_of_so > no_this_so) {
-            for (var i = no_this_so - 1; i < number_of_so; i++) {
-                space_objects[i].image = document.getElementById(this.space_objects[i].image);
+            for (var i = no_this_so; i < number_of_so; i++) {
+                space_objects[i].image = document.getElementById(space_objects[i].image);
+                console.log(i);
                 this.space_objects.push(space_objects[i]);
             }
         }

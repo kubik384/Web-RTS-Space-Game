@@ -159,7 +159,7 @@ module.exports = class Game {
     }
 
     async extract_game_data() {
-        return {space_objects: this.space_objects, fleets: this.fleets};
+        return {space_objects: this.space_objects, fleets: this.fleets, space_object_id: this.space_object_id};
     }
     
     async attempt_game_load(file = 'server_side/save_files/save.txt') {
@@ -176,6 +176,7 @@ module.exports = class Game {
                 parsed_data.fleets[i].velocity = new Vector(parsed_data.fleets[i].velocity)
             }
             this.fleets = parsed_data.fleets;
+            this.space_object_id = parsed_data.space_object_id;
         });
     }
 
@@ -208,38 +209,48 @@ module.exports = class Game {
     }
 
     async get_map_datapack(layout, socket_id) {
-        return new Promise((resolve, reject) => {
-            if (this.updating) {
-                setTimeout(() => {this.get_map_datapack(layout, socket_id)}, 0);
-            } else {
+        if (this.updating) {
+            await new Promise((resolve, reject) => {setTimeout(resolve, 0)});
+            return this.get_map_datapack();
+        } else {
+            return new Promise(async (resolve, reject) => {
                 this.sending_datapack = true;
                 if (layout === 'galaxy') {
                     resolve({galaxies: []});
+                    return;
                 } else if (layout === 'system') {
                     for (var i = 0; i < this.players.length; i++) {
                         if (this.players[i].socket.id == socket_id) {
                             var space_objects = [];
-                            for (var j = 0; j < this.space_objects.length; j++) {
-                                if (this.space_objects[j].galaxy_id == this.players[i].galaxy_id) {
-                                    space_objects.push(this.space_objects[j]);
+                            var player_planet = this.space_objects.find(space_object => space_object.space_object_id == this.players[i].space_object_id);
+                            if (player_planet !== undefined) {
+                                //will need to recalculate what is in the view range as it moves around
+                                for (var j = 0; j < this.space_objects.length; j++) {
+                                    var object_distance = await (new Vector(player_planet, this.space_objects[j])).length();
+                                    //Expect all the space objects to be squares (circles) = same width and height - for now
+                                    var calculated_view_range = this.players[i].view_range * this.space_objects[j].width;
+                                    if (calculated_view_range > object_distance) {
+                                        space_objects.push(this.space_objects[j]);
+                                    }
                                 }
                             }
                             resolve({space_objects: space_objects, last_update: this.last_tick, boundaries: this.boundaries});
+                            return;
                         }
                     }
                 }
                 throw new Error('Player was not found to return map datapack');
-            }
-        }).then(datapack => {
-            this.sending_datapack = false;
-            return datapack;
-        });
+            }).then(datapack => {
+                this.sending_datapack = false;
+                return datapack;
+            });
+        }
     }
 
     async addPlayer(socket, username) {
         //socket remains a reference - isn't deep copied
         var basic_player_map_info = (await this.dbManager.get_basic_player_map_info(username))[0];
-        this.players.push({socket: socket, username: username, galaxy_id: basic_player_map_info.galaxy_id, space_object_id: basic_player_map_info.space_object_id});
+        this.players.push({socket: socket, username: username, space_object_id: basic_player_map_info.space_object_id, view_range: 100});
     }
 
     async removePlayer(socket) {
@@ -250,5 +261,13 @@ module.exports = class Game {
             }
         }
         throw new Error('Did not find player to get them removed from the players array');
+    }
+
+    async generate_asteroid(number, coordinates_range) {
+        
+    }
+
+    async generate_galaxy() {
+        
     }
 }

@@ -22,7 +22,7 @@ module.exports = class DbManager {
     }
 
     async get_basic_player_map_info(username) {
-        var query = 'SELECT space_object_id, galaxy_id FROM players WHERE username = ?';
+        var query = 'SELECT space_object_id FROM players WHERE username = ?';
         return this.execute_query(query, [username]);
     }
 
