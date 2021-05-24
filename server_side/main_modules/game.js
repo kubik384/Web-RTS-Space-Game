@@ -45,8 +45,8 @@ module.exports = class Game {
                     //Expect all the space objects to be squares (circles) = same width and height - for now
                     var object_radius = this.space_objects[i].width/2;
                     if (await vector.length() > object_radius) {
-                        var pull = Math.round(time_passed * Math.pow(object_radius, 4) / Math.pow(await vector.length(), 2) / 1e5) / 1e10;
-                        this.fleets[j].velocity = await this.space_objects[i].velocity.add(await (await vector.normalize()).multiply(pull));
+                        var pull = Math.round(Math.pow(object_radius, 2) / Math.pow(await vector.length(), 2) * 1e3) / 1e9;
+                        this.fleets[j].velocity = await this.fleets[j].velocity.add(await (await vector.normalize()).multiply(pull));
                     } else {
                         this.deleted_fleets.push(j);
                         this.fleets.splice(j, 1);
@@ -64,7 +64,7 @@ module.exports = class Game {
                         //Expect all the space objects to be squares (circles) = same width and height - for now
                         var object_radius = this.space_objects[j].width/2;
                         if (await vector.length() > object_radius) {
-                            var pull = Math.round(time_passed * Math.pow(object_radius, 4) / Math.pow(await vector.length(), 2) * 1e-5) / 1e10;
+                            var pull = Math.round(Math.pow(object_radius, 2) / Math.pow(await vector.length(), 2) * 1e3) / 1e9;
                             this.space_objects[i].velocity = await this.space_objects[i].velocity.add(await (await vector.normalize()).multiply(pull));
                         } else {
                             this.deleted_space_objects.push(i);
@@ -85,23 +85,17 @@ module.exports = class Game {
                     if (this.fleets[i].acceleration != 0) {
                         var acceleration_input = speed/(this.fleets[i].acceleration * time_passed * this.time_speed);
                         var adjusted_vector = await vector.divide(acceleration_input);
-                        var slowdown_time = distance/speed;
+                        var time_to_slowdown = distance/speed;
                         var calculated_vector;
-                        if ((await adjusted_vector.length() > speed) || (slowdown_time < acceleration_input)) {
+                        if ((await adjusted_vector.length() > speed) || (time_to_slowdown < acceleration_input)) {
                             calculated_vector = await (new Vector(this.fleets[i].velocity, adjusted_vector)).normalize();
                         } else {
                             var normalized_velocity = await this.fleets[i].velocity.isNull() ? this.fleets[i].velocity : await this.fleets[i].velocity.normalize();
                             calculated_vector = await (new Vector(normalized_velocity, await vector.normalize())).normalize();
                         }
-                        this.fleets[i].velocity = await this.fleets[i].velocity.add(await calculated_vector.multiply(this.fleets[i].acceleration * time_passed));
+                        this.fleets[i].velocity = await this.fleets[i].velocity.add(await calculated_vector.multiply(this.fleets[i].acceleration));
                     }
                 }
-                /*
-                if (Date.now() % 50 == 0) {
-                    console.log(this.fleets[i].velocity.x * time_passed * this.time_speed);
-                    console.log(this.fleets[i].velocity);
-                }
-                */
                 this.fleets[i].x += this.fleets[i].velocity.x * time_passed * this.time_speed;
                 this.fleets[i].y += this.fleets[i].velocity.y * time_passed * this.time_speed;
             }
@@ -195,7 +189,7 @@ module.exports = class Game {
             }
         }
         if (player_planet !== undefined) {
-            var fleet = {owner: player.username, x: player_planet.x - player_planet.width, y: player_planet.y - player_planet.height, acceleration: 0.000000025, velocity: new Vector(player_planet.velocity)};
+            var fleet = {owner: player.username, x: player_planet.x - player_planet.width, y: player_planet.y - player_planet.height, acceleration: 0.0000025, velocity: new Vector(player_planet.velocity)};
             var f_index = this.fleets.findIndex( fleet => fleet.owner == player.username);
             if (f_index == -1) {
                 this.fleets.push(fleet);
