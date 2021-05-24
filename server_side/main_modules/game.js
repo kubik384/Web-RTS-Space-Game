@@ -83,7 +83,7 @@ module.exports = class Game {
                     var distance = await vector.length();
                     var speed = await this.fleets[i].velocity.length() * time_passed * this.time_speed;
                     if (this.fleets[i].acceleration != 0) {
-                        var acceleration_input = speed/(this.fleets[i].acceleration * time_passed * this.time_speed);
+                        var acceleration_input = speed/(this.fleets[i].acceleration);
                         var adjusted_vector = await vector.divide(acceleration_input);
                         var time_to_slowdown = distance/speed;
                         var calculated_vector;
