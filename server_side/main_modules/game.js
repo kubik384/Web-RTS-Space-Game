@@ -46,7 +46,7 @@ module.exports = class Game {
                     var object_radius = this.space_objects[i].width/2;
                     var distance = await vector.length();
                     if (distance > object_radius) {
-                        var pull = Math.round(this.space_objects[i].mass * 0.0001 / Math.pow(distance, 2) * 1e3) / 1e11;
+                        var pull = Math.round(this.space_objects[i].mass / Math.pow(distance, 2) * 1e3) / 1e11;
                         this.fleets[j].velocity = await this.fleets[j].velocity.add(await (await vector.normalize()).multiply(pull));
                     } else {
                         this.deleted_fleets.push(j);
