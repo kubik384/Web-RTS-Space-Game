@@ -1,7 +1,7 @@
 * {
     margin:0px;
 	padding:0px;
-	font-size: 0px;
+	font-size: 20px;
 	user-select: none;
 }
 
@@ -107,6 +107,29 @@ body {
 	width: 50% !important;
 }
 
-#assemble_fleet {
+#fleet_ui {
+	text-align: center;
+}
+
+#fleet_ui > p {
+	margin-top: 20px;
+	margin-bottom: 20px;
+}
+
+button {
+	margin-left: 5px;
+}
+
+p {
+	padding-top: 10px;
+}
+
+label {
+	font-size: 14px;
+}
+
+input {
+	width: 60px;
+	margin-bottom: 10px;
 	font-size: 20px;
 }
