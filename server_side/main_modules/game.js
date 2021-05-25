@@ -271,4 +271,37 @@ module.exports = class Game {
     async generate_galaxy() {
         
     }
+
+    async process_request(username, request_id) {
+        if (typeof request_id === 'string') {
+            if (!this.updating) {
+                switch(request_id) {
+                    case 'assemble_fleet':
+                        this.assemble_fleet();
+                        break;
+                    case '+':
+                    case '-':
+                        this.time_speed *= request_id == '+' ? 1e1 : 1e-1;
+                        break;
+                    case 'cancel':
+                        for (var i = 0; i < this.fleets.length; i++) {
+                            if (this.fleets[i].owner == username) {
+                                this.fleets[i].move_point = undefined;
+                                break;
+                            }
+                        }
+                        break;
+                    case 'switch_galaxy':
+                        break;
+                    case 'generate_galaxy':
+                        this.generate_galaxy();
+                        break;
+                }
+            } else {
+                setTimeout(this.process_request, 0, username, request_id);
+            }
+        } else {
+            console.log('Type of request_id is not string!');
+        }
+    }
 }

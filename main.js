@@ -196,8 +196,26 @@ io.on('connection', socket => {
 		});
 	});
 
-	socket.on('assemble_fleet', () => {
-		game.assemble_fleet(socket.id);
+	socket.on('request', (...args) => {
+		var request_id = args[0];
+		if (request_id === 'restart') {
+			var token = socketTable[socket.id];
+			delete require.cache[require.resolve('./server_side/main_modules/Game.js')];
+			delete require.cache[require.resolve('./server_side/main_modules/dbManager.js')];
+			const DbManager = require('./server_side/main_modules/dbManager.js');
+			const Game = require('./server_side/main_modules/Game.js');
+			dbManager = new DbManager();
+			game = new Game(dbManager, io);
+			game.setup_game().then(() => {
+				game.addPlayer(socket, token).then(() => {
+					socket.gameAdded = true;
+					game.get_map_datapack(args[1], socket.id).then(result => {socket.emit('map_datapack', JSON.stringify(result))});
+				});
+			});
+		} else {
+			var token = socketTable[socket.id];
+			game.process_request(token, request_id);
+		}
 	});
 
 	socket.on('set_movepoint', (x, y) => {

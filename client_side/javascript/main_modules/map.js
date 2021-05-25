@@ -29,7 +29,6 @@ class Game {
         this.dragging = false;
         this.boundaries;
         this.firstUpdate = true;
-        this.size_adjustment = 1e15;
         
         const query_string = window.location.search;
         const url_parameters = new URLSearchParams(query_string);
@@ -65,8 +64,15 @@ class Game {
             //expecting the border to have the same width on all the sides of the canvas
             this.map_canvas_border = +getComputedStyle(this.map_canvas).getPropertyValue('border-top-width').slice(0, -2);
 
-            document.getElementById('assemble_fleet').addEventListener('click', e => { 
-                this.request_fleet_assembly();
+            document.getElementById('fleet_ui').addEventListener('click', e => {
+                if (e.target.localName == 'button') {
+                    if (e.target.id == 'restart') {
+                        this.socket.emit('request', e.target.id, this.layout);
+                    } else {
+                        this.socket.emit('request', e.target.id);
+                    }
+                    
+                }
             });
 
             document.getElementById('map').addEventListener('contextmenu', e => { 
@@ -284,25 +290,6 @@ class Game {
         this.map_canvas.setAttribute('height', this.map_height);
         this.map_canvas.setAttribute('width', this.map_width);
         return this.window_resize_handler.bind(this);
-    }
-
-    async request_fleet_assembly() {
-        this.socket.emit('assemble_fleet');
-
-        /*
-        var interpolation_coefficient = (Date.now() - this.last_tick)/this.tick_time_passed;
-        var rotation = ((this.space_objects[0].rot - this.space_objects[0].last_rot) * interpolation_coefficient + this.space_objects[0].last_rot);
-        var rads = await utils.angleToRad(rotation);
-        var [planetX, planetY] = [this.space_objects[0].x, this.space_objects[0].y];
-        var [pointX, pointY] = [this.system_center_object.x, this.system_center_object.y];
-        this.controlled_fleet.x = pointX + (planetX - pointX) * Math.cos(rads) - (planetY - pointY) * Math.sin(rads) - 10;
-        this.controlled_fleet.y = pointY + (planetX - pointX) * Math.sin(rads) + (planetY - pointY) * Math.cos(rads) - 10;
-        this.controlled_fleet.last_x = this.controlled_fleet.x;
-        this.controlled_fleet.last_y = this.controlled_fleet.y;
-        this.controlled_fleet.acceleration = 0.03;
-        this.controlled_fleet.velocity = new Vector(0, 0);
-        this.controlled_fleet.last_velocity = this.controlled_fleet.velocity;
-        */
     }
 
     async generate_movepoint(x, y) {
