@@ -348,7 +348,7 @@ class Game {
             */
         }
 
-        for (var i = deleted_space_objects.length - 1; i >= 0; i--) {
+        for (var i = 0; i < deleted_space_objects.length; i++) {
             this.space_objects.splice(deleted_space_objects[i], 1);
         }
 
@@ -360,7 +360,6 @@ class Game {
                 this.space_objects.push(space_objects[i]);
             }
         }
-
         for (var i = 0; i < this.space_objects.length; i++) {
             this.space_objects[i].last_x = this.space_objects[i].x;
             this.space_objects[i].last_y = this.space_objects[i].y;
