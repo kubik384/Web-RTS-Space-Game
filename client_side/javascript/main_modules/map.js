@@ -42,11 +42,9 @@ class Game {
     async setup_game(p_datapack) {
         return new Promise((resolve, reject) => {
             var datapack = JSON.parse(p_datapack);
-            this.map_canvas = document.getElementById("map");
-            this.map_ctx = this.map_canvas.getContext("2d");
-            window.onresize = this.window_resize_handler();
             if (this.layout === 'system') {
                 this.space_objects = datapack.space_objects;
+                this.fleets = datapack.fleets;
                 this.last_fe_tick = datapack.last_update;
                 this.last_be_tick = datapack.last_update;
                 this.boundaries = datapack.boundaries;
@@ -61,86 +59,90 @@ class Game {
             }
             this.xOffset = this.map_width/2;
             this.yOffset = this.map_height/2;
-            //expecting the border to have the same width on all the sides of the canvas
-            this.map_canvas_border = +getComputedStyle(this.map_canvas).getPropertyValue('border-top-width').slice(0, -2);
+            if (this.map_canvas === undefined) {
+                this.map_canvas = document.getElementById("map");
+                this.map_ctx = this.map_canvas.getContext("2d");
+                window.onresize = this.window_resize_handler();
+                //expecting the border to have the same width on all the sides of the canvas
+                this.map_canvas_border = +getComputedStyle(this.map_canvas).getPropertyValue('border-top-width').slice(0, -2);
 
-            document.getElementById('fleet_ui').addEventListener('click', e => {
-                if (e.target.localName == 'button') {
-                    if (e.target.id == 'restart') {
-                        this.socket.emit('request', e.target.id, this.layout);
-                    } else {
-                        this.socket.emit('request', e.target.id);
+                document.getElementById('fleet_ui').addEventListener('click', e => {
+                    if (e.target.localName == 'button') {
+                        if (e.target.id == 'restart') {
+                            this.socket.emit('request', e.target.id, this.layout);
+                        } else {
+                            this.socket.emit('request', e.target.id);
+                        }
                     }
-                    
-                }
-            });
+                });
 
-            document.getElementById('map').addEventListener('contextmenu', e => { 
-                e.preventDefault();
-                if (this.controlled_fleet !== undefined) {
+                document.getElementById('map').addEventListener('contextmenu', e => { 
+                    e.preventDefault();
+                    if (this.controlled_fleet !== undefined) {
+                        const rect = this.map_canvas.getBoundingClientRect();
+                        var x = e.clientX - this.xOffset - rect.left - this.map_canvas_border;
+                        var y = e.clientY - this.yOffset - rect.top - this.map_canvas_border;
+                        this.generate_movepoint(x/this.zoom, y/this.zoom);
+                    }
+                });
+
+                document.getElementById('map').addEventListener('wheel', e => {
+                    e.preventDefault();
                     const rect = this.map_canvas.getBoundingClientRect();
-                    var x = e.clientX - this.xOffset - rect.left - this.map_canvas_border;
-                    var y = e.clientY - this.yOffset - rect.top - this.map_canvas_border;
-                    this.generate_movepoint(x/this.zoom, y/this.zoom);
-                }
-            });
-
-            document.getElementById('map').addEventListener('wheel', e => {
-                e.preventDefault();
-                const rect = this.map_canvas.getBoundingClientRect();
-                var x = e.clientX - rect.left - this.map_canvas_border;
-                var y = e.clientY - rect.top - this.map_canvas_border;
-                if (e.deltaY < 0) {
-                    if (this.zoom < 24) {
-                        const deltaZoom = 1.25;
-                        var oldZoom = this.zoom;
-                        this.zoom *= deltaZoom;
-                        var zoomRatio = (this.zoom - oldZoom)/oldZoom;
-                        this.xOffset += (this.xOffset - x) * zoomRatio;
-                        this.yOffset += (this.yOffset - y) * zoomRatio;
+                    var x = e.clientX - rect.left - this.map_canvas_border;
+                    var y = e.clientY - rect.top - this.map_canvas_border;
+                    if (e.deltaY < 0) {
+                        if (this.zoom < 24) {
+                            const deltaZoom = 1.25;
+                            var oldZoom = this.zoom;
+                            this.zoom *= deltaZoom;
+                            var zoomRatio = (this.zoom - oldZoom)/oldZoom;
+                            this.xOffset += (this.xOffset - x) * zoomRatio;
+                            this.yOffset += (this.yOffset - y) * zoomRatio;
+                        }
+                    } else {
+                        if (this.zoom > 0.01) {
+                            const deltaZoom = 0.8;
+                            var oldZoom = this.zoom;
+                            this.zoom *= deltaZoom;
+                            var zoomRatio = (oldZoom - this.zoom)/oldZoom;
+                            this.xOffset -= (this.xOffset - x) * zoomRatio;
+                            this.yOffset -= (this.yOffset - y) * zoomRatio;
+                        }
                     }
-                } else {
-                    if (this.zoom > 0.01) {
-                        const deltaZoom = 0.8;
-                        var oldZoom = this.zoom;
-                        this.zoom *= deltaZoom;
-                        var zoomRatio = (oldZoom - this.zoom)/oldZoom;
-                        this.xOffset -= (this.xOffset - x) * zoomRatio;
-                        this.yOffset -= (this.yOffset - y) * zoomRatio;
+                });
+
+                document.getElementById('map').addEventListener('mousedown', e => {
+                    //left click
+                    if (e.button == 0) {
+                        this.dragging = true;
                     }
-                }
-            });
+                });
 
-            document.getElementById('map').addEventListener('mousedown', e => {
-                //left click
-                if (e.button == 0) {
-                    this.dragging = true;
-                }
-            });
+                window.addEventListener('mouseup', e => {
+                    //left click
+                    if (e.button == 0) {
+                        this.dragging = false;
+                    }
+                });
 
-            window.addEventListener('mouseup', e => {
-                //left click
-                if (e.button == 0) {
-                    this.dragging = false;
-                }
-            });
+                document.addEventListener('mousemove', e => {
+                    if (this.dragging) {
+                        this.xOffset += e.movementX;
+                        this.yOffset += e.movementY;
+                    }
+                });
 
-            document.addEventListener('mousemove', e => {
-                if (this.dragging) {
-                    this.xOffset += e.movementX;
-                    this.yOffset += e.movementY;
-                }
-            });
-
-            window.addEventListener("visibilitychange", () => {
-                if (document.visibilityState == 'hidden') {
-                    this.dragging = false;
-                }
-            });
-            
-            window.requestAnimationFrame(this.draw.bind(this));
-            this.logic_loop = setTimeout(this.update.bind(this), this.tick_time);
-            resolve();
+                window.addEventListener("visibilitychange", () => {
+                    if (document.visibilityState == 'hidden') {
+                        this.dragging = false;
+                    }
+                });
+                
+                window.requestAnimationFrame(this.draw.bind(this));
+                this.logic_loop = setTimeout(this.update.bind(this), this.tick_time);
+                resolve();
+            };
         });
     }
 
@@ -355,7 +357,6 @@ class Game {
         if (number_of_so > no_this_so) {
             for (var i = no_this_so; i < number_of_so; i++) {
                 space_objects[i].image = document.getElementById(space_objects[i].image);
-                console.log(i);
                 this.space_objects.push(space_objects[i]);
             }
         }

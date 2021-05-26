@@ -235,12 +235,12 @@ module.exports = class Game {
                                     }
                                 }
                             }
-                            resolve({space_objects: space_objects, last_update: this.last_tick, boundaries: this.boundaries});
+                            resolve({space_objects: space_objects, fleets: this.fleets, last_update: this.last_tick, boundaries: this.boundaries});
                             return;
                         }
                     }
                 }
-                throw new Error('Player was not found to return map datapack');
+                reject(new Error('Player was not found to return map datapack'));
             }).then(datapack => {
                 this.sending_datapack = false;
                 return datapack;
@@ -272,12 +272,12 @@ module.exports = class Game {
         
     }
 
-    async process_request(username, request_id) {
+    async process_request(socket, username, request_id) {
         if (typeof request_id === 'string') {
             if (!this.updating) {
                 switch(request_id) {
                     case 'assemble_fleet':
-                        this.assemble_fleet();
+                        this.assemble_fleet(socket.id);
                         break;
                     case '+':
                     case '-':
@@ -303,5 +303,9 @@ module.exports = class Game {
         } else {
             console.log('Type of request_id is not string!');
         }
+    }
+
+    async stop() {
+		clearTimeout(this.next_logic_run);
     }
 }
