@@ -281,7 +281,16 @@ module.exports = class Game {
                         break;
                     case '+':
                     case '-':
-                        this.time_speed *= request_id == '+' ? 1e1 : 1e-1;
+                        var time_change = request_id == '+' ? 1e1 : 1e-1;
+                        for (var i = 0; i < this.space_objects.length; i++) {
+                            this.space_objects[i].velocity = await this.space_objects[i].velocity.multiply(time_change);
+                            console.log(this.space_objects[i].velocity);
+                        }
+                        for (var i = 0; i < this.fleets.length; i++) {
+                            this.fleets[i].velocity = await this.fleets[i].velocity.multiply(time_change);
+                            this.fleets[i].acceleration = await this.fleets.acceleration * time_change;
+                        }
+                        this.time_speed *= time_change;
                         break;
                     case 'cancel':
                         for (var i = 0; i < this.fleets.length; i++) {
