@@ -17,7 +17,6 @@ module.exports = class Game {
         this.deleted_fleets = [];
         this.deleted_space_objects = [];
         this.boundaries = 10000;
-        this.time_speed = 1e4;
     }
 
     async setup_game() {
@@ -46,7 +45,7 @@ module.exports = class Game {
                     var object_radius = this.space_objects[i].width/2;
                     var distance = await vector.length();
                     if (distance > object_radius) {
-                        var pull = Math.round(this.space_objects[i].mass / Math.pow(distance, 2) * time_passed * 1e1) / 1e11;
+                        var pull = Math.round(this.space_objects[i].mass / Math.pow(distance, 2) * time_passed * 1e1) / 1e7;
                         this.fleets[j].velocity = await this.fleets[j].velocity.add(await (await vector.normalize()).multiply(pull));
                     } else {
                         this.deleted_fleets.push(j);
@@ -66,7 +65,7 @@ module.exports = class Game {
                         var object_radius = this.space_objects[j].width/2;
                         var distance = await vector.length();
                         if (distance > object_radius) {
-                            var pull = Math.round(this.space_objects[j].mass / Math.pow(distance, 2) * time_passed * 1e1) / 1e11;
+                            var pull = Math.round(this.space_objects[j].mass / Math.pow(distance, 2) * time_passed * 1e1) / 1e7;
                             this.space_objects[i].velocity = await this.space_objects[i].velocity.add(await (await vector.normalize()).multiply(pull));
                         } else {
                             this.deleted_space_objects.push(i);
@@ -75,15 +74,15 @@ module.exports = class Game {
                         }
                     }
                 }
-                this.space_objects[i].x += this.space_objects[i].velocity.x * time_passed * this.time_speed;
-                this.space_objects[i].y += this.space_objects[i].velocity.y * time_passed * this.time_speed;
+                this.space_objects[i].x += this.space_objects[i].velocity.x * time_passed;
+                this.space_objects[i].y += this.space_objects[i].velocity.y * time_passed;
             }
 
             for (var i = 0; i < this.fleets.length; i++) {
                 if (this.fleets[i].move_point !== undefined) {
                     var vector = new Vector(this.fleets[i], this.fleets[i].move_point);
                     var distance = await vector.length();
-                    var speed = await this.fleets[i].velocity.length() * time_passed * this.time_speed;
+                    var speed = await this.fleets[i].velocity.length() * time_passed;
                     if (this.fleets[i].acceleration != 0) {
                         var acceleration_input = speed/(this.fleets[i].acceleration * time_passed);
                         var adjusted_vector = await vector.divide(acceleration_input);
@@ -98,8 +97,8 @@ module.exports = class Game {
                         this.fleets[i].velocity = await this.fleets[i].velocity.add(await calculated_vector.multiply(this.fleets[i].acceleration * time_passed));
                     }
                 }
-                this.fleets[i].x += this.fleets[i].velocity.x * time_passed * this.time_speed;
-                this.fleets[i].y += this.fleets[i].velocity.y * time_passed * this.time_speed;
+                this.fleets[i].x += this.fleets[i].velocity.x * time_passed;
+                this.fleets[i].y += this.fleets[i].velocity.y * time_passed;
             }
 
             //very inefficient and resource intensive solution
@@ -191,7 +190,7 @@ module.exports = class Game {
             }
         }
         if (player_planet !== undefined) {
-            var fleet = {owner: player.username, x: player_planet.x - player_planet.width, y: player_planet.y - player_planet.height, acceleration: 0.000000025, velocity: new Vector(player_planet.velocity)};
+            var fleet = {owner: player.username, x: player_planet.x - player_planet.width, y: player_planet.y - player_planet.height, acceleration: 0.00025, velocity: new Vector(player_planet.velocity)};
             var f_index = this.fleets.findIndex( fleet => fleet.owner == player.username);
             if (f_index == -1) {
                 this.fleets.push(fleet);
@@ -290,7 +289,7 @@ module.exports = class Game {
                             this.fleets[i].velocity = await this.fleets[i].velocity.multiply(time_change);
                             this.fleets[i].acceleration = await this.fleets.acceleration * time_change;
                         }
-                        this.time_speed *= time_change;
+                        //this.time_speed *= time_change;
                         break;
                     case 'cancel':
                         for (var i = 0; i < this.fleets.length; i++) {
