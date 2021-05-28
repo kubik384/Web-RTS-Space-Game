@@ -57,9 +57,9 @@ class Game {
                 this.galaxies = datapack.galaxies;
                 this.last_fe_tick = Date.now();
             }
-            this.xOffset = this.map_width/2;
-            this.yOffset = this.map_height/2;
             if (this.map_canvas === undefined) {
+                this.xOffset = this.map_width/2;
+                this.yOffset = this.map_height/2;
                 this.map_canvas = document.getElementById("map");
                 this.map_ctx = this.map_canvas.getContext("2d");
                 window.onresize = this.window_resize_handler();

@@ -201,20 +201,7 @@ io.on('connection', socket => {
 	socket.on('request', (...args) => {
 		var request_id = args[0];
 		if (request_id === 'restart') {
-			var token = socketTable[socket.id];
-			delete require.cache[require.resolve('./server_side/main_modules/Game.js')];
-			delete require.cache[require.resolve('./server_side/main_modules/dbManager.js')];
-			const DbManager = require('./server_side/main_modules/dbManager.js');
-			const Game = require('./server_side/main_modules/Game.js');
-			dbManager = new DbManager();
-			game.stop();
-			game = new Game(dbManager, io.bind);
-			game.setup_game().then(() => {
-				game.addPlayer(socket, token).then(() => {
-					socket.gameAdded = true;
-					game.get_map_datapack(args[1], socket.id).then(result => {socket.emit('map_datapack', JSON.stringify(result))});
-				});
-			});
+			restart_server(socket, args[1]);
 		} else {
 			var token = socketTable[socket.id];
 			game.process_request(socket, token, request_id);
@@ -234,3 +221,24 @@ io.on('connection', socket => {
 		}
 	});
 });
+
+function restart_server(socket, layout) {
+	if (socket !== undefined) {
+		var token = socketTable[socket.id];
+	}
+	delete require.cache[require.resolve('./server_side/main_modules/Game.js')];
+	delete require.cache[require.resolve('./server_side/main_modules/dbManager.js')];
+	const DbManager = require('./server_side/main_modules/dbManager.js');
+	const Game = require('./server_side/main_modules/Game.js');
+	dbManager = new DbManager();
+	game.stop();
+	game = new Game(dbManager, io);
+	game.setup_game().then(() => {
+		if (socket !== undefined) {
+			game.addPlayer(socket, token).then(() => {
+				socket.gameAdded = true;
+				game.get_map_datapack(layout, socket.id).then(result => {socket.emit('map_datapack', JSON.stringify(result))});
+			});
+		}
+	});
+}
