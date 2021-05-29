@@ -7,6 +7,8 @@ module.exports = class Game {
     constructor(dbManager, server) {
         this.dbManager = dbManager;
         this.server = server;
+        this.interval_time = 20;
+        this.overall_time_passed = 0;
         this.tick_time = 90;
         this.save_time = 120000;
         this.secondary_save_time = 300000;
@@ -26,107 +28,109 @@ module.exports = class Game {
         this.last_tick = timestamp;
         this.last_save = timestamp;
         this.last_secondary_save = timestamp;
-        this.next_logic_run = setTimeout(this.update.bind(this), this.tick_time);
+        this.next_logic_run = setInterval(this.update.bind(this), this.interval_time);
     }
 
     async update() {
         if (!this.saving && !this.updating && !this.sending_datapack) {
             this.updating = true;
             //a race condition should never occur, since the functions should be running at minimal this.tick_time apart, which makes it impossible for the function that was ran before to not have set this.updating to true in this time to prevent the second function from executing
-            this.next_logic_run = setTimeout(this.update.bind(this), this.tick_time);
             const timestamp = Date.now();
-            const time_passed = timestamp - this.last_tick;
+            var time_passed = timestamp - this.last_tick;
+            this.last_tick = timestamp;
+            this.overall_time_passed += time_passed;
+            if (this.overall_time_passed >= this.tick_time - this.interval_time/2) {
+                this.overall_time_passed -= this.tick_time;
+                time_passed = this.tick_time;
 
-            space_objects_loop:
-            for (var i = this.space_objects.length - 1; i >= 0; i--) {
-                for (var j = this.fleets.length - 1; j >= 0; j--) {
-                    var vector = new Vector(this.fleets[j], this.space_objects[i]);
-                    //Expect all the space objects to be squares (circles) = same width and height - for now
-                    var object_radius = this.space_objects[i].width/2;
-                    var distance = await vector.length();
-                    if (distance > object_radius) {
-                        var pull = Math.round(this.space_objects[i].mass / Math.pow(distance, 2) * 1e3) * time_passed / 1e9;
-                        this.fleets[j].velocity = await this.fleets[j].velocity.add(await (await vector.normalize()).multiply(pull));
-                    } else {
-                        this.deleted_fleets.push(j);
-                        this.fleets.splice(j, 1);
-                    }
-                }
-                if (Math.abs(this.space_objects[i].x) > this.boundaries
-                || Math.abs(this.space_objects[i].y) > this.boundaries) {
-                    this.deleted_space_objects.push(i);
-                    this.space_objects.splice(i, 1);
-                    continue;
-                }
-                for (var j = 0; j < this.space_objects.length; j++) {
-                    if (i !== j) {
-                        var vector = new Vector(this.space_objects[i], this.space_objects[j]);
+                space_objects_loop:
+                for (var i = this.space_objects.length - 1; i >= 0; i--) {
+                    for (var j = this.fleets.length - 1; j >= 0; j--) {
+                        var vector = new Vector(this.fleets[j], this.space_objects[i]);
                         //Expect all the space objects to be squares (circles) = same width and height - for now
-                        var object_radius = this.space_objects[j].width/2;
+                        var object_radius = this.space_objects[i].width/2;
                         var distance = await vector.length();
                         if (distance > object_radius) {
-                            var pull = Math.round(this.space_objects[j].mass / Math.pow(distance, 2) * 1e3) * time_passed / 1e9;
-                            this.space_objects[i].velocity = await this.space_objects[i].velocity.add(await (await vector.normalize()).multiply(pull));
+                            var pull = Math.round(this.space_objects[i].mass / Math.pow(distance, 2) * 1e3) * time_passed / 1e9;
+                            this.fleets[j].velocity = await this.fleets[j].velocity.add(await (await vector.normalize()).multiply(pull));
                         } else {
-                            this.deleted_space_objects.push(i);
-                            this.space_objects.splice(i, 1);
-                            continue space_objects_loop;
+                            this.deleted_fleets.push(j);
+                            this.fleets.splice(j, 1);
                         }
                     }
-                }
-                this.space_objects[i].x += this.space_objects[i].velocity.x * time_passed;
-                this.space_objects[i].y += this.space_objects[i].velocity.y * time_passed;
-            }
-
-            for (var i = 0; i < this.fleets.length; i++) {
-                if (this.fleets[i].move_point !== undefined) {
-                    var vector = new Vector(this.fleets[i], this.fleets[i].move_point);
-                    var distance = await vector.length();
-                    var speed = await this.fleets[i].velocity.length() * time_passed;
-                    if (this.fleets[i].acceleration != 0) {
-                        var acceleration_input = speed/(this.fleets[i].acceleration * time_passed);
-                        var adjusted_vector = await vector.divide(acceleration_input);
-                        var time_to_slowdown = distance/speed;
-                        var calculated_vector;
-                        if ((await adjusted_vector.length() > speed) || (time_to_slowdown < acceleration_input)) {
-                            calculated_vector = await (new Vector(this.fleets[i].velocity, adjusted_vector)).normalize();
-                        } else {
-                            var normalized_velocity = await this.fleets[i].velocity.isNull() ? this.fleets[i].velocity : await this.fleets[i].velocity.normalize();
-                            calculated_vector = await (new Vector(normalized_velocity, await vector.normalize())).normalize();
+                    if (Math.abs(this.space_objects[i].x) > this.boundaries
+                    || Math.abs(this.space_objects[i].y) > this.boundaries) {
+                        this.deleted_space_objects.push(i);
+                        this.space_objects.splice(i, 1);
+                        continue;
+                    }
+                    for (var j = 0; j < this.space_objects.length; j++) {
+                        if (i !== j) {
+                            var vector = new Vector(this.space_objects[i], this.space_objects[j]);
+                            //Expect all the space objects to be squares (circles) = same width and height - for now
+                            var object_radius = this.space_objects[j].width/2;
+                            var distance = await vector.length();
+                            if (distance > object_radius) {
+                                var pull = Math.round(this.space_objects[j].mass / Math.pow(distance, 2) * 1e3) * time_passed / 1e9;
+                                this.space_objects[i].velocity = await this.space_objects[i].velocity.add(await (await vector.normalize()).multiply(pull));
+                            } else {
+                                this.deleted_space_objects.push(i);
+                                this.space_objects.splice(i, 1);
+                                continue space_objects_loop;
+                            }
                         }
-                        this.fleets[i].velocity = await this.fleets[i].velocity.add(await calculated_vector.multiply(this.fleets[i].acceleration * time_passed));
                     }
+                    this.space_objects[i].x += this.space_objects[i].velocity.x * time_passed;
+                    this.space_objects[i].y += this.space_objects[i].velocity.y * time_passed;
                 }
-                this.fleets[i].x += this.fleets[i].velocity.x * time_passed;
-                this.fleets[i].y += this.fleets[i].velocity.y * time_passed;
-            }
 
-            //very inefficient and resource intensive solution
-            for (var i = 0; i < this.players.length; i++) {
-                var fleets = [];
-                for (var j = 0; j < this.fleets.length; j++) {
-                    if (this.fleets[j].owner == this.players[i].username) {
-                        fleets.push(this.fleets[j]);
-                    } else {
-                        fleets.push({x: this.fleets[j].x, y: this.fleets[j].y});
+                for (var i = 0; i < this.fleets.length; i++) {
+                    if (this.fleets[i].move_point !== undefined) {
+                        var vector = new Vector(this.fleets[i], this.fleets[i].move_point);
+                        var distance = await vector.length();
+                        var speed = await this.fleets[i].velocity.length() * time_passed;
+                        if (this.fleets[i].acceleration != 0) {
+                            var acceleration_input = speed/(this.fleets[i].acceleration * time_passed);
+                            var adjusted_vector = await vector.divide(acceleration_input);
+                            var time_to_slowdown = distance/speed;
+                            var calculated_vector;
+                            if ((await adjusted_vector.length() > speed) || (time_to_slowdown < acceleration_input)) {
+                                calculated_vector = await (new Vector(this.fleets[i].velocity, adjusted_vector)).normalize();
+                            } else {
+                                var normalized_velocity = await this.fleets[i].velocity.isNull() ? this.fleets[i].velocity : await this.fleets[i].velocity.normalize();
+                                calculated_vector = await (new Vector(normalized_velocity, await vector.normalize())).normalize();
+                            }
+                            this.fleets[i].velocity = await this.fleets[i].velocity.add(await calculated_vector.multiply(this.fleets[i].acceleration * time_passed));
+                        }
                     }
+                    this.fleets[i].x += this.fleets[i].velocity.x * time_passed;
+                    this.fleets[i].y += this.fleets[i].velocity.y * time_passed;
                 }
-                this.players[i].socket.emit('game_update', [fleets, this.deleted_fleets, this.space_objects, this.deleted_space_objects, this.last_tick]);
-            }
-            this.deleted_fleets = [];
-            this.deleted_space_objects = [];
 
-            this.attempt_game_save(timestamp);
-            if (time_passed >= this.tick_time + Math.floor(this.tick_time/4)) {
-                console.log('Significant time delay detected - tick took: ' + time_passed + 's instead of ' + this.tick_time + 's');
+                //very inefficient and resource intensive solution
+                for (var i = 0; i < this.players.length; i++) {
+                    var fleets = [];
+                    for (var j = 0; j < this.fleets.length; j++) {
+                        if (this.fleets[j].owner == this.players[i].username) {
+                            fleets.push(this.fleets[j]);
+                        } else {
+                            fleets.push({x: this.fleets[j].x, y: this.fleets[j].y});
+                        }
+                    }
+                    this.players[i].socket.emit('game_update', [fleets, this.deleted_fleets, this.space_objects, this.deleted_space_objects, timestamp - time_passed]);
+                }
+                this.deleted_fleets = [];
+                this.deleted_space_objects = [];
+
+                this.attempt_game_save(timestamp);
+                if (time_passed >= this.tick_time + Math.floor(this.tick_time/4)) {
+                    console.log('Significant time delay detected - tick took: ' + time_passed + 's instead of ' + this.tick_time + 's');
+                }
             }
-            this.last_tick = timestamp;
             this.updating = false;
         } else {
             if (Date.now() - this.last_tick > this.tick_time * 3) {
                 throw new Error("More than 3 ticks have been skipped at once, check the code u dum dum");
-            } else {
-                setTimeout(this.update.bind(this), 0);
             }
         }
     }
