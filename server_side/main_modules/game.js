@@ -45,7 +45,7 @@ module.exports = class Game {
                     var object_radius = this.space_objects[i].width/2;
                     var distance = await vector.length();
                     if (distance > object_radius) {
-                        var pull = Math.round(this.space_objects[i].mass / Math.pow(distance, 2) * time_passed * 1e1) / 1e7;
+                        var pull = Math.round(this.space_objects[i].mass / Math.pow(distance, 2) * 1e3) * time_passed / 1e9;
                         this.fleets[j].velocity = await this.fleets[j].velocity.add(await (await vector.normalize()).multiply(pull));
                     } else {
                         this.deleted_fleets.push(j);
@@ -65,7 +65,7 @@ module.exports = class Game {
                         var object_radius = this.space_objects[j].width/2;
                         var distance = await vector.length();
                         if (distance > object_radius) {
-                            var pull = Math.round(this.space_objects[j].mass / Math.pow(distance, 2) * time_passed * 1e1) / 1e7;
+                            var pull = Math.round(this.space_objects[j].mass / Math.pow(distance, 2) * 1e3) * time_passed / 1e9;
                             this.space_objects[i].velocity = await this.space_objects[i].velocity.add(await (await vector.normalize()).multiply(pull));
                         } else {
                             this.deleted_space_objects.push(i);
@@ -280,16 +280,11 @@ module.exports = class Game {
                         break;
                     case '+':
                     case '-':
-                        var time_change = request_id == '+' ? 1e1 : 1e-1;
-                        for (var i = 0; i < this.space_objects.length; i++) {
-                            this.space_objects[i].velocity = await this.space_objects[i].velocity.multiply(time_change);
-                            console.log(this.space_objects[i].velocity);
+                        var tick_change = request_id == '+' ? 10 : -10;
+                        var tick_time = this.tick_time + tick_change;
+                        if (tick_time > 5 && tick_time < 205) {
+                            this.tick_time += tick_change;
                         }
-                        for (var i = 0; i < this.fleets.length; i++) {
-                            this.fleets[i].velocity = await this.fleets[i].velocity.multiply(time_change);
-                            this.fleets[i].acceleration = await this.fleets.acceleration * time_change;
-                        }
-                        //this.time_speed *= time_change;
                         break;
                     case 'cancel':
                         for (var i = 0; i < this.fleets.length; i++) {
