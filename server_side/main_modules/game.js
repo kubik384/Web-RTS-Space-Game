@@ -8,6 +8,7 @@ module.exports = class Game {
         this.dbManager = dbManager;
         this.server = server;
         this.tick_time = 90;
+        this.tick_offset = 10;
         this.save_time = 120000;
         this.secondary_save_time = 300000;
         this.saving = false;
@@ -35,7 +36,7 @@ module.exports = class Game {
             //a race condition should never occur, since the functions should be running at minimal this.tick_time apart, which makes it impossible for the function that was ran before to not have set this.updating to true in this time to prevent the second function from executing
             this.next_logic_run = setTimeout(this.update.bind(this), this.tick_time);
             const timestamp = Date.now();
-            const time_passed = timestamp - this.last_tick;
+            const time_passed = this.tick_time + this.tick_offset;
 
             space_objects_loop:
             for (var i = this.space_objects.length - 1; i >= 0; i--) {
@@ -117,7 +118,7 @@ module.exports = class Game {
             this.deleted_space_objects = [];
 
             this.attempt_game_save(timestamp);
-            if (time_passed >= this.tick_time + Math.floor(this.tick_time/4)) {
+            if (timestamp - this.last_tick >= this.tick_time + Math.floor(this.tick_time/4)) {
                 console.log('Significant time delay detected - tick took: ' + time_passed + 's instead of ' + this.tick_time + 's');
             }
             this.last_tick = timestamp;
@@ -126,7 +127,7 @@ module.exports = class Game {
             if (Date.now() - this.last_tick > this.tick_time * 3) {
                 throw new Error("More than 3 ticks have been skipped at once, check the code u dum dum");
             } else {
-                setTimeout(this.update.bind(this), 0);
+                this.next_logic_run = setTimeout(this.update.bind(this), 0);
             }
         }
     }
@@ -281,9 +282,9 @@ module.exports = class Game {
                     case '+':
                     case '-':
                         var tick_change = request_id == '+' ? 10 : -10;
-                        var tick_time = this.tick_time + tick_change;
-                        if (tick_time > 5 && tick_time < 205) {
-                            this.tick_time += tick_change;
+                        var tick_offset = this.tick_offset + tick_change;
+                        if (tick_offset + this.tick_time > 10 && tick_offset < 200) {
+                            this.tick_offset = tick_offset;
                         }
                         break;
                     case 'cancel':
