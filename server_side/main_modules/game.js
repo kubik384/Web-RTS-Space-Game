@@ -10,6 +10,7 @@ module.exports = class Game {
         this.interval_time = 20;
         this.overall_time_passed = 0;
         this.tick_time = 90;
+        this.tick_offset = 10;
         this.save_time = 120000;
         this.secondary_save_time = 300000;
         this.saving = false;
@@ -41,7 +42,7 @@ module.exports = class Game {
             this.overall_time_passed += time_passed;
             if (this.overall_time_passed >= this.tick_time - this.interval_time/2) {
                 this.overall_time_passed -= this.tick_time;
-                time_passed = this.tick_time;
+                time_passed = this.tick_time + this.tick_offset;
 
                 space_objects_loop:
                 for (var i = this.space_objects.length - 1; i >= 0; i--) {
@@ -285,9 +286,9 @@ module.exports = class Game {
                     case '+':
                     case '-':
                         var tick_change = request_id == '+' ? 10 : -10;
-                        var tick_time = this.tick_time + tick_change;
-                        if (tick_time > 5 && tick_time < 205) {
-                            this.tick_time += tick_change;
+                        var tick_offset = this.tick_offset + tick_change;
+                        if (tick_offset + this.tick_time > 10 && tick_offset < 200) {
+                            this.tick_offset = tick_offset;
                         }
                         break;
                     case 'cancel':
