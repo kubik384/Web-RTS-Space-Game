@@ -229,6 +229,7 @@ class Game {
     draw() {
         var timestamp = Date.now();
         var be_interpolation_coefficient = (timestamp - this.last_be_tick)/this.tick_be_time_passed;
+        be_interpolation_coefficient = be_interpolation_coefficient > 1 ? 1 : be_interpolation_coefficient;
         //var fe_interpolation_coefficient = (timestamp - this.last_fe_tick)/this.tick_fe_time_passed;
         this.map_ctx.clearRect(0, 0, this.map_width, this.map_height);
         if (this.layout === 'system') {                
@@ -303,9 +304,8 @@ class Game {
         var deleted_fleets = data[1];
         var space_objects = data[2];
         var deleted_space_objects = data[3];
-        var new_last_be_tick = data[data.length-1];
-        var time_passed = new_last_be_tick - this.last_be_tick;
-        this.tick_be_time_passed = time_passed;
+        this.tick_be_time_passed = data[data.length-1];
+        this.last_be_tick = Date.now();
         
         //when a player joins, server can send new data, where the fleets are already deleted with what has been deleted from old data - which the user never received, so they cannot remove the fleets from them. Same goes for anything else (space objects)
         for (var i = deleted_fleets.length - 1; i >= 0; i--) {
@@ -372,7 +372,6 @@ class Game {
             }
             */
         }
-        this.last_be_tick = new_last_be_tick;
     }
 }
 

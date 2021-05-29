@@ -29,7 +29,7 @@ module.exports = class Game {
         this.last_tick = timestamp;
         this.last_save = timestamp;
         this.last_secondary_save = timestamp;
-        this.next_logic_run = setInterval(this.update.bind(this), this.interval_time);
+        this.logic_loop = setInterval(this.update.bind(this), this.interval_time);
     }
 
     async update() {
@@ -118,13 +118,13 @@ module.exports = class Game {
                             fleets.push({x: this.fleets[j].x, y: this.fleets[j].y});
                         }
                     }
-                    this.players[i].socket.emit('game_update', [fleets, this.deleted_fleets, this.space_objects, this.deleted_space_objects, timestamp - time_passed]);
+                    this.players[i].socket.emit('game_update', [fleets, this.deleted_fleets, this.space_objects, this.deleted_space_objects, time_passed]);
                 }
                 this.deleted_fleets = [];
                 this.deleted_space_objects = [];
 
                 this.attempt_game_save(timestamp);
-                if (time_passed >= this.tick_time + Math.floor(this.tick_time/4)) {
+                if (timestamp - this.last_tick >= this.tick_time + Math.floor(this.tick_time/4)) {
                     console.log('Significant time delay detected - tick took: ' + time_passed + 's instead of ' + this.tick_time + 's');
                 }
             }
@@ -314,6 +314,6 @@ module.exports = class Game {
     }
 
     async stop() {
-		clearTimeout(this.next_logic_run);
+		clearTimeout(this.logic_loop);
     }
 }
