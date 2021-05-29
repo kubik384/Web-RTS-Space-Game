@@ -285,9 +285,9 @@ module.exports = class Game {
                         break;
                     case '+':
                     case '-':
-                        var tick_change = request_id == '+' ? 10 : -10;
+                        var tick_change = request_id == '+' ? 20 : -20;
                         var tick_offset = this.tick_offset + tick_change;
-                        if (tick_offset + this.tick_time > 10 && tick_offset < 200) {
+                        if (tick_offset + this.tick_time > 1 && tick_offset < 400) {
                             this.tick_offset = tick_offset;
                         }
                         break;
