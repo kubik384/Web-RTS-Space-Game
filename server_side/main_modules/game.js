@@ -10,7 +10,7 @@ module.exports = class Game {
         this.interval_time = 20;
         this.overall_time_passed = 0;
         this.tick_time = 90;
-        this.tick_offset = 10;
+        this.tick_offset = 0;
         this.save_time = 120000;
         this.secondary_save_time = 300000;
         this.saving = false;
@@ -29,7 +29,7 @@ module.exports = class Game {
         this.last_tick = timestamp;
         this.last_save = timestamp;
         this.last_secondary_save = timestamp;
-        this.next_logic_run = setInterval(this.update.bind(this), this.interval_time);
+        this.logic_loop = setInterval(this.update.bind(this), this.interval_time);
     }
 
     async update() {
@@ -118,13 +118,13 @@ module.exports = class Game {
                             fleets.push({x: this.fleets[j].x, y: this.fleets[j].y});
                         }
                     }
-                    this.players[i].socket.emit('game_update', [fleets, this.deleted_fleets, this.space_objects, this.deleted_space_objects, timestamp - time_passed]);
+                    this.players[i].socket.emit('game_update', [fleets, this.deleted_fleets, this.space_objects, this.deleted_space_objects, time_passed]);
                 }
                 this.deleted_fleets = [];
                 this.deleted_space_objects = [];
 
                 this.attempt_game_save(timestamp);
-                if (time_passed >= this.tick_time + Math.floor(this.tick_time/4)) {
+                if (timestamp - this.last_tick >= this.tick_time + Math.floor(this.tick_time/4)) {
                     console.log('Significant time delay detected - tick took: ' + time_passed + 's instead of ' + this.tick_time + 's');
                 }
             }
@@ -283,12 +283,21 @@ module.exports = class Game {
                     case 'assemble_fleet':
                         this.assemble_fleet(socket.id);
                         break;
+                    case '=':
+                        this.tick_offset = 0;
+                        break;
                     case '+':
                     case '-':
-                        var tick_change = request_id == '+' ? 10 : -10;
+                        var tick_change = request_id == '+' ? 20 : -20;
                         var tick_offset = this.tick_offset + tick_change;
-                        if (tick_offset + this.tick_time > 10 && tick_offset < 200) {
-                            this.tick_offset = tick_offset;
+                        if (tick_offset + this.tick_time > 1) {
+                            if (tick_offset < 400) {
+                                this.tick_offset = tick_offset;
+                            } else {
+                                this.tick_offset = 399;
+                            }
+                        } else {
+                            this.tick_offset = 1 - this.tick_time;
                         }
                         break;
                     case 'cancel':
@@ -314,6 +323,6 @@ module.exports = class Game {
     }
 
     async stop() {
-		clearTimeout(this.next_logic_run);
+		clearTimeout(this.logic_loop);
     }
 }
