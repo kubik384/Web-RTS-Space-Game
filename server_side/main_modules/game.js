@@ -221,7 +221,7 @@ module.exports = class Game {
             return new Promise(async (resolve, reject) => {
                 this.sending_datapack = true;
                 if (layout === 'galaxy') {
-                    resolve({galaxies: []});
+                    resolve({systems: []});
                     return;
                 } else if (layout === 'system') {
                     for (var i = 0; i < this.players.length; i++) {
@@ -272,7 +272,7 @@ module.exports = class Game {
         
     }
 
-    async generate_galaxy() {
+    async generate_system() {
         
     }
 
@@ -299,10 +299,10 @@ module.exports = class Game {
                             }
                         }
                         break;
-                    case 'switch_galaxy':
+                    case 'switch_system':
                         break;
-                    case 'generate_galaxy':
-                        this.generate_galaxy();
+                    case 'generate_system':
+                        this.generate_system();
                         break;
                 }
             } else {

@@ -21,8 +21,8 @@ class Game {
         this.xOffset = 0;
         this.yOffset = 0;
         this.space_objects = [];
-        this.galaxies = [];
-        this.center_galaxy;
+        this.systems = [];
+        this.center_system;
         this.fleets = [];
         this.time_passed;
         this.lastScrollTop = 0;
@@ -54,7 +54,7 @@ class Game {
                     this.space_objects[i].last_y = this.space_objects[i].y;
                 }
             } else if (this.layout === 'galaxy') {
-                this.galaxies = datapack.galaxies;
+                this.systems = datapack.systems;
                 this.last_fe_tick = Date.now();
             }
             if (this.map_canvas === undefined) {
@@ -160,7 +160,7 @@ class Game {
                     this.controlled_fleet.last_y = this.controlled_fleet.y;
                     var rads = await utils.angleToRad(this.space_objects[i].rot);
                     var [origin_x, origin_y] = [this.space_objects[i].x, this.space_objects[i].y];
-                    var [center_x, center_y] = [this.system_center_object.x, this.system_center_object.y];
+                    var [center_x, center_y] = [this.center_system_object.x, this.center_system_object.y];
                     var object_x = center_x + (origin_x - center_x) * Math.cos(rads) - (origin_y - center_y) * Math.sin(rads);
                     var object_y = center_y + (origin_x - center_x) * Math.sin(rads) + (origin_y - center_y) * Math.cos(rads);
                     
@@ -180,15 +180,15 @@ class Game {
                 }
             }
             if (this.controlled_fleet !== undefined) {
-                var object_radius = this.system_center_object.width/2;
-                var vector = new Vector(this.controlled_fleet, this.system_center_object);
+                var object_radius = this.center_system_object.width/2;
+                var vector = new Vector(this.controlled_fleet, this.center_system_object);
                 if (await vector.length() <= object_radius) {
                     this.controlled_fleet.deleted = true;
                     this.move_point.deleted = true;
                 } else {
-                    var vector = new Vector(this.controlled_fleet, this.system_center_object);
+                    var vector = new Vector(this.controlled_fleet, this.center_system_object);
                     //Expect all the space objects to be squares (circles) = same width and height - for now
-                    var object_radius = this.system_center_object.width/2;
+                    var object_radius = this.center_system_object.width/2;
                     var g_strength = Math.pow(object_radius/await vector.length(), 2);
                     var pull = g_strength * object_radius / 2500;
                     this.controlled_fleet.velocity = await this.controlled_fleet.velocity.add(await (await vector.normalize()).multiply(pull));
@@ -270,13 +270,13 @@ class Game {
             this.map_ctx.strokeRect(-this.boundaries * this.zoom, -this.boundaries * this.zoom, this.boundaries * 2 * this.zoom, this.boundaries * 2 * this.zoom);
             this.map_ctx.restore();
         } else if (this.layout = 'galaxy') {
-            for (var i = 0; i < this.galaxies.length; i++) {
+            for (var i = 0; i < this.systems.length; i++) {
                 this.map_ctx.save();
                 this.map_ctx.translate(this.xOffset, this.yOffset);
-                this.map_ctx.drawImage(this.galaxies[i].image, this.galaxies[i].x - this.galaxies[i].width/2, this.galaxies[i].y - this.galaxies[i].width/2, this.galaxies[i].width, this.galaxies[i].height);
+                this.map_ctx.drawImage(this.systems[i].image, this.systems[i].x - this.systems[i].width/2, this.systems[i].y - this.systems[i].width/2, this.systems[i].width, this.systems[i].height);
                 this.map_ctx.restore();
             }
-            this.map_ctx.drawImage(this.center_galaxy.image, this.center_galaxy.x + this.xOffset - this.center_galaxy.width/2, this.center_galaxy.y + this.yOffset - this.center_galaxy.width/2, this.center_galaxy.width, this.center_galaxy.height);
+            this.map_ctx.drawImage(this.center_system.image, this.center_system.x + this.xOffset - this.center_system.width/2, this.center_system.y + this.yOffset - this.center_system.width/2, this.center_system.width, this.center_system.height);
         }
         window.requestAnimationFrame(this.draw.bind(this));
     }
