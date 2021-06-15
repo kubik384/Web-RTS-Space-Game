@@ -1,7 +1,7 @@
 * {
     margin:0px;
 	padding:0px;
-	font-size: 20px;
+	font-size: 0px;
 	user-select: none;
 }
 
@@ -25,7 +25,6 @@ body {
 
 #navbar {
 	height: 48px;
-	overflow: auto;
 	background-color: #333;
 }
 
@@ -122,6 +121,7 @@ button {
 
 p {
 	padding-top: 10px;
+	font-size: 20px;
 }
 
 label {
@@ -131,5 +131,9 @@ label {
 input {
 	width: 60px;
 	margin-bottom: 10px;
+	font-size: 20px;
+}
+
+.fleet_ui_text {
 	font-size: 20px;
 }

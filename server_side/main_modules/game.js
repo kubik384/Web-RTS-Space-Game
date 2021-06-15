@@ -20,6 +20,7 @@ module.exports = class Game {
         this.deleted_fleets = [];
         this.deleted_space_objects = [];
         this.boundaries = 10000;
+        this.time_passed = this.tick_time + this.tick_offset;
     }
 
     async setup_game() {
@@ -42,7 +43,7 @@ module.exports = class Game {
             this.overall_time_passed += time_passed;
             if (this.overall_time_passed >= this.tick_time - this.interval_time/2) {
                 this.overall_time_passed -= this.tick_time;
-                time_passed = this.tick_time + this.tick_offset;
+                this.time_passed = this.tick_time + this.tick_offset;
 
                 space_objects_loop:
                 for (var i = this.space_objects.length - 1; i >= 0; i--) {
@@ -52,7 +53,7 @@ module.exports = class Game {
                         var object_radius = this.space_objects[i].width/2;
                         var distance = await vector.length();
                         if (distance > object_radius) {
-                            var pull = Math.round(this.space_objects[i].mass / Math.pow(distance, 2) * 1e3) * time_passed / 1e9;
+                            var pull = Math.round(this.space_objects[i].mass / Math.pow(distance, 2) * 1e3) * this.time_passed / 1e9;
                             this.fleets[j].velocity = await this.fleets[j].velocity.add(await (await vector.normalize()).multiply(pull));
                         } else {
                             this.deleted_fleets.push(j);
@@ -72,7 +73,7 @@ module.exports = class Game {
                             var object_radius = this.space_objects[j].width/2;
                             var distance = await vector.length();
                             if (distance > object_radius) {
-                                var pull = Math.round(this.space_objects[j].mass / Math.pow(distance, 2) * 1e3) * time_passed / 1e9;
+                                var pull = Math.round(this.space_objects[j].mass / Math.pow(distance, 2) * 1e3) * this.time_passed / 1e9;
                                 this.space_objects[i].velocity = await this.space_objects[i].velocity.add(await (await vector.normalize()).multiply(pull));
                             } else {
                                 this.deleted_space_objects.push(i);
@@ -81,17 +82,17 @@ module.exports = class Game {
                             }
                         }
                     }
-                    this.space_objects[i].x += this.space_objects[i].velocity.x * time_passed;
-                    this.space_objects[i].y += this.space_objects[i].velocity.y * time_passed;
+                    this.space_objects[i].x += this.space_objects[i].velocity.x * this.time_passed;
+                    this.space_objects[i].y += this.space_objects[i].velocity.y * this.time_passed;
                 }
 
                 for (var i = 0; i < this.fleets.length; i++) {
                     if (this.fleets[i].move_point !== undefined) {
                         var vector = new Vector(this.fleets[i], this.fleets[i].move_point);
                         var distance = await vector.length();
-                        var speed = await this.fleets[i].velocity.length() * time_passed;
+                        var speed = await this.fleets[i].velocity.length() * this.time_passed;
                         if (this.fleets[i].acceleration != 0) {
-                            var acceleration_input = speed/(this.fleets[i].acceleration * time_passed);
+                            var acceleration_input = speed/(this.fleets[i].acceleration * this.time_passed);
                             var adjusted_vector = await vector.divide(acceleration_input);
                             var time_to_slowdown = distance/speed;
                             var calculated_vector;
@@ -101,11 +102,11 @@ module.exports = class Game {
                                 var normalized_velocity = await this.fleets[i].velocity.isNull() ? this.fleets[i].velocity : await this.fleets[i].velocity.normalize();
                                 calculated_vector = await (new Vector(normalized_velocity, await vector.normalize())).normalize();
                             }
-                            this.fleets[i].velocity = await this.fleets[i].velocity.add(await calculated_vector.multiply(this.fleets[i].acceleration * time_passed));
+                            this.fleets[i].velocity = await this.fleets[i].velocity.add(await calculated_vector.multiply(this.fleets[i].acceleration * this.time_passed));
                         }
                     }
-                    this.fleets[i].x += this.fleets[i].velocity.x * time_passed;
-                    this.fleets[i].y += this.fleets[i].velocity.y * time_passed;
+                    this.fleets[i].x += this.fleets[i].velocity.x * this.time_passed;
+                    this.fleets[i].y += this.fleets[i].velocity.y * this.time_passed;
                 }
 
                 //very inefficient and resource intensive solution
@@ -118,14 +119,14 @@ module.exports = class Game {
                             fleets.push({x: this.fleets[j].x, y: this.fleets[j].y});
                         }
                     }
-                    this.players[i].socket.emit('game_update', [fleets, this.deleted_fleets, this.space_objects, this.deleted_space_objects, time_passed]);
+                    this.players[i].socket.emit('game_update', [fleets, this.deleted_fleets, this.space_objects, this.deleted_space_objects, this.time_passed]);
                 }
                 this.deleted_fleets = [];
                 this.deleted_space_objects = [];
 
                 this.attempt_game_save(timestamp);
                 if (timestamp - this.last_tick >= this.tick_time + Math.floor(this.tick_time/4)) {
-                    console.log('Significant time delay detected - tick took: ' + time_passed + 's instead of ' + this.tick_time + 's');
+                    console.log('Significant time delay detected - tick took: ' + (timestamp - this.last_tick) + 's instead of ' + this.tick_time + 's');
                 }
             }
             this.updating = false;
@@ -239,7 +240,7 @@ module.exports = class Game {
                                     }
                                 }
                             }
-                            resolve({space_objects: space_objects, fleets: this.fleets, last_update: this.last_tick, boundaries: this.boundaries});
+                            resolve({space_objects: space_objects, fleets: this.fleets, last_update: this.last_tick, time_passed: this.time_passed, boundaries: this.boundaries});
                             return;
                         }
                     }

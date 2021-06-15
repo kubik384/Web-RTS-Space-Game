@@ -15,7 +15,6 @@ class Game {
         this.logic_loop;
         this.tick_time = 50;
         this.tick_fe_time_passed;
-        this.tick_be_time_passed;
         this.zoom = 0.025;
 
         this.xOffset = 0;
@@ -28,7 +27,6 @@ class Game {
         this.lastScrollTop = 0;
         this.dragging = false;
         this.boundaries;
-        this.firstUpdate = true;
         
         const query_string = window.location.search;
         const url_parameters = new URLSearchParams(query_string);
@@ -42,19 +40,22 @@ class Game {
     async setup_game(p_datapack) {
         return new Promise((resolve, reject) => {
             var datapack = JSON.parse(p_datapack);
+            this.updates = [{}];
             if (this.layout === 'system') {
-                this.space_objects = datapack.space_objects;
-                this.fleets = datapack.fleets;
+                var space_objects = datapack.space_objects;
+                this.updates[0].fleets = datapack.fleets;
                 this.last_fe_tick = datapack.last_update;
-                this.last_be_tick = datapack.last_update;
+                this.updates[0].tick_timestamp = datapack.last_update;
+                this.updates[0].tick_be_time_passed = datapack.time_passed;
                 this.boundaries = datapack.boundaries;
-                for (var i = 0; i < this.space_objects.length; i++) {
-                    this.space_objects[i].image = document.getElementById(this.space_objects[i].image);
-                    this.space_objects[i].last_x = this.space_objects[i].x;
-                    this.space_objects[i].last_y = this.space_objects[i].y;
+                for (var i = 0; i < space_objects.length; i++) {
+                    space_objects[i].image = document.getElementById(space_objects[i].image);
+                    space_objects[i].last_x = space_objects[i].x;
+                    space_objects[i].last_y = space_objects[i].y;
                 }
+                this.updates[0].space_objects = space_objects;
             } else if (this.layout === 'galaxy') {
-                this.systems = datapack.systems;
+                this.updates[0].systems = datapack.systems;
                 this.last_fe_tick = Date.now();
             }
             if (this.map_canvas === undefined) {
@@ -228,22 +229,25 @@ class Game {
     
     draw() {
         var timestamp = Date.now();
-        var be_interpolation_coefficient = (timestamp - this.last_be_tick)/this.tick_be_time_passed;
-        be_interpolation_coefficient = be_interpolation_coefficient > 1 ? 1 : be_interpolation_coefficient;
+        this.check_updates(timestamp);
+        var update = this.updates[0];
+        var be_interpolation_coefficient = (timestamp - update.tick_timestamp)/update.tick_be_time_passed;
         //var fe_interpolation_coefficient = (timestamp - this.last_fe_tick)/this.tick_fe_time_passed;
         this.map_ctx.clearRect(0, 0, this.map_width, this.map_height);
-        if (this.layout === 'system') {                
-            for (var i = 0; i < this.space_objects.length; i++) {
-                var x_position = ((this.space_objects[i].x - this.space_objects[i].last_x) * be_interpolation_coefficient + this.space_objects[i].last_x) * this.zoom - this.space_objects[i].width/2 * this.zoom;
-                var y_position = ((this.space_objects[i].y - this.space_objects[i].last_y) * be_interpolation_coefficient + this.space_objects[i].last_y) * this.zoom - this.space_objects[i].height/2 * this.zoom;
+        if (this.layout === 'system') {
+            var space_objects = update.space_objects;
+            for (var i = 0; i < space_objects.length; i++) {
+                var x_position = ((space_objects[i].x - space_objects[i].last_x) * be_interpolation_coefficient + space_objects[i].last_x) * this.zoom - space_objects[i].width/2 * this.zoom;
+                var y_position = ((space_objects[i].y - space_objects[i].last_y) * be_interpolation_coefficient + space_objects[i].last_y) * this.zoom - space_objects[i].height/2 * this.zoom;
                 this.map_ctx.save();
                 this.map_ctx.translate(this.xOffset, this.yOffset);
-                this.map_ctx.drawImage(this.space_objects[i].image, x_position, y_position, this.space_objects[i].width * this.zoom, this.space_objects[i].height * this.zoom);
+                this.map_ctx.drawImage(space_objects[i].image, x_position, y_position, space_objects[i].width * this.zoom, space_objects[i].height * this.zoom);
                 this.map_ctx.restore();
             }
-            for (var i = 0; i < this.fleets.length; i++) {
-                var x_position = ((this.fleets[i].x - this.fleets[i].last_x) * be_interpolation_coefficient + this.fleets[i].last_x);
-                var y_position = ((this.fleets[i].y - this.fleets[i].last_y) * be_interpolation_coefficient + this.fleets[i].last_y);
+            var fleets = update.fleets;
+            for (var i = 0; i < fleets.length; i++) {
+                var x_position = ((fleets[i].x - fleets[i].last_x) * be_interpolation_coefficient + fleets[i].last_x);
+                var y_position = ((fleets[i].y - fleets[i].last_y) * be_interpolation_coefficient + fleets[i].last_y);
                 this.map_ctx.save();
                 this.map_ctx.translate(this.xOffset, this.yOffset);
                 this.map_ctx.beginPath();
@@ -252,12 +256,12 @@ class Game {
                 this.map_ctx.fill();
                 this.map_ctx.restore();
 
-                if (this.fleets[i].move_point !== undefined) {
+                if (fleets[i].move_point !== undefined) {
                     this.map_ctx.save();
                     this.map_ctx.translate(this.xOffset, this.yOffset);
                     this.map_ctx.beginPath();
                     this.map_ctx.moveTo(x_position * this.zoom, y_position * this.zoom);
-                    this.map_ctx.lineTo(this.fleets[i].move_point.x * this.zoom, this.fleets[i].move_point.y * this.zoom);
+                    this.map_ctx.lineTo(fleets[i].move_point.x * this.zoom, fleets[i].move_point.y * this.zoom);
                     this.map_ctx.strokeStyle = "red";
                     this.map_ctx.stroke();
                     this.map_ctx.restore();
@@ -271,13 +275,15 @@ class Game {
             this.map_ctx.strokeRect(-this.boundaries * this.zoom, -this.boundaries * this.zoom, this.boundaries * 2 * this.zoom, this.boundaries * 2 * this.zoom);
             this.map_ctx.restore();
         } else if (this.layout = 'galaxy') {
-            for (var i = 0; i < this.systems.length; i++) {
+            var systems = update.systems;
+            for (var i = 0; i < systems.length; i++) {
                 this.map_ctx.save();
                 this.map_ctx.translate(this.xOffset, this.yOffset);
-                this.map_ctx.drawImage(this.systems[i].image, this.systems[i].x - this.systems[i].width/2, this.systems[i].y - this.systems[i].width/2, this.systems[i].width, this.systems[i].height);
+                this.map_ctx.drawImage(systems[i].image, systems[i].x - systems[i].width/2, systems[i].y - systems[i].width/2, systems[i].width, systems[i].height);
                 this.map_ctx.restore();
             }
-            this.map_ctx.drawImage(this.center_system.image, this.center_system.x + this.xOffset - this.center_system.width/2, this.center_system.y + this.yOffset - this.center_system.width/2, this.center_system.width, this.center_system.height);
+            var center_system = update.center_system;
+            this.map_ctx.drawImage(center_system.image, center_system.x + this.xOffset - center_system.width/2, center_system.y + this.yOffset - center_system.width/2, center_system.width, center_system.height);
         }
         window.requestAnimationFrame(this.draw.bind(this));
     }
@@ -299,78 +305,103 @@ class Game {
         this.socket.emit('set_movepoint', x, y);
     }
 
-    async process_server_update(data) {
-        var fleets = data[0];
-        var deleted_fleets = data[1];
-        var space_objects = data[2];
-        var deleted_space_objects = data[3];
-        this.tick_be_time_passed = data[data.length-1];
-        this.last_be_tick = Date.now();
-        
-        //when a player joins, server can send new data, where the fleets are already deleted with what has been deleted from old data - which the user never received, so they cannot remove the fleets from them. Same goes for anything else (space objects)
-        for (var i = deleted_fleets.length - 1; i >= 0; i--) {
-            //if the fleet has a username attribute, it's the controlled fleet - temporary solution
-            if (this.fleets[deleted_fleets[i]].owner !== undefined) {
-                this.controlled_fleet = undefined;
+    async process_server_update(p_update) {
+        this.check_updates(Date.now());
+        if (this.updates.length < 3) {
+            var updated_fleets = p_update[0];
+            var deleted_fleets = p_update[1];
+            var updated_space_objects = p_update[2];
+            var deleted_space_objects = p_update[3];
+            var tick_be_time_passed = p_update[p_update.length-1];
+            //causes the update to lose all the images - resulting in an error when attempting to draw the broken image
+            var update = JSON.parse(JSON.stringify(this.updates[this.updates.length - 1]));
+            update.tick_be_time_passed = tick_be_time_passed;
+            update.tick_timestamp = Date.now();
+            
+            //when a player joins, server can send new data, where the fleets are already deleted with what has been deleted from old data - which the user never received, so they cannot remove the fleets from them. Same goes for anything else (space objects)
+            for (var i = deleted_fleets.length - 1; i >= 0; i--) {
+                //if the fleet has a username attribute, it's the controlled fleet - temporary solution
+                if (update.fleets[deleted_fleets[i]].owner !== undefined) {
+                    this.controlled_fleet = undefined;
+                }
+                update.fleets.splice(deleted_fleets[i], 1);
             }
-            this.fleets.splice(deleted_fleets[i], 1);
-        }
 
-        var no_this_fleets = this.fleets.length;
-        var number_of_fleets = fleets.length;
-        if (number_of_fleets > no_this_fleets) {
-            this.fleets = this.fleets.concat(fleets.slice(no_this_fleets - number_of_fleets));
-        }
-
-        for (var i = 0; i < this.fleets.length; i++) {
-            //if the fleet has an owner attribute, it's the controlled fleet - temporary solution
-            if (this.fleets[i].owner !== undefined) {
-                this.controlled_fleet = this.fleets[i];
+            var fleets = update.fleets;
+            var no_this_fleets = fleets.length;
+            var number_of_fleets = updated_fleets.length;
+            if (number_of_fleets > no_this_fleets) {
+                fleets = fleets.concat(updated_fleets.slice(no_this_fleets - number_of_fleets));
             }
-            if (fleets[i].move_point !== undefined) {
-                this.fleets[i].move_point = fleets[i].move_point;
-            } else if (this.fleets[i].move_point !== undefined) {
-                if (this.fleets[i].move_point.deleted !== undefined) {
-                    delete this.fleets[i].move_point;
-                } else {
-                    this.fleets[i].move_point.deleted = true;
+
+            for (var i = 0; i < fleets.length; i++) {
+                //if the fleet has an owner attribute, it's the controlled fleet - temporary solution
+                if (fleets[i].owner !== undefined) {
+                    this.controlled_fleet = fleets[i];
+                }
+                if (updated_fleets[i].move_point !== undefined) {
+                    fleets[i].move_point = updated_fleets[i].move_point;
+                } else if (fleets[i].move_point !== undefined) {
+                    if (fleets[i].move_point.deleted !== undefined) {
+                        delete fleets[i].move_point;
+                    } else {
+                        fleets[i].move_point.deleted = true;
+                    }
+                }
+                fleets[i].last_x = fleets[i].x;
+                fleets[i].last_y = fleets[i].y;
+                fleets[i].x = updated_fleets[i].x;
+                fleets[i].y = updated_fleets[i].y;
+                /* Velocity is not currently used anywhere anyway
+                if (this.fleets.velocity !== undefined) {
+                    this.fleets[i].last_velocity = this.fleets[i].velocity;
+                    this.fleets[i].velocity = new Vector(fleets[i].velocity.x, fleets[i].velocity.y);
+                }
+                */
+            }
+
+            var space_objects = update.space_objects;
+            for (var i = 0; i < deleted_space_objects.length; i++) {
+                space_objects.splice(deleted_space_objects[i], 1);
+            }
+
+            var no_this_so = space_objects.length;
+            var number_of_so = updated_space_objects.length;
+            if (number_of_so > no_this_so) {
+                for (var i = no_this_so; i < number_of_so; i++) {
+                    updated_space_objects[i].image = document.getElementById(updated_space_objects[i].image);
+                    space_objects.push(updated_space_objects[i]);
                 }
             }
-            this.fleets[i].last_x = this.fleets[i].x;
-            this.fleets[i].last_y = this.fleets[i].y;
-            this.fleets[i].x = fleets[i].x;
-            this.fleets[i].y = fleets[i].y;
-            /* Velocity is not currently used anywhere anyway
-            if (this.fleets.velocity !== undefined) {
-                this.fleets[i].last_velocity = this.fleets[i].velocity;
-                this.fleets[i].velocity = new Vector(fleets[i].velocity.x, fleets[i].velocity.y);
+            for (var i = 0; i < space_objects.length; i++) {
+                space_objects[i].last_x = space_objects[i].x;
+                space_objects[i].last_y = space_objects[i].y;
+                space_objects[i].x = updated_space_objects[i].x;
+                space_objects[i].y = updated_space_objects[i].y;
+                /* Velocity is not currently used anywhere anyway
+                if (this.moving_space_objects.velocity !== undefined) {
+                    this.moving_space_objects[i].last_velocity = this.moving_space_objects[i].velocity;
+                    this.moving_space_objects[i].velocity = new Vector(moving_space_objects[i].velocity.x, moving_space_objects[i].velocity.y);
+                }
+                */
             }
-            */
+            this.updates.push(update);
+            //console.log(this.updates.length);
+        } else {
+            throw new Error('More than 3 updates stored');
         }
+    }
 
-        for (var i = 0; i < deleted_space_objects.length; i++) {
-            this.space_objects.splice(deleted_space_objects[i], 1);
-        }
-
-        var no_this_so = this.space_objects.length;
-        var number_of_so = space_objects.length;
-        if (number_of_so > no_this_so) {
-            for (var i = no_this_so; i < number_of_so; i++) {
-                space_objects[i].image = document.getElementById(space_objects[i].image);
-                this.space_objects.push(space_objects[i]);
+    check_updates(timestamp) {
+        for (var i = this.updates.length - 1; i >= 0; i--) {
+            var update = this.updates[i];
+            if (timestamp - update.tick_timestamp > update.tick_be_time_passed) {
+                if (this.updates.length < 2) {
+                    console.log('Ran out of updates');
+                } else {
+                    this.updates.splice(0,1);
+                }
             }
-        }
-        for (var i = 0; i < this.space_objects.length; i++) {
-            this.space_objects[i].last_x = this.space_objects[i].x;
-            this.space_objects[i].last_y = this.space_objects[i].y;
-            this.space_objects[i].x = space_objects[i].x;
-            this.space_objects[i].y = space_objects[i].y;
-            /* Velocity is not currently used anywhere anyway
-            if (this.moving_space_objects.velocity !== undefined) {
-                this.moving_space_objects[i].last_velocity = this.moving_space_objects[i].velocity;
-                this.moving_space_objects[i].velocity = new Vector(moving_space_objects[i].velocity.x, moving_space_objects[i].velocity.y);
-            }
-            */
         }
     }
 }

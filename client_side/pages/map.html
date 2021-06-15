@@ -13,7 +13,7 @@
 			<img src='/client_side/images/canvas/planet2.png' id='planet2'></img>
 			<img src='/client_side/images/canvas/asteroid.png' id='asteroid'></img>
 			<img src='/client_side/images/canvas/star.png' id='star'></img>
-			<img src='/client_side/images/canvas/system1.png' id='system1'></img>
+			<img src='/client_side/images/canvas/galaxy1.png' id='galaxy1'></img>
 		</div>
 		<div id='container'>
 			<div id='navbar'>
@@ -41,24 +41,24 @@
 						<td>
 							<div id='fleet_ui'>
 								<div>
-									<button id="assemble_fleet">Assemble a fleet</button>
+									<button id="assemble_fleet" class="fleet_ui_text">Assemble a fleet</button>
 								</div>
 								<p>-----Debugging tools-----</p>
 								<div>
 									<p>Time flow</p>
-									<button id="+">Increase</button>
-									<button id="-">Decrease</button>
-									<button id="=">Restart</button>
+									<button id="+" class="fleet_ui_text">Increase</button>
+									<button id="-" class="fleet_ui_text">Decrease</button>
+									<button id="=" class="fleet_ui_text">Restart</button>
 									<p>Move point</p>
-									<button id="cancel">Cancel</button>
+									<button id="cancel" class="fleet_ui_text">Cancel</button>
 									<p>Switch</p>
-									<label for="galaxy_id">Galaxy id to switch to</label>
+									<label for="galaxy_id" class="fleet_ui_text">Galaxy id to switch to </label>
 									<input type='text' id='galaxy_id' name="galaxy_id"></input>
-									<button id="switch_galaxy">Galaxy</button>
+									<button id="switch_galaxy" class="fleet_ui_text">Galaxy</button>
 									<p>Generate</p>
-									<button id="generate_galaxy">Galaxy</button>
+									<button id="generate_galaxy" class="fleet_ui_text">Galaxy</button>
 									<p>Restart</p>
-									<button id="restart">Server</button>
+									<button id="restart" class="fleet_ui_text">Server</button>
 								</div>
 							</div>
 						</td>

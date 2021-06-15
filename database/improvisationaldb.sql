@@ -125,7 +125,7 @@ CREATE TABLE IF NOT EXISTS `player_units` (
   `unit_id` int(3) NOT NULL,
   `count` int(8) NOT NULL,
   PRIMARY KEY (`player_id`,`unit_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 --
 -- Dumping data for table `player_units`
@@ -150,7 +150,7 @@ CREATE TABLE IF NOT EXISTS `player_unit_ques` (
   `count` int(8) NOT NULL,
   `calculated_timestamp` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`player_id`,`unit_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 --
 -- Dumping data for table `player_unit_ques`
