@@ -49,7 +49,7 @@ class Game {
                 this.updates[0].tick_be_time_passed = datapack.time_passed;
                 this.boundaries = datapack.boundaries;
                 for (var i = 0; i < space_objects.length; i++) {
-                    space_objects[i].image = document.getElementById(space_objects[i].image);
+                    space_objects[i].HTMLimage = document.getElementById(space_objects[i].image);
                     space_objects[i].last_x = space_objects[i].x;
                     space_objects[i].last_y = space_objects[i].y;
                 }
@@ -241,7 +241,7 @@ class Game {
                 var y_position = ((space_objects[i].y - space_objects[i].last_y) * be_interpolation_coefficient + space_objects[i].last_y) * this.zoom - space_objects[i].height/2 * this.zoom;
                 this.map_ctx.save();
                 this.map_ctx.translate(this.xOffset, this.yOffset);
-                this.map_ctx.drawImage(space_objects[i].image, x_position, y_position, space_objects[i].width * this.zoom, space_objects[i].height * this.zoom);
+                this.map_ctx.drawImage(space_objects[i].HTMLimage, x_position, y_position, space_objects[i].width * this.zoom, space_objects[i].height * this.zoom);
                 this.map_ctx.restore();
             }
             var fleets = update.fleets;
@@ -279,11 +279,11 @@ class Game {
             for (var i = 0; i < systems.length; i++) {
                 this.map_ctx.save();
                 this.map_ctx.translate(this.xOffset, this.yOffset);
-                this.map_ctx.drawImage(systems[i].image, systems[i].x - systems[i].width/2, systems[i].y - systems[i].width/2, systems[i].width, systems[i].height);
+                this.map_ctx.drawImage(systems[i].HTMLimage, systems[i].x - systems[i].width/2, systems[i].y - systems[i].width/2, systems[i].width, systems[i].height);
                 this.map_ctx.restore();
             }
             var center_system = update.center_system;
-            this.map_ctx.drawImage(center_system.image, center_system.x + this.xOffset - center_system.width/2, center_system.y + this.yOffset - center_system.width/2, center_system.width, center_system.height);
+            this.map_ctx.drawImage(center_system.HTMLimage, center_system.x + this.xOffset - center_system.width/2, center_system.y + this.yOffset - center_system.width/2, center_system.width, center_system.height);
         }
         window.requestAnimationFrame(this.draw.bind(this));
     }
@@ -313,6 +313,10 @@ class Game {
             var updated_space_objects = p_update[2];
             var deleted_space_objects = p_update[3];
             var tick_be_time_passed = p_update[p_update.length-1];
+
+
+
+            
             //causes the update to lose all the images - resulting in an error when attempting to draw the broken image
             var update = JSON.parse(JSON.stringify(this.updates[this.updates.length - 1]));
             update.tick_be_time_passed = tick_be_time_passed;
@@ -369,7 +373,7 @@ class Game {
             var number_of_so = updated_space_objects.length;
             if (number_of_so > no_this_so) {
                 for (var i = no_this_so; i < number_of_so; i++) {
-                    updated_space_objects[i].image = document.getElementById(updated_space_objects[i].image);
+                    updated_space_objects[i]. HTMLimage = document.getElementById(updated_space_objects[i].image);
                     space_objects.push(updated_space_objects[i]);
                 }
             }
@@ -378,6 +382,7 @@ class Game {
                 space_objects[i].last_y = space_objects[i].y;
                 space_objects[i].x = updated_space_objects[i].x;
                 space_objects[i].y = updated_space_objects[i].y;
+                space_objects[i].HTMLimage = document.getElementById(space_objects[i].image);
                 /* Velocity is not currently used anywhere anyway
                 if (this.moving_space_objects.velocity !== undefined) {
                     this.moving_space_objects[i].last_velocity = this.moving_space_objects[i].velocity;
@@ -386,7 +391,6 @@ class Game {
                 */
             }
             this.updates.push(update);
-            //console.log(this.updates.length);
         } else {
             throw new Error('More than 3 updates stored');
         }
@@ -397,7 +401,8 @@ class Game {
             var update = this.updates[i];
             if (timestamp - update.tick_timestamp > update.tick_be_time_passed) {
                 if (this.updates.length < 2) {
-                    console.log('Ran out of updates');
+                    //console.log(timestamp);
+                    //console.log('Ran out of updates');
                 } else {
                     this.updates.splice(0,1);
                 }
