@@ -47,24 +47,23 @@ module.exports = class Game {
 
                 space_objects_loop:
                 for (var i = this.space_objects.length - 1; i >= 0; i--) {
-                    for (var j = this.fleets.length - 1; j >= 0; j--) {
-                        var vector = new Vector(this.fleets[j], this.space_objects[i]);
-                        //Expect all the space objects to be squares (circles) = same width and height - for now
-                        var object_radius = this.space_objects[i].width/2;
-                        var distance = await vector.length();
-                        if (distance > object_radius) {
-                            var pull = Math.round(this.space_objects[i].mass / Math.pow(distance, 2) * 1e3) * this.time_passed / 1e9;
-                            this.fleets[j].velocity = await this.fleets[j].velocity.add(await (await vector.normalize()).multiply(pull));
-                        } else {
-                            this.deleted_fleets.push(j);
-                            this.fleets.splice(j, 1);
-                        }
-                    }
                     if (Math.abs(this.space_objects[i].x) > this.boundaries
                     || Math.abs(this.space_objects[i].y) > this.boundaries) {
                         this.deleted_space_objects.push(i);
                         this.space_objects.splice(i, 1);
                         continue;
+                    }
+                    if (this.space_objects[i].centerrot_id != 0 && this.space_objects[i].centerrot_id != this.space_objects[i].space_object_id) {
+                        this.space_objects[i].rot += 0.1;
+                        if (this.space_objects[i].rot >= 360) {
+                            this.space_objects[i].rot -= 360;
+                        }
+                        var rads = await utils.angleToRad(this.space_objects[i].rot);
+                        var centerrot_object = this.space_objects.find(space_object => space_object.space_object_id == this.space_objects[i].centerrot_id);
+                        var [center_x, center_y] = [centerrot_object.x, centerrot_object.y];
+                        var [original_x, original_y] = [this.space_objects[i].original_x, this.space_objects[i].original_y];
+                        this.space_objects[i].x = center_x + (original_x - center_x) * Math.cos(rads) - (original_y - center_y) * Math.sin(rads);
+                        this.space_objects[i].y = center_y + (original_x - center_x) * Math.sin(rads) + (original_y - center_y) * Math.cos(rads);
                     }
                     for (var j = 0; j < this.space_objects.length; j++) {
                         if (i !== j) {
@@ -72,10 +71,7 @@ module.exports = class Game {
                             //Expect all the space objects to be squares (circles) = same width and height - for now
                             var object_radius = this.space_objects[j].width/2;
                             var distance = await vector.length();
-                            if (distance > object_radius) {
-                                var pull = Math.round(this.space_objects[j].mass / Math.pow(distance, 2) * 1e3) * this.time_passed / 1e9;
-                                this.space_objects[i].velocity = await this.space_objects[i].velocity.add(await (await vector.normalize()).multiply(pull));
-                            } else {
+                            if (distance <= object_radius) {
                                 this.deleted_space_objects.push(i);
                                 this.space_objects.splice(i, 1);
                                 continue space_objects_loop;
@@ -93,7 +89,7 @@ module.exports = class Game {
                         var speed = await this.fleets[i].velocity.length() * this.time_passed;
                         if (this.fleets[i].acceleration != 0) {
                             var acceleration_input = speed/(this.fleets[i].acceleration * this.time_passed);
-                            var adjusted_vector = await vector.divide(acceleration_input);
+                            var adjusted_vector = acceleration_input != 0 ? await vector.divide(acceleration_input) : vector;
                             var time_to_slowdown = distance/speed;
                             var calculated_vector;
                             if ((await adjusted_vector.length() > speed) || (time_to_slowdown < acceleration_input)) {
