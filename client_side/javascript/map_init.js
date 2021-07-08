@@ -15,6 +15,8 @@ async function start() {
 
 	socket.on('game_update', game.process_server_update.bind(game));
 
+	socket.on('system_generated', game.switch_focus.bind(game));
+
     game.request_data();
 }
 

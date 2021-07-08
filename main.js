@@ -212,6 +212,10 @@ io.on('connection', socket => {
 		game.set_movepoint(socket.id, x, y);
 	});
 
+	socket.on('assign_fleet', space_object_id => {
+		game.assign_fleet(socket.id, space_object_id);
+	});
+
 	socket.on('disconnect', () => {
 		//doing this "logs out" the user every time they try to switch pages (e.g. go from planet to map - causes disconnect and is removed from the tokens, which causes them to end up the next time on the login page)
 		//tokens.splice(tokens.findIndex(token => token == socketTable[socket.id]), 1);
@@ -222,9 +226,11 @@ io.on('connection', socket => {
 	});
 });
 
+//does not refresh the cache of the code for main.js -> any changes in main.js will not be loaded when restarting through FE
 function restart_server(socket, layout) {
+	var token;
 	if (socket !== undefined) {
-		var token = socketTable[socket.id];
+		token = socketTable[socket.id];
 	}
 	delete require.cache[require.resolve('./server_side/main_modules/Game.js')];
 	delete require.cache[require.resolve('./server_side/main_modules/dbManager.js')];

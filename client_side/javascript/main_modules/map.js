@@ -19,7 +19,6 @@ class Game {
 
         this.xOffset = 0;
         this.yOffset = 0;
-        this.space_objects = [];
         this.systems = [];
         this.center_system;
         this.fleets = [];
@@ -59,17 +58,31 @@ class Game {
                 this.last_fe_tick = Date.now();
             }
             if (this.map_canvas === undefined) {
-                this.xOffset = this.map_width/2;
-                this.yOffset = this.map_height/2;
                 this.map_canvas = document.getElementById("map");
                 this.map_ctx = this.map_canvas.getContext("2d");
                 window.onresize = this.window_resize_handler();
+                var home_planet = this.updates[0].space_objects.find(space_object => space_object.space_object_id = datapack.home_planet_id);
+                var home_system = this.updates[0].space_objects.find(space_object => space_object.space_object_id = home_planet.centerrot_id);
+                this.switch_focus(home_system);
                 //expecting the border to have the same width on all the sides of the canvas
                 this.map_canvas_border = +getComputedStyle(this.map_canvas).getPropertyValue('border-top-width').slice(0, -2);
 
                 document.getElementById('fleet_ui').addEventListener('click', e => {
                     if (e.target.localName == 'button') {
-                        if (e.target.id == 'restart') {
+                        if (e.target.id == 'switch_space_object') {
+                            var string_space_object_id = document.getElementById('space_object_id').value
+                            if (string_space_object_id.length !== 0) {
+                                var space_object_id = +string_space_object_id;
+                                if (space_object_id > 0) {
+                                    var space_object = this.updates[0].space_objects.find(space_object => space_object.space_object_id == space_object_id);
+                                    if (space_object !== undefined) {
+                                        this.switch_focus(space_object);
+                                    } else {
+                                        console.log('Space object with space object id: ' + space_object_id + ' does not exist/has been destroyed/removed');
+                                    }
+                                }
+                            }
+                        } else if (e.target.id == 'restart') {
                             this.socket.emit('request', e.target.id, this.layout);
                         } else {
                             this.socket.emit('request', e.target.id);
@@ -102,7 +115,7 @@ class Game {
                             this.yOffset += (this.yOffset - y) * zoomRatio;
                         }
                     } else {
-                        if (this.zoom > 0.01) {
+                        if (this.zoom > 0.00025) {
                             const deltaZoom = 0.8;
                             var oldZoom = this.zoom;
                             this.zoom *= deltaZoom;
@@ -252,7 +265,7 @@ class Game {
                 this.map_ctx.translate(this.xOffset, this.yOffset);
                 this.map_ctx.beginPath();
                 this.map_ctx.fillStyle = "red";
-                this.map_ctx.rect(x_position  * this.zoom - 5 * this.zoom, y_position  * this.zoom - 5 * this.zoom, 10 * this.zoom, 10 * this.zoom);
+                this.map_ctx.rect(x_position  * this.zoom - 2 * this.zoom, y_position  * this.zoom - 2 * this.zoom, 4 * this.zoom, 4 * this.zoom);
                 this.map_ctx.fill();
                 this.map_ctx.restore();
 
@@ -302,7 +315,18 @@ class Game {
     }
 
     async generate_movepoint(x, y) {
-        this.socket.emit('set_movepoint', x, y);
+        var space_objects = this.updates[0].space_objects;
+        var assigned = false;
+        for (var i = 0; i < space_objects.length; i++) {
+            if (x < space_objects[i].x + space_objects[i].width/2 && x > space_objects[i].x - space_objects[i].width/2 && y < space_objects[i].y + space_objects[i].height/2 && y > space_objects[i].y - space_objects[i].height/2) {
+                this.socket.emit('assign_fleet', space_objects[i].space_object_id);
+                assigned = true;
+                break;
+            }
+        }
+        if (!assigned) {
+            this.socket.emit('set_movepoint', x, y);
+        }
     }
 
     async process_server_update(p_update) {
@@ -331,13 +355,13 @@ class Game {
                 update.fleets.splice(deleted_fleets[i], 1);
             }
 
-            var fleets = update.fleets;
-            var no_this_fleets = fleets.length;
+            var no_this_fleets = update.fleets.length;
             var number_of_fleets = updated_fleets.length;
             if (number_of_fleets > no_this_fleets) {
-                fleets = fleets.concat(updated_fleets.slice(no_this_fleets - number_of_fleets));
+                update.fleets = update.fleets.concat(updated_fleets.slice(no_this_fleets - number_of_fleets));
             }
 
+            var fleets = update.fleets;
             for (var i = 0; i < fleets.length; i++) {
                 //if the fleet has an owner attribute, it's the controlled fleet - temporary solution
                 if (fleets[i].owner !== undefined) {
@@ -390,6 +414,7 @@ class Game {
                 }
                 */
             }
+            
             this.updates.push(update);
         } else {
             throw new Error('More than 3 updates stored');
@@ -401,12 +426,25 @@ class Game {
             var update = this.updates[i];
             if (timestamp - update.tick_timestamp > update.tick_be_time_passed) {
                 if (this.updates.length < 2) {
-                    //console.log(timestamp);
                     //console.log('Ran out of updates');
                 } else {
-                    this.updates.splice(0,1);
+                    this.updates.splice(i,1);
                 }
             }
+        }
+    }
+
+    async switch_focus(a, b) {
+        if (typeof a === "number" && !isNaN(a) && typeof b === "number" && !isNaN(b)) {
+            //a = system_center_x, b = system_center_y
+            this.xOffset = Math.floor(this.map_width/2) - a * this.zoom;
+            this.yOffset = Math.floor(this.map_height/2) - b * this.zoom;
+        } else if (typeof a === "object") {
+            //a = system_center
+            this.xOffset = Math.floor(this.map_width/2) - a.x * this.zoom;
+            this.yOffset = Math.floor(this.map_height/2) - a.y * this.zoom;
+        } else {
+            throw new Error('Invalid input for focus_system');
         }
     }
 }

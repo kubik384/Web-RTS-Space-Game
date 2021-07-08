@@ -19,7 +19,7 @@ module.exports = class Game {
         this.players = [];
         this.deleted_fleets = [];
         this.deleted_space_objects = [];
-        this.boundaries = 10000;
+        this.boundaries = 500000;
         this.time_passed = this.tick_time + this.tick_offset;
     }
 
@@ -47,14 +47,29 @@ module.exports = class Game {
 
                 space_objects_loop:
                 for (var i = this.space_objects.length - 1; i >= 0; i--) {
+                    for (var j = this.fleets.length - 1; j >= 0; j--) {
+                        var vector = new Vector(this.fleets[j], this.space_objects[i]);
+                        //Expect all the space objects to be squares (circles) = same width and height - for now
+                        var object_radius = this.space_objects[i].width/2;
+                        var distance = await vector.length();
+                        var speed = await(await this.fleets[j].velocity.subtract(this.space_objects[i])).length();
+                        if (distance < object_radius && this.fleets[j].safe_space_object_id != this.space_objects[i].space_object_id) {
+                            if (this.fleets[j].assigned_space_object_id == this.space_objects[i].space_object_id && speed > 0.03) {
+                                this.fleets[j].safe_space_object_id = this.fleets[j].assigned_space_object_id;
+                            } else {
+                                this.deleted_fleets.push(j);
+                                this.fleets.splice(j, 1);
+                            }
+                        }
+                    }
                     if (Math.abs(this.space_objects[i].x) > this.boundaries
                     || Math.abs(this.space_objects[i].y) > this.boundaries) {
                         this.deleted_space_objects.push(i);
                         this.space_objects.splice(i, 1);
                         continue;
                     }
-                    if (this.space_objects[i].centerrot_id != 0 && this.space_objects[i].centerrot_id != this.space_objects[i].space_object_id) {
-                        this.space_objects[i].rot += 0.1;
+                    if (this.space_objects[i].centerrot_id !== undefined && this.space_objects[i].centerrot_id != this.space_objects[i].space_object_id) {
+                        this.space_objects[i].rot += 0.001 * this.time_passed;
                         if (this.space_objects[i].rot >= 360) {
                             this.space_objects[i].rot -= 360;
                         }
@@ -83,7 +98,91 @@ module.exports = class Game {
                 }
 
                 for (var i = 0; i < this.fleets.length; i++) {
+                    if (this.fleets[i].assigned_space_object_id !== undefined) {
+                        var space_object = this.space_objects.find(space_object => space_object.space_object_id == this.fleets[i].assigned_space_object_id);
+                        if (space_object !== undefined) {
+                            var previous_space_object_position;
+                            var velocity = space_object.velocity;
+                            if (space_object.centerrot_id !== undefined) {
+                                if (space_object.centerrot_id !== space_object.space_object_id) {
+                                    var rads = await utils.angleToRad(space_object.rot - 0.001 * this.time_passed);
+                                    var centerrot_object = this.space_objects.find(space_obj => space_obj.space_object_id == space_object.centerrot_id);
+                                    var [center_x, center_y] = [centerrot_object.x, centerrot_object.y];
+                                    var [original_x, original_y] = [space_object.original_x, space_object.original_y];
+                                    var x = center_x + (original_x - center_x) * Math.cos(rads) - (original_y - center_y) * Math.sin(rads);
+                                    var y = center_y + (original_x - center_x) * Math.sin(rads) + (original_y - center_y) * Math.cos(rads);
+                                    previous_space_object_position = new Vector(x, y);
+                                    velocity = await new Vector(previous_space_object_position, space_object).divide(this.time_passed);
+                                } else {
+                                    previous_space_object_position = new Vector(space_object);
+                                }
+                            } else {
+                                previous_space_object_position = await new Vector(space_object).subtract(await (this.space_objects[i].velocity).multiply(this.time_passed));
+                            }
+                            var distance = await new Vector(this.fleets[i], previous_space_object_position).length();
+                            if (distance < 100) {
+                                this.fleets[i].move_point = undefined;
+                                this.fleets[i].velocity = velocity;
+                                if (distance != 0) {
+                                    this.fleets[i].status_cooldown = 10000;
+                                    this.fleets[i].x = previous_space_object_position.x;
+                                    this.fleets[i].y = previous_space_object_position.y;
+                                } else {
+                                    if (this.fleets[i].status_cooldown < 1) {
+                                        var username = this.fleets[i].owner;
+                                        var player_space_object_id = (await this.dbManager.get_basic_player_map_info(username))[0].space_object_id;
+                                        if (space_object.space_object_id == player_space_object_id) {
+                                            if (this.fleets[i].resources > 0) {
+                                                this.dbManager.update_resource(username, 'timber', this.fleets[i].resources);
+                                                console.log(this.fleets[i].resources);
+                                                this.fleets[i].resources = 0;
+                                            }
+                                        } else {
+                                            var resources;
+                                            if (this.fleets[i].status_cooldown != 0) {
+                                                resources = Math.abs(this.fleets[i].status_cooldown)/100;
+                                                this.fleets[i].status_cooldown = 0;
+                                            } else {
+                                                resources = this.time_passed/100;
+                                            }
+                                            if (this.fleets[i].resources != this.fleets[i].capacity && space_object.resources !== undefined && space_object.resources > 0) {
+                                                if (this.fleets[i].resources + resources <= this.fleets[i].capacity) {
+                                                    if (space_object.resources - resources < 0) {
+                                                        this.fleets[i].resources += resources;
+                                                        space_object.resources -= resources;
+                                                    } else {
+                                                        this.fleets[i].resources += space_object.resources;
+                                                        space_object.resources = 0;
+                                                    }
+                                                } else {
+                                                    resources = this.fleets[i].capacity - this.fleets[i].resources;
+                                                    this.fleets[i].resources += resources;
+                                                    space_object.resources -= resources;
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        this.fleets[i].status_cooldown -= this.time_passed;
+                                    }
+                                }
+                            } else {
+                                this.fleets[i].move_point = {x: space_object.x, y: space_object.y};
+                            }
+                        } else {
+                            this.fleets[i].assigned_space_object_id = undefined;
+                            this.fleets[i].safe_space_object_id = undefined;
+                            this.fleets[i].move_point = undefined;
+                        }
+                    }
                     if (this.fleets[i].move_point !== undefined) {
+                        if (this.fleets[i].safe_space_object_id !== undefined) {
+                            var space_object = this.space_objects.find(space_object => space_object.space_object_id == this.fleets[i].safe_space_object_id);
+                            var object_radius = space_object.width/2;
+                            var distance = await new Vector(this.fleets[i], space_object).length();
+                            if (distance > object_radius) {
+                                this.fleets[i].safe_space_object_id = undefined;
+                            }
+                        }
                         var vector = new Vector(this.fleets[i], this.fleets[i].move_point);
                         var distance = await vector.length();
                         var speed = await this.fleets[i].velocity.length() * this.time_passed;
@@ -128,6 +227,7 @@ module.exports = class Game {
             this.updating = false;
         } else {
             if (Date.now() - this.last_tick > this.tick_time * 3) {
+                this.stop();
                 throw new Error("More than 3 ticks have been skipped at once, check the code u dum dum");
             }
         }
@@ -192,7 +292,7 @@ module.exports = class Game {
             }
         }
         if (player_planet !== undefined) {
-            var fleet = {owner: player.username, x: player_planet.x - player_planet.width, y: player_planet.y - player_planet.height, acceleration: 0.00025, velocity: new Vector(player_planet.velocity)};
+            var fleet = {owner: player.username, x: player_planet.x - player_planet.width, y: player_planet.y - player_planet.height, acceleration: 0.00025, velocity: new Vector(player_planet.velocity), capacity: 1200, resources: 0};
             var f_index = this.fleets.findIndex( fleet => fleet.owner == player.username);
             if (f_index == -1) {
                 this.fleets.push(fleet);
@@ -207,6 +307,7 @@ module.exports = class Game {
         var player_fleet = this.fleets.find( fleet => fleet.owner == username );
         if (player_fleet !== undefined) {
             player_fleet.move_point = {x:x, y:y};
+            player_fleet.assigned_space_object_id = undefined;
         }
     }
 
@@ -223,8 +324,9 @@ module.exports = class Game {
                 } else if (layout === 'system') {
                     for (var i = 0; i < this.players.length; i++) {
                         if (this.players[i].socket.id == socket_id) {
-                            var space_objects = [];
+                            /*
                             var player_planet = this.space_objects.find(space_object => space_object.space_object_id == this.players[i].space_object_id);
+                            var space_objects = [];
                             if (player_planet !== undefined) {
                                 //will need to recalculate what is in the view range as it moves around
                                 for (var j = 0; j < this.space_objects.length; j++) {
@@ -236,7 +338,8 @@ module.exports = class Game {
                                     }
                                 }
                             }
-                            resolve({space_objects: space_objects, fleets: this.fleets, last_update: this.last_tick, time_passed: this.time_passed, boundaries: this.boundaries});
+                            */
+                            resolve({home_planet_id: this.players[i].space_object_id, space_objects: this.space_objects, fleets: this.fleets, last_update: this.last_tick, time_passed: this.time_passed, boundaries: this.boundaries});
                             return;
                         }
                     }
@@ -265,12 +368,31 @@ module.exports = class Game {
         throw new Error('Did not find player to get them removed from the players array');
     }
 
-    async generate_asteroid(number, coordinates_range) {
-        
+    async generate_asteroid() {
+        var x = Math.floor(Math.sign(Math.random() - 0.49) * Math.random() * this.boundaries);
+        var y = Math.floor(Math.sign(Math.random() - 0.49) * Math.random() * this.boundaries);
+        var size = 6 + Math.floor(Math.random() * 26);
+        var tmp = Math.random() - 0.35;
+        var resource_ratio = tmp > 0 ? tmp : 0;
+        var resources = Math.floor(resource_ratio * size);
+        this.space_objects.push({space_object_id:  this.space_object_id++, original_x: x, original_y: y, x: x, y: y, width: size, height: size, image: "asteroid", velocity: new Vector(0, 0), rot: 0, resources: resources});
     }
 
-    async generate_system() {
-        
+    async generate_system(socket) {
+        var center_x = Math.floor(Math.random() * this.boundaries - 50000 * Math.sign(Math.random() - 0.49));
+        var center_y = Math.floor(Math.random() * this.boundaries - 50000 * Math.sign(Math.random() - 0.49));
+        var center_size = Math.random() * 9000;
+        var center_object_id = this.space_object_id++;
+        this.space_objects.push({space_object_id: center_object_id, original_x: center_x, original_y: center_y, x: center_x, y: center_y, width: center_size, height: center_size, image: "star", velocity: new Vector(0, 0), rot: 0, centerrot_id: center_object_id});
+        var no_planets = 3 + Math.floor(Math.random() * 5);
+        for (var i = 0; i < no_planets; i++) {
+            var x = center_x + Math.floor(center_size/2 + Math.random() * 10000);
+            var y = center_y + Math.floor(center_size/2 + Math.random() * 10000);
+            var size = Math.floor(Math.random() * 2600);
+            var rot = Math.floor(Math.random() * 360);
+            this.space_objects.push({space_object_id: this.space_object_id++, original_x: x, original_y: y, x: x, y: y, width: size, height: size, image: "planet2", velocity: new Vector(0, 0), rot: rot, centerrot_id: center_object_id});
+        }
+        socket.emit('system_generated', center_x, center_y);
     }
 
     async process_request(socket, username, request_id) {
@@ -305,10 +427,11 @@ module.exports = class Game {
                             }
                         }
                         break;
-                    case 'switch_system':
-                        break;
                     case 'generate_system':
-                        this.generate_system();
+                        this.generate_system(socket);
+                        break;
+                    case 'generate_asteroid':
+                        this.generate_asteroid();
                         break;
                 }
             } else {
@@ -316,6 +439,14 @@ module.exports = class Game {
             }
         } else {
             console.log('Type of request_id is not string!');
+        }
+    }
+
+    async assign_fleet(socket_id, space_object_id) {
+        var username = this.players.find( player => player.socket.id == socket_id ).username;
+        var player_fleet = this.fleets.find( fleet => fleet.owner == username );
+        if (player_fleet !== undefined) {
+            player_fleet.assigned_space_object_id = space_object_id;
         }
     }
 
