@@ -35,7 +35,7 @@ module.exports = class DbManager {
     async update_resource(username, p_resources, amount = 0) {
         var resource_generator = buildings.find(b => b.building_id == 2);
         await this.update_building_level(username, resource_generator.building_id);
-        var query = `SELECT p.player_id, UNIX_TIMESTAMP(p.res_last_update) AS last_update, pb.level
+        var query = `SELECT p.player_id, p.res_last_update AS last_update, pb.level
         FROM player_buildings pb
         INNER JOIN players p ON p.player_id = pb.player_id
         WHERE p.username = ? AND pb.building_id = ?`;
@@ -51,7 +51,7 @@ module.exports = class DbManager {
         for (var i = 0; i < resources.length; i++) {
             set_to += resources[i] + ' = ' + resources[i] + ' + ' + ((res_production[resources[i]] === undefined ? 0 : res_production[resources[i]]) * (await utils.get_timestamp() - results[0].last_update) + amount) + ' , ';
         }
-        set_to += 'res_last_update = NOW()';
+        set_to += 'res_last_update = UNIX_TIMESTAMP()';
 
         var query = "UPDATE players SET " + set_to + " WHERE player_id = ?";
         return this.execute_query(query, [results[0].player_id]);
@@ -103,7 +103,7 @@ module.exports = class DbManager {
                 throw new Error('Trying to update building past the max level');
             }
             query += `p.${resource} = p.${resource} - ${buildings[b_index].level_details[l_index].upgrade_cost[resource]}, 
-            pb.update_start = NOW()
+            pb.update_start = UNIX_TIMESTAMP()
             WHERE p.player_id = ? AND pb.building_id = ? AND pb.update_start IS NULL`;
         }
         if (results[0].update_start === null) {
@@ -156,7 +156,7 @@ module.exports = class DbManager {
         var query = `UPDATE player_buildings pb 
         INNER JOIN players p ON p.player_id = pb.player_id
         SET 
-            pb.update_start = NOW(),
+            pb.update_start = UNIX_TIMESTAMP(),
             pb.downgrade = 1
         WHERE p.username = ? AND pb.building_id = ? AND pb.level > 0 AND pb.update_start IS NULL`;
         await this.execute_query(query, [username, buildings[b_index].building_id]);
@@ -171,7 +171,7 @@ module.exports = class DbManager {
         await this.update_building_level(username, p_building);
         var building_id;
         var query = `SELECT pb.player_id, pb.building_id, pb.level, pb.downgrade,
-        UNIX_TIMESTAMP(pb.update_start) AS update_start
+        pb.update_start AS update_start
         FROM player_buildings pb
         INNER JOIN players p ON p.player_id = pb.player_id
         WHERE p.username = ?`;
@@ -192,7 +192,7 @@ module.exports = class DbManager {
     }
 
     async update_building_level(username, p_building, passingId = false) {
-        var query = `SELECT p.player_id, UNIX_TIMESTAMP(pb.update_start) AS update_start, pb.level, pb.building_id, pb.downgrade
+        var query = `SELECT p.player_id, pb.update_start AS update_start, pb.level, pb.building_id, pb.downgrade
             FROM player_buildings pb
             INNER JOIN players p ON p.player_id = pb.player_id
             WHERE p.username = ? AND pb.update_start IS NOT NULL`;
@@ -425,7 +425,6 @@ module.exports = class DbManager {
         var p_units_building = await this.get_player_building_details(username, 4, true);
         var units_building_level_details = buildings.find(building => building.building_id == p_units_building.building_id).level_details
         var allowed_units = units_building_level_details.find(level_detail => level_detail.level == p_units_building.level).units;
-        //Object.assign works properly only for objects with enumerable properties
         var updated_player_resources = Object.assign({}, player_resources);
         var query = 'UPDATE players SET ';
         for (var i = 0; i < p_units.length; i++) {
@@ -464,7 +463,7 @@ module.exports = class DbManager {
         var promises = [];
         for (var i = 0; i < p_units.length; i++) {
             query = `UPDATE player_unit_ques puq
-            INNER JOIN players p ON p.player_id = puq.player_id 
+            INNER JOIN players p ON p.player_id = puq.player_id
             SET puq.count = puq.count + ?, puq.calculated_timestamp = IF (puq.count = 0, UNIX_TIMESTAMP(), puq.calculated_timestamp)
             WHERE p.username = ? AND puq.unit_id = ?`;
             promises.push(this.execute_query(query, [p_units[i].count, username, p_units[i].unit_id]));

@@ -166,6 +166,10 @@ button, html, input {
 	border-top: 1px solid black;
 }
 
+#units_table img {
+	width: 20px;
+}
+
 #units_que_table > thead > tr:first-child > th {
 	border-bottom: 1px solid black;
 }

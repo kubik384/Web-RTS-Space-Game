@@ -120,7 +120,7 @@ module.exports = class Game {
                 for (var i = 0; i < this.fleets.length; i++) {
                     if (this.fleets[i].abandon_timer !== undefined) {
                         this.fleets[i].abandon_timer -= this.time_passed;
-                        if (this.fleets[i].abandon_timer <= 0) {
+                        if (this.fleets[i].abandon_timer + 1000 <= 0) {
                             this.fleets[i].abandon_timer = undefined;
                             this.fleets[i].owner = undefined;
                         }

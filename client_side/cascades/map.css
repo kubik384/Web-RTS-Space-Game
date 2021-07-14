@@ -1,7 +1,6 @@
 * {
     margin:0px;
 	padding:0px;
-	user-select: none;
 }
 
 html {
@@ -11,6 +10,14 @@ html {
 body {
 	height: 100%;
 	font-size: 0px;
+	overflow: hidden;
+	overflow-y: scroll;
+}
+
+body::-webkit-scrollbar {
+	display: none;
+	-ms-overflow-style: none;  /* IE and Edge */
+	scrollbar-width: none;  /* Firefox */
 }
 
 #image_holder {
@@ -103,6 +110,7 @@ body {
 }
 
 #map_column {
+	user-select: none;
 	width: 50% !important;
 }
 
@@ -145,13 +153,36 @@ body {
 	padding-right: 5px;
 }
 
-#assemble_fleet_wrapper span {
-	padding-left: 5px;
-	cursor: pointer;
-}
-
 #assemble_fleet_wrapper input {
 	width: 80px;
+}
+
+#abandon_timer {
+	color: red;
+	font-weight: bold;
+	padding: 0 0 10px 0;
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	align-items: center;
+}
+
+#abandon_timer > span {
+	padding-left: 5px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+
+#abandon_timer > span > span {
+	padding-left: 5px;
+}
+
+.cancel {
+	height: 20px;
+	padding-left: 15px;
+	cursor: pointer;
 }
 
 #dialog_div {
@@ -159,10 +190,10 @@ body {
 	text-align: center;
 	position: fixed;
 	transform: translateX(-50%);
-	top: 10%;
+	top: 8%;
 	left: 50%;
 	right: 0;
-	background-color: rgba(200, 200, 200, 1);
+	background-color: rgb(155, 155, 155);
 	z-index: 3;
 	padding: 10px;
 	max-width: 25%;
@@ -174,6 +205,7 @@ body {
 	margin-top: 10px;
 	padding: 6px 12px;
 	margin-top: 20px;
+	background-color: rgba(255, 255, 255, 1);
 }
 
 #dialog_div > button:first-of-type {
@@ -188,18 +220,4 @@ body {
 	height: 100%;
 	z-index: 2;
 	background-color: rgba(255, 255, 255, 0);
-}
-
-#abandon_timer {
-	color: red;
-	font-weight: bold;
-	padding: 0 0 10px 0;
-	display: flex;
-	justify-content: center;
-}
-
-.cancel {
-	height: 20px;
-	padding-left: 15px;
-	cursor: pointer;
 }

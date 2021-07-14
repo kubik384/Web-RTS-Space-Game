@@ -79,9 +79,9 @@ class Game {
             this.updates[0].fleets = datapack.fleets;
             for (var i = 0; i < this.updates[0].fleets.length; i++) {
                 if (this.updates[0].fleets[i].owner !== undefined) {
-                    this.controlled_fleet = this.updates[0].fleets[i];
+                    this.controlled_fleet_index = i;
                     if (this.updates[0].fleets[i].abandon_timer !== undefined) {
-                        this.add_abandon_timer();
+                        this.add_abandon_timer(this.updates[0].fleets[i].abandon_timer);
                     }
                 }
             }
@@ -138,7 +138,7 @@ class Game {
                                 var assemble_fleet = function(abandon = false) {
                                     this.socket.emit('request', e.target.id, units, abandon);
                                 }.bind(this);
-                                if (this.controlled_fleet !== undefined) {
+                                if (this.controlled_fleet_index !== undefined) {
                                     utils.display_custom_confirm_dialog('Are you sure you want to abandon your other fleet? Due to technical limitations, a player can currently have only one fleet.', assemble_fleet, 'Abandon');
                                 } else {
                                     assemble_fleet();
@@ -157,7 +157,7 @@ class Game {
 
             document.getElementById('map').addEventListener('contextmenu', e => { 
                 e.preventDefault();
-                if (this.controlled_fleet !== undefined) {
+                if (this.controlled_fleet_index !== undefined) {
                     const rect = this.map_canvas.getBoundingClientRect();
                     var x = e.clientX - this.xOffset - rect.left - this.map_canvas_border;
                     var y = e.clientY - this.yOffset - rect.top - this.map_canvas_border;
@@ -220,10 +220,6 @@ class Game {
             
             window.requestAnimationFrame(this.draw.bind(this));
             this.logic_loop = setTimeout(this.update.bind(this), this.tick_time);
-
-            
-            this.last_ui_update_timestamp = Date.now();
-            this.ui_update_loop = setInterval(this.update_ui.bind(this), 1000);
             return;
         };
     }
@@ -306,15 +302,6 @@ class Game {
             */
         }
         this.last_fe_tick = timestamp;
-    }
-
-    update_ui() {
-        const timestamp = Date.now();
-        const time_passed = timestamp - this.last_ui_update_timestamp;
-        if (this.controlled_fleet !== undefined && this.controlled_fleet.abandon_timer !== undefined) {
-            document.getElementById('abandon_timer');
-        }
-        this.last_ui_update_timestamp = timestamp;
     }
     
     draw() {
@@ -425,7 +412,10 @@ class Game {
             for (var i = deleted_fleets.length - 1; i >= 0; i--) {
                 //if the fleet has a username attribute, it's the controlled fleet - temporary solution
                 if (update.fleets[deleted_fleets[i]].owner !== undefined) {
-                    this.controlled_fleet = undefined;
+                    if (update.fleets[deleted_fleets[i]].abandon_timer !== undefined) {
+                        this.remove_abandon_timer();
+                    }
+                    this.controlled_fleet_index = undefined;
                 }
                 update.fleets.splice(deleted_fleets[i], 1);
             }
@@ -433,7 +423,13 @@ class Game {
             var no_this_fleets = update.fleets.length;
             var number_of_fleets = updated_fleets.length;
             if (number_of_fleets > no_this_fleets) {
-                update.fleets = update.fleets.concat(updated_fleets.slice(no_this_fleets - number_of_fleets));
+                var new_fleets = updated_fleets.slice(no_this_fleets - number_of_fleets);
+                for (var i = 0; i < new_fleets.length; i++) {
+                    if (new_fleets[i].owner !== undefined) {
+                        this.controlled_fleet_index = update.fleets.length + i;
+                    }
+                }
+                update.fleets = update.fleets.concat(new_fleets);
             }
 
             var fleets = update.fleets;
@@ -441,12 +437,25 @@ class Game {
                 //if the fleet has an owner attribute, it's the controlled fleet - temporary solution
                 if (fleets[i].owner !== undefined) {
                     if (updated_fleets[i].owner !== undefined) {
-                        if (fleets[i].abandon_timer === undefined && updated_fleets[i].abandon_timer !== undefined) {
-                            this.add_abandon_timer();
+                        if (fleets[i].owner_deleted !== undefined) {
+                            fleets[i].owner_deleted = undefined;
+                            fleets[i].owner = updated_fleets[i].owner;
                         }
-                        this.controlled_fleet = updated_fleets[i];
+                        if (fleets[i].abandon_timer === undefined && updated_fleets[i].abandon_timer !== undefined) {
+                            fleets[i].abandon_timer = updated_fleets[i].abandon_timer;
+                            this.add_abandon_timer(updated_fleets[i].abandon_timer);
+                        } else if (updated_fleets[i].abandon_timer !== undefined) {
+                            this.update_abandon_timer(updated_fleets[i].abandon_timer);
+                        }
                     } else {
-                        this.controlled_fleet = undefined;
+                        if (fleets[i].owner_deleted !== undefined) {
+                            fleets[i].owner = undefined;
+                            fleets[i].owner_deleted = undefined;
+                        } else {
+                            this.controlled_fleet_index = undefined;
+                            fleets[i].owner_deleted = true;
+                            this.remove_abandon_timer();
+                        }
                     }
                 }
                 if (updated_fleets[i].move_point !== undefined) {
@@ -496,7 +505,6 @@ class Game {
                 }
                 */
             }
-            
             this.updates.push(update);
         } else {
             throw new Error('More than 3 updates stored');
@@ -530,28 +538,41 @@ class Game {
         }
     }
 
-    async add_abandon_timer() {
+    async add_abandon_timer(timeLeft) {
         var assemble_fleet_wrapper = document.getElementById('assemble_fleet_wrapper');
         var paragraph = document.createElement('p');
         paragraph.setAttribute('id', 'abandon_timer');
         paragraph.append('Abandoning fleet in: ');
         var timer = document.createElement('span');
-        timer.append(await utils.seconds_to_time(this.controlled_fleet.abandon_timer, true));
-        paragraph.append(timer);
+        var seconds = await utils.timestamp_to_seconds(timeLeft);
+        timer.append(await utils.seconds_to_time(seconds, true));
+        var timer_wrapper = document.createElement('span');
+        timer_wrapper.append(timer);
+        paragraph.append(timer_wrapper);
         var cancel_img = document.createElement('img');
-        cancel_img.scr = "/client_side/images/ui/red_cross.png";
+        cancel_img.setAttribute("src", "/client_side/images/ui/red_cross.png");
         cancel_img.classList.add('cancel');
+        cancel_img.addEventListener('click', () => {
+            this.socket.emit('abandon_cancel');
+            this.remove_abandon_timer();
+        });
+        timer_wrapper.append(cancel_img);
         assemble_fleet_wrapper.append(paragraph);
     }
 
     async remove_abandon_timer() {
         var abandon_timer = document.getElementById('abandon_timer');
-        abandon_timer.remove();
+        if (abandon_timer !== null) {
+            abandon_timer.remove();
+        }
     }
 
-    async update_abandon_timer() {
-        var time_element = document.querySelector('#abandon_timer > span');
-        time_element.textContent = await utils.seconds_to_time(this.controlled_fleet.abandon_timer, true);
+    async update_abandon_timer(timeLeft) {
+        var seconds = await utils.timestamp_to_seconds(timeLeft);
+        var time_element = document.querySelector('#abandon_timer > span > span');
+        if (time_element !== null) {
+            time_element.textContent = await utils.seconds_to_time(seconds >= 0? seconds : 0, true);
+        }
     }
 }
 
