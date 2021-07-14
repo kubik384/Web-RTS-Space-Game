@@ -5,7 +5,8 @@
         "cost": {
             "timber": 1
         },
-        "build_time": 10
+        "build_time": 10,
+        "capacity": 4
     },
     {
         "unit_id": 2,
@@ -13,6 +14,7 @@
         "cost": {
             "timber": 2
         },
-        "build_time": 120
+        "build_time": 120,
+        "capacity": 10
     }
 ]

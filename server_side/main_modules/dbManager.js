@@ -292,7 +292,7 @@ module.exports = class DbManager {
     }
 
     /**
-     * Returns results in following format [{building_id, name, level_details: [{level, upgrade_time, wood_cost, dirt_cost, iron_cost, pop_cost}, upgrade time, ..]}, ..]
+     * Returns results in following format [{player_id, unit_id, count]}, ..]
      * @param {string} username username of the user the data is supposed to be loaded for
      * @param {string} p_unit Either a singular unit to get the data for or all of the unit data for the selected user
      */
@@ -412,7 +412,7 @@ module.exports = class DbManager {
         var player_units = await this.get_player_units(username, 'all');
         var player_ques = await this.get_player_unit_ques(username, 'all');
         var building_results = await this.get_building_details(building_details);
-        var unit_results = await this.get_unit_details(player_units);
+        var unit_results = JSON.parse(JSON.stringify(await this.get_unit_details(player_units)));
         for (var i = 0; i < unit_results.length; i++) {
             unit_results[i].count = player_units[i].count;
         }

@@ -200,11 +200,12 @@ io.on('connection', socket => {
 
 	socket.on('request', (...args) => {
 		var request_id = args[0];
+		var passed_args = args.slice(1);
 		if (request_id === 'restart') {
-			restart_server(socket, args[1]);
+			restart_server(socket, passed_args[0]);
 		} else {
 			var token = socketTable[socket.id];
-			game.process_request(socket, token, request_id);
+			game.process_request(socket, token, request_id, passed_args);
 		}
 	});
 

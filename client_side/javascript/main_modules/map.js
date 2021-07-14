@@ -37,40 +37,74 @@ class Game {
     }
 
     async setup_game(p_datapack) {
-        return new Promise((resolve, reject) => {
-            var datapack = JSON.parse(p_datapack);
-            this.updates = [{}];
-            if (this.layout === 'system') {
-                var space_objects = datapack.space_objects;
-                this.updates[0].fleets = datapack.fleets;
-                this.last_fe_tick = datapack.last_update;
-                this.updates[0].tick_timestamp = datapack.last_update;
-                this.updates[0].tick_be_time_passed = datapack.time_passed;
-                this.boundaries = datapack.boundaries;
-                for (var i = 0; i < space_objects.length; i++) {
-                    space_objects[i].HTMLimage = document.getElementById(space_objects[i].image);
-                    space_objects[i].last_x = space_objects[i].x;
-                    space_objects[i].last_y = space_objects[i].y;
+        var datapack = JSON.parse(p_datapack);
+        this.updates = [{}];
+        if (this.layout === 'system') {
+            this.last_fe_tick = datapack.last_update;
+            this.updates[0].tick_timestamp = datapack.last_update;
+            this.updates[0].tick_be_time_passed = datapack.time_passed;
+            this.boundaries = datapack.boundaries;
+            this.available_units = datapack.available_units;
+            var assemble_fleet_html = `<button id="assemble_fleet">Assemble a fleet</button>
+            <table><tr>`;
+            var disable_button = true;
+            for (var i = 0; i < this.available_units.length; i++) {
+                if (this.available_units[i].count > 0) {
+                    disable_button = false;
+                    assemble_fleet_html += `
+                    <td>
+                        <label for="${(this.available_units[i].name).toLowerCase()}">${(this.available_units[i].name)}</label>
+                    </td>
+                    <td>
+                        <input type='number' id='unit_${(this.available_units[i].unit_id)}' name="${(this.available_units[i].name).toLowerCase()}" class="game_unit" placeholder="0"></input>
+                    </td>
+                    <td>
+                    <span onclick="document.getElementById('unit_${(this.available_units[i].unit_id)}').value=+this.innerText.substr(1, this.innerText.length-2);">(${this.available_units[i].count})</span>
+                    </td>
+                    </tr>`;
                 }
-                this.updates[0].space_objects = space_objects;
-            } else if (this.layout === 'galaxy') {
-                this.updates[0].systems = datapack.systems;
-                this.last_fe_tick = Date.now();
             }
-            if (this.map_canvas === undefined) {
-                this.map_canvas = document.getElementById("map");
-                this.map_ctx = this.map_canvas.getContext("2d");
-                window.onresize = this.window_resize_handler();
-                var home_planet = this.updates[0].space_objects.find(space_object => space_object.space_object_id = datapack.home_planet_id);
-                var home_system = this.updates[0].space_objects.find(space_object => space_object.space_object_id = home_planet.centerrot_id);
-                this.switch_focus(home_system);
-                //expecting the border to have the same width on all the sides of the canvas
-                this.map_canvas_border = +getComputedStyle(this.map_canvas).getPropertyValue('border-top-width').slice(0, -2);
+            document.getElementById('assemble_fleet_wrapper').innerHTML = assemble_fleet_html + '</table>';
+            if (disable_button) {
+                document.getElementById('assemble_fleet').disabled = true;
+            }
+            var space_objects = datapack.space_objects;
+            for (var i = 0; i < space_objects.length; i++) {
+                space_objects[i].HTMLimage = document.getElementById(space_objects[i].image);
+                space_objects[i].last_x = space_objects[i].x;
+                space_objects[i].last_y = space_objects[i].y;
+            }
+            this.updates[0].space_objects = space_objects;
+            
+            this.updates[0].fleets = datapack.fleets;
+            for (var i = 0; i < this.updates[0].fleets.length; i++) {
+                if (this.updates[0].fleets[i].owner !== undefined) {
+                    this.controlled_fleet = this.updates[0].fleets[i];
+                    if (this.updates[0].fleets[i].abandon_timer !== undefined) {
+                        this.add_abandon_timer();
+                    }
+                }
+            }
 
-                document.getElementById('fleet_ui').addEventListener('click', e => {
-                    if (e.target.localName == 'button') {
-                        if (e.target.id == 'switch_space_object') {
-                            var string_space_object_id = document.getElementById('space_object_id').value
+        } else if (this.layout === 'galaxy') {
+            this.updates[0].systems = datapack.systems;
+            this.last_fe_tick = Date.now();
+        }
+        if (this.map_canvas === undefined) {
+            this.map_canvas = document.getElementById("map");
+            this.map_ctx = this.map_canvas.getContext("2d");
+            window.onresize = this.window_resize_handler();
+            var home_planet = this.updates[0].space_objects.find(space_object => space_object.space_object_id = datapack.home_planet_id);
+            var home_system = this.updates[0].space_objects.find(space_object => space_object.space_object_id = home_planet.centerrot_id);
+            this.switch_focus(home_system);
+            //expecting the border to have the same width on all the sides of the canvas
+            this.map_canvas_border = +getComputedStyle(this.map_canvas).getPropertyValue('border-top-width').slice(0, -2);
+
+            document.getElementById('fleet_ui').addEventListener('click', e => {
+                if (e.target.localName == 'button') {
+                    switch (e.target.id) {
+                        case "switch_space_object":
+                            var string_space_object_id = document.getElementById('space_object_id').value;
                             if (string_space_object_id.length !== 0) {
                                 var space_object_id = +string_space_object_id;
                                 if (space_object_id > 0) {
@@ -82,82 +116,116 @@ class Game {
                                     }
                                 }
                             }
-                        } else if (e.target.id == 'restart') {
+                        break;
+                        case "assemble_fleet":
+                            var empty_fleet = true;
+                            var units = [];
+                            var unit_elements = document.getElementsByClassName('game_unit');
+                            for (var i = 0; i < unit_elements.length; i++) {
+                                var unit_id = +(unit_elements[i].id.split("_")[1]);
+                                var unit_count_string = unit_elements[i].value;
+                                if (unit_count_string.length !== 0) {
+                                    var unit_count = +unit_count_string;
+                                    if (unit_count > 0) {
+                                        empty_fleet = false;
+                                    }
+                                    units.push({unit_id: unit_id, count: unit_count});
+                                } else {
+                                    units.push({unit_id: unit_id, count: 0});
+                                }
+                            }
+                            if (!empty_fleet) {
+                                var assemble_fleet = function(abandon = false) {
+                                    this.socket.emit('request', e.target.id, units, abandon);
+                                }.bind(this);
+                                if (this.controlled_fleet !== undefined) {
+                                    utils.display_custom_confirm_dialog('Are you sure you want to abandon your other fleet? Due to technical limitations, a player can currently have only one fleet.', assemble_fleet, 'Abandon');
+                                } else {
+                                    assemble_fleet();
+                                }
+                            }
+                        break;
+                        case "restart":
                             this.socket.emit('request', e.target.id, this.layout);
-                        } else {
+                        break;
+                        default: 
                             this.socket.emit('request', e.target.id);
-                        }
+                        break;
                     }
-                });
+                }
+            });
 
-                document.getElementById('map').addEventListener('contextmenu', e => { 
-                    e.preventDefault();
-                    if (this.controlled_fleet !== undefined) {
-                        const rect = this.map_canvas.getBoundingClientRect();
-                        var x = e.clientX - this.xOffset - rect.left - this.map_canvas_border;
-                        var y = e.clientY - this.yOffset - rect.top - this.map_canvas_border;
-                        this.generate_movepoint(x/this.zoom, y/this.zoom);
-                    }
-                });
-
-                document.getElementById('map').addEventListener('wheel', e => {
-                    e.preventDefault();
+            document.getElementById('map').addEventListener('contextmenu', e => { 
+                e.preventDefault();
+                if (this.controlled_fleet !== undefined) {
                     const rect = this.map_canvas.getBoundingClientRect();
-                    var x = e.clientX - rect.left - this.map_canvas_border;
-                    var y = e.clientY - rect.top - this.map_canvas_border;
-                    if (e.deltaY < 0) {
-                        if (this.zoom < 24) {
-                            const deltaZoom = 1.25;
-                            var oldZoom = this.zoom;
-                            this.zoom *= deltaZoom;
-                            var zoomRatio = (this.zoom - oldZoom)/oldZoom;
-                            this.xOffset += (this.xOffset - x) * zoomRatio;
-                            this.yOffset += (this.yOffset - y) * zoomRatio;
-                        }
-                    } else {
-                        if (this.zoom > 0.00025) {
-                            const deltaZoom = 0.8;
-                            var oldZoom = this.zoom;
-                            this.zoom *= deltaZoom;
-                            var zoomRatio = (oldZoom - this.zoom)/oldZoom;
-                            this.xOffset -= (this.xOffset - x) * zoomRatio;
-                            this.yOffset -= (this.yOffset - y) * zoomRatio;
-                        }
-                    }
-                });
+                    var x = e.clientX - this.xOffset - rect.left - this.map_canvas_border;
+                    var y = e.clientY - this.yOffset - rect.top - this.map_canvas_border;
+                    this.generate_movepoint(x/this.zoom, y/this.zoom);
+                }
+            });
 
-                document.getElementById('map').addEventListener('mousedown', e => {
-                    //left click
-                    if (e.button == 0) {
-                        this.dragging = true;
+            document.getElementById('map').addEventListener('wheel', e => {
+                e.preventDefault();
+                const rect = this.map_canvas.getBoundingClientRect();
+                var x = e.clientX - rect.left - this.map_canvas_border;
+                var y = e.clientY - rect.top - this.map_canvas_border;
+                if (e.deltaY < 0) {
+                    if (this.zoom < 24) {
+                        const deltaZoom = 1.25;
+                        var oldZoom = this.zoom;
+                        this.zoom *= deltaZoom;
+                        var zoomRatio = (this.zoom - oldZoom)/oldZoom;
+                        this.xOffset += (this.xOffset - x) * zoomRatio;
+                        this.yOffset += (this.yOffset - y) * zoomRatio;
                     }
-                });
+                } else {
+                    if (this.zoom > 0.00025) {
+                        const deltaZoom = 0.8;
+                        var oldZoom = this.zoom;
+                        this.zoom *= deltaZoom;
+                        var zoomRatio = (oldZoom - this.zoom)/oldZoom;
+                        this.xOffset -= (this.xOffset - x) * zoomRatio;
+                        this.yOffset -= (this.yOffset - y) * zoomRatio;
+                    }
+                }
+            });
 
-                window.addEventListener('mouseup', e => {
-                    //left click
-                    if (e.button == 0) {
-                        this.dragging = false;
-                    }
-                });
+            document.getElementById('map').addEventListener('mousedown', e => {
+                //left click
+                if (e.button == 0) {
+                    this.dragging = true;
+                }
+            });
 
-                document.addEventListener('mousemove', e => {
-                    if (this.dragging) {
-                        this.xOffset += e.movementX;
-                        this.yOffset += e.movementY;
-                    }
-                });
+            window.addEventListener('mouseup', e => {
+                //left click
+                if (e.button == 0) {
+                    this.dragging = false;
+                }
+            });
 
-                window.addEventListener("visibilitychange", () => {
-                    if (document.visibilityState == 'hidden') {
-                        this.dragging = false;
-                    }
-                });
-                
-                window.requestAnimationFrame(this.draw.bind(this));
-                this.logic_loop = setTimeout(this.update.bind(this), this.tick_time);
-                resolve();
-            };
-        });
+            document.addEventListener('mousemove', e => {
+                if (this.dragging) {
+                    this.xOffset += e.movementX;
+                    this.yOffset += e.movementY;
+                }
+            });
+
+            window.addEventListener("visibilitychange", () => {
+                if (document.visibilityState == 'hidden') {
+                    this.dragging = false;
+                }
+            });
+            
+            window.requestAnimationFrame(this.draw.bind(this));
+            this.logic_loop = setTimeout(this.update.bind(this), this.tick_time);
+
+            
+            this.last_ui_update_timestamp = Date.now();
+            this.ui_update_loop = setInterval(this.update_ui.bind(this), 1000);
+            return;
+        };
     }
 
     async update(timestamp) {
@@ -238,6 +306,15 @@ class Game {
             */
         }
         this.last_fe_tick = timestamp;
+    }
+
+    update_ui() {
+        const timestamp = Date.now();
+        const time_passed = timestamp - this.last_ui_update_timestamp;
+        if (this.controlled_fleet !== undefined && this.controlled_fleet.abandon_timer !== undefined) {
+            document.getElementById('abandon_timer');
+        }
+        this.last_ui_update_timestamp = timestamp;
     }
     
     draw() {
@@ -339,9 +416,7 @@ class Game {
             var tick_be_time_passed = p_update[p_update.length-1];
 
 
-
-            
-            //causes the update to lose all the images - resulting in an error when attempting to draw the broken image
+            //causes the update to lose all the html loaded images
             var update = JSON.parse(JSON.stringify(this.updates[this.updates.length - 1]));
             update.tick_be_time_passed = tick_be_time_passed;
             update.tick_timestamp = Date.now();
@@ -365,7 +440,14 @@ class Game {
             for (var i = 0; i < fleets.length; i++) {
                 //if the fleet has an owner attribute, it's the controlled fleet - temporary solution
                 if (fleets[i].owner !== undefined) {
-                    this.controlled_fleet = fleets[i];
+                    if (updated_fleets[i].owner !== undefined) {
+                        if (fleets[i].abandon_timer === undefined && updated_fleets[i].abandon_timer !== undefined) {
+                            this.add_abandon_timer();
+                        }
+                        this.controlled_fleet = updated_fleets[i];
+                    } else {
+                        this.controlled_fleet = undefined;
+                    }
                 }
                 if (updated_fleets[i].move_point !== undefined) {
                     fleets[i].move_point = updated_fleets[i].move_point;
@@ -446,6 +528,30 @@ class Game {
         } else {
             throw new Error('Invalid input for focus_system');
         }
+    }
+
+    async add_abandon_timer() {
+        var assemble_fleet_wrapper = document.getElementById('assemble_fleet_wrapper');
+        var paragraph = document.createElement('p');
+        paragraph.setAttribute('id', 'abandon_timer');
+        paragraph.append('Abandoning fleet in: ');
+        var timer = document.createElement('span');
+        timer.append(await utils.seconds_to_time(this.controlled_fleet.abandon_timer, true));
+        paragraph.append(timer);
+        var cancel_img = document.createElement('img');
+        cancel_img.scr = "/client_side/images/ui/red_cross.png";
+        cancel_img.classList.add('cancel');
+        assemble_fleet_wrapper.append(paragraph);
+    }
+
+    async remove_abandon_timer() {
+        var abandon_timer = document.getElementById('abandon_timer');
+        abandon_timer.remove();
+    }
+
+    async update_abandon_timer() {
+        var time_element = document.querySelector('#abandon_timer > span');
+        time_element.textContent = await utils.seconds_to_time(this.controlled_fleet.abandon_timer, true);
     }
 }
 
