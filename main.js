@@ -49,7 +49,7 @@ app.post('/register', function(req, res) {
 					if (err) {
 						throw err;
 					}
-					query = "INSERT INTO players (username, password, system_id, space_object_id) VALUES ( ? , ? , ? , ? )";
+					query = "INSERT INTO players (username, password, system_id, space_object_id, res_last_update) VALUES ( ? , ? , ? , ? , UNIX_TIMESTAMP())";
 					dbManager.execute_query(query, [username, hash, 1, 2]).then(() => {
 						res.sendStatus(200);
 					}).catch(err => { throw err });
