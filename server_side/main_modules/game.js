@@ -470,6 +470,16 @@ module.exports = class Game {
         }
     }
 
+    async cancel_fleet_abandoning(socket_id) {
+        var player = this.players.find( player => player.socket.id == socket_id );
+        var fleet = this.fleets.find(fleet => fleet.owner == player.username);
+        if (fleet !== undefined) {
+            if (fleet.abandon_timer !== undefined) {
+                fleet.abandon_timer = undefined;
+            }
+        }
+    }
+
     async set_movepoint(socket_id, x, y) {
         var username = this.players.find( player => player.socket.id == socket_id ).username;
         var player_fleet = this.fleets.find( fleet => fleet.owner == username );
@@ -605,6 +615,9 @@ module.exports = class Game {
                         break;
                     case 'generate_asteroid':
                         this.generate_asteroid();
+                        break;
+                    case 'cancel_fleet_abandoning':
+                        this.cancel_fleet_abandoning(socket.id);
                         break;
                 }
             } else {

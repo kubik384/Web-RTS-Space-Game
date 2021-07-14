@@ -34,7 +34,7 @@ class Utils {
         return rad/Math.Pi * 180;
     }
 
-    display_custom_confirm_dialog(question, callback, confirm_text = 'Confirm', reject_text = 'Cancel') {
+    display_custom_confirm_dialog(question, confirm_callback, reject_callback, confirm_text = 'Confirm', reject_text = 'Cancel') {
         if (document.getElementById('dialog_div') === null) {
             var dialog_id = 'dialog_div';
             var dialog_verlay_id = 'dialog_overlay';
@@ -42,10 +42,15 @@ class Utils {
             dialog.setAttribute("id", dialog_id);
             var dialog_overlay = document.createElement('div');
             dialog_overlay.setAttribute("id", dialog_verlay_id);
-            var button_function = function() {
+            var confirm_function = function() {
                 dialog.remove();
                 dialog_overlay.remove();
-                callback(this.textContent == confirm_text);
+                confirm_callback();
+            }
+            var reject_function = function() {
+                dialog.remove();
+                dialog_overlay.remove();
+                reject_callback();
             }
             var contextmenu_function = function(event) {
                 event.preventDefault();
@@ -64,10 +69,10 @@ class Utils {
             dialog_question.append(question);
             var dialog_confirm_button = document.createElement('button');
             dialog_confirm_button.append(confirm_text);
-            dialog_confirm_button.onclick = button_function;
+            dialog_confirm_button.onclick = confirm_function;
             var dialog_cancel_button =  document.createElement('button');
             dialog_cancel_button.append(reject_text);
-            dialog_cancel_button.onclick = button_function;
+            dialog_cancel_button.onclick = reject_function;
             dialog.append(dialog_question, dialog_confirm_button, dialog_cancel_button);
             document.body.append(dialog, dialog_overlay);
         } else {

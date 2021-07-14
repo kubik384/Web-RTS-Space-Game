@@ -135,13 +135,13 @@ class Game {
                                 }
                             }
                             if (!empty_fleet) {
-                                var assemble_fleet = function(abandon = false) {
+                                var assemble_fleet = function(abandon = true) {
                                     this.socket.emit('request', e.target.id, units, abandon);
                                 }.bind(this);
                                 if (this.controlled_fleet_index !== undefined) {
-                                    utils.display_custom_confirm_dialog('Are you sure you want to abandon your other fleet? Due to technical limitations, a player can currently have only one fleet.', assemble_fleet, 'Abandon');
+                                    utils.display_custom_confirm_dialog('Are you sure you want to abandon your other fleet? Due to technical limitations, a player can currently have only one fleet.', assemble_fleet, function() {}, 'Abandon');
                                 } else {
-                                    assemble_fleet();
+                                    assemble_fleet(false);
                                 }
                             }
                         break;
@@ -412,10 +412,10 @@ class Game {
             for (var i = deleted_fleets.length - 1; i >= 0; i--) {
                 //if the fleet has a username attribute, it's the controlled fleet - temporary solution
                 if (update.fleets[deleted_fleets[i]].owner !== undefined) {
+                    this.controlled_fleet_index = undefined;
                     if (update.fleets[deleted_fleets[i]].abandon_timer !== undefined) {
                         this.remove_abandon_timer();
                     }
-                    this.controlled_fleet_index = undefined;
                 }
                 update.fleets.splice(deleted_fleets[i], 1);
             }
@@ -446,6 +446,8 @@ class Game {
                             this.add_abandon_timer(updated_fleets[i].abandon_timer);
                         } else if (updated_fleets[i].abandon_timer !== undefined) {
                             this.update_abandon_timer(updated_fleets[i].abandon_timer);
+                        } else if (fleets[i].abandon_timer !== undefined) {
+                            fleets[i].abandon_timer = undefined;
                         }
                     } else {
                         if (fleets[i].owner_deleted !== undefined) {
@@ -539,25 +541,28 @@ class Game {
     }
 
     async add_abandon_timer(timeLeft) {
-        var assemble_fleet_wrapper = document.getElementById('assemble_fleet_wrapper');
-        var paragraph = document.createElement('p');
-        paragraph.setAttribute('id', 'abandon_timer');
-        paragraph.append('Abandoning fleet in: ');
-        var timer = document.createElement('span');
-        var seconds = await utils.timestamp_to_seconds(timeLeft);
-        timer.append(await utils.seconds_to_time(seconds, true));
-        var timer_wrapper = document.createElement('span');
-        timer_wrapper.append(timer);
-        paragraph.append(timer_wrapper);
-        var cancel_img = document.createElement('img');
-        cancel_img.setAttribute("src", "/client_side/images/ui/red_cross.png");
-        cancel_img.classList.add('cancel');
-        cancel_img.addEventListener('click', () => {
-            this.socket.emit('abandon_cancel');
-            this.remove_abandon_timer();
-        });
-        timer_wrapper.append(cancel_img);
-        assemble_fleet_wrapper.append(paragraph);
+        var abandon_timer = document.getElementById('abandon_timer');
+        if (abandon_timer === null && this.controlled_fleet_index !== undefined) {
+            var assemble_fleet_wrapper = document.getElementById('assemble_fleet_wrapper');
+            var paragraph = document.createElement('p');
+            paragraph.setAttribute('id', 'abandon_timer');
+            paragraph.append('Abandoning fleet in: ');
+            var timer = document.createElement('span');
+            var seconds = await utils.timestamp_to_seconds(timeLeft);
+            timer.append(await utils.seconds_to_time(seconds, true));
+            var timer_wrapper = document.createElement('span');
+            timer_wrapper.append(timer);
+            paragraph.append(timer_wrapper);
+            var cancel_img = document.createElement('img');
+            cancel_img.setAttribute("src", "/client_side/images/ui/red_cross.png");
+            cancel_img.classList.add('cancel');
+            cancel_img.addEventListener('click', () => {
+                this.socket.emit('request', 'cancel_fleet_abandoning');
+                this.remove_abandon_timer();
+            });
+            timer_wrapper.append(cancel_img);
+            assemble_fleet_wrapper.append(paragraph);
+        }
     }
 
     async remove_abandon_timer() {
