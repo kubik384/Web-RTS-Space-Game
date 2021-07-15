@@ -213,8 +213,8 @@ io.on('connection', socket => {
 		game.set_movepoint(socket.id, x, y);
 	});
 
-	socket.on('assign_fleet', space_object_id => {
-		game.assign_fleet(socket.id, space_object_id);
+	socket.on('assign_fleet', (object_type, object_id) => {
+		game.assign_fleet(socket.id, object_type, object_id);
 	});
 
 	socket.on('disconnect', () => {

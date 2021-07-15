@@ -135,13 +135,17 @@ class Game {
                                 }
                             }
                             if (!empty_fleet) {
-                                var assemble_fleet = function(abandon = true) {
+                                var assemble_fleet_fnc = function(abandon = true) {
                                     this.socket.emit('request', e.target.id, units, abandon);
                                 }.bind(this);
                                 if (this.controlled_fleet_index !== undefined) {
-                                    utils.display_custom_confirm_dialog('Are you sure you want to abandon your other fleet? Due to technical limitations, a player can currently have only one fleet.', assemble_fleet, function() {}, 'Abandon');
+                                    if (this.updates[0].fleets[this.controlled_fleet_index].engaged_fleet_id === undefined) {
+                                        utils.display_custom_confirm_dialog('Are you sure you want to abandon your other fleet? Due to technical limitations, a player can currently have only one fleet.', assemble_fleet_fnc, function() {}, 'Abandon');
+                                    } else {
+                                        utils.display_custom_confirm_dialog('Due to technical limitations, a player can currently have only one fleet. This fleet has however entered combat and therefore cannot be abandoned.', function() {}, function() {}, 'OK', '');
+                                    }
                                 } else {
-                                    assemble_fleet(false);
+                                    assemble_fleet_fnc(false);
                                 }
                             }
                         break;
@@ -157,7 +161,7 @@ class Game {
 
             document.getElementById('map').addEventListener('contextmenu', e => { 
                 e.preventDefault();
-                if (this.controlled_fleet_index !== undefined) {
+                if (this.controlled_fleet_index !== undefined && this.updates[0].fleets[this.controlled_fleet_index].engaged_fleet_id === undefined && this.updates[0].fleets[this.controlled_fleet_index].abandon_timer === undefined) {
                     const rect = this.map_canvas.getBoundingClientRect();
                     var x = e.clientX - this.xOffset - rect.left - this.map_canvas_border;
                     var y = e.clientY - this.yOffset - rect.top - this.map_canvas_border;
@@ -380,17 +384,20 @@ class Game {
 
     async generate_movepoint(x, y) {
         var space_objects = this.updates[0].space_objects;
-        var assigned = false;
         for (var i = 0; i < space_objects.length; i++) {
             if (x < space_objects[i].x + space_objects[i].width/2 && x > space_objects[i].x - space_objects[i].width/2 && y < space_objects[i].y + space_objects[i].height/2 && y > space_objects[i].y - space_objects[i].height/2) {
-                this.socket.emit('assign_fleet', space_objects[i].space_object_id);
-                assigned = true;
-                break;
+                this.socket.emit('assign_fleet', 'space_object', space_objects[i].space_object_id);
+                return;
             }
         }
-        if (!assigned) {
-            this.socket.emit('set_movepoint', x, y);
+        var fleets = this.updates[0].fleets;
+        for (var i = 0; i < fleets.length; i++) {
+            if (x < fleets[i].x + 2 && x > fleets[i].x - 2 && y < fleets[i].y + 2 && y > fleets[i].y - 2) {
+                this.socket.emit('assign_fleet', 'fleet', fleets[i].fleet_id);
+                return;
+            }
         }
+        this.socket.emit('set_movepoint', x, y);
     }
 
     async process_server_update(p_update) {
@@ -411,11 +418,13 @@ class Game {
             //when a player joins, server can send new data, where the fleets are already deleted with what has been deleted from old data - which the user never received, so they cannot remove the fleets from them. Same goes for anything else (space objects)
             for (var i = deleted_fleets.length - 1; i >= 0; i--) {
                 //if the fleet has a username attribute, it's the controlled fleet - temporary solution
-                if (update.fleets[deleted_fleets[i]].owner !== undefined) {
+                if (this.controlled_fleet_index !== undefined && this.controlled_fleet_index == deleted_fleets[i]) {
                     this.controlled_fleet_index = undefined;
                     if (update.fleets[deleted_fleets[i]].abandon_timer !== undefined) {
                         this.remove_abandon_timer();
                     }
+                } else if (this.controlled_fleet_index !== undefined && deleted_fleets[i] < this.controlled_fleet_index) {
+                    this.controlled_fleet_index--;
                 }
                 update.fleets.splice(deleted_fleets[i], 1);
             }
@@ -437,6 +446,7 @@ class Game {
                 //if the fleet has an owner attribute, it's the controlled fleet - temporary solution
                 if (fleets[i].owner !== undefined) {
                     if (updated_fleets[i].owner !== undefined) {
+                        fleets[i].engaged_fleet_id = updated_fleets[i].engaged_fleet_id;
                         if (fleets[i].owner_deleted !== undefined) {
                             fleets[i].owner_deleted = undefined;
                             fleets[i].owner = updated_fleets[i].owner;

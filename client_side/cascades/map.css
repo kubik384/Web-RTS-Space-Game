@@ -158,6 +158,10 @@ body::-webkit-scrollbar {
 	width: 80px;
 }
 
+#assemble_fleet_wrapper table span {
+	cursor: pointer;
+}
+
 #abandon_timer {
 	color: red;
 	font-weight: bold;

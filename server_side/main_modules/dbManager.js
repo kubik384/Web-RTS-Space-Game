@@ -277,6 +277,9 @@ module.exports = class DbManager {
      * @param {Array} p_units in format [{unit_id}]
      */
     async get_unit_details(p_units) {
+        if (p_units == 'all') {
+            return units;
+        }
         var unit_details = [];
         var u_index = -1;
         for (var i = 0; i < p_units.length; i++) {

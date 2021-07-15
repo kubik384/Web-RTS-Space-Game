@@ -6,15 +6,25 @@
             "timber": 1
         },
         "build_time": 10,
-        "capacity": 4
+        "capacity": 4,
+        "hull": 40,
+        "shield": 1,
+        "weapons": [
+            {"count": 1, "damage": 15}
+        ]
     },
     {
         "unit_id": 2,
         "name": "Cruiser",
         "cost": {
-            "timber": 2
+            "timber": 3
         },
         "build_time": 120,
-        "capacity": 10
+        "capacity": 6,
+        "hull": 100,
+        "shield": 10,
+        "weapons": [
+            {"count": 2, "damage": 15}
+        ]
     }
 ]

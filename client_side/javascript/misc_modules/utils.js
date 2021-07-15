@@ -35,49 +35,54 @@ class Utils {
     }
 
     display_custom_confirm_dialog(question, confirm_callback, reject_callback, confirm_text = 'Confirm', reject_text = 'Cancel') {
-        if (document.getElementById('dialog_div') === null) {
-            var dialog_id = 'dialog_div';
-            var dialog_verlay_id = 'dialog_overlay';
-            var dialog = document.createElement('div');
-            dialog.setAttribute("id", dialog_id);
-            var dialog_overlay = document.createElement('div');
-            dialog_overlay.setAttribute("id", dialog_verlay_id);
-            var confirm_function = function() {
-                dialog.remove();
-                dialog_overlay.remove();
-                confirm_callback();
-            }
-            var reject_function = function() {
-                dialog.remove();
-                dialog_overlay.remove();
-                reject_callback();
-            }
-            var contextmenu_function = function(event) {
-                event.preventDefault();
-                dialog_overlay.style.display = 'none';
-                var new_event = new event.constructor(event.type, event);
-                document.elementFromPoint(event.clientX, event.clientY).dispatchEvent(new_event);
-                dialog_overlay.style.display = 'block';
-            }
-            var click_function = function() {
-                dialog.remove();
-                dialog_overlay.remove();
-            }
-            dialog_overlay.addEventListener('contextmenu', contextmenu_function);
-            dialog_overlay.addEventListener('click', click_function);
-            var dialog_question = document.createElement('h3');
-            dialog_question.append(question);
-            var dialog_confirm_button = document.createElement('button');
-            dialog_confirm_button.append(confirm_text);
-            dialog_confirm_button.onclick = confirm_function;
+        var old_dialog = document.getElementById('dialog_div');
+        if (old_dialog !== null) {
+            old_dialog.remove();
+        }
+        var dialog_id = 'dialog_div';
+        var dialog_verlay_id = 'dialog_overlay';
+        var dialog = document.createElement('div');
+        dialog.setAttribute("id", dialog_id);
+        var dialog_overlay = document.createElement('div');
+        dialog_overlay.setAttribute("id", dialog_verlay_id);
+        var confirm_function = function() {
+            dialog.remove();
+            dialog_overlay.remove();
+            confirm_callback();
+        }
+        var reject_function = function() {
+            dialog.remove();
+            dialog_overlay.remove();
+            reject_callback();
+        }
+        var contextmenu_function = function(event) {
+            event.preventDefault();
+            dialog_overlay.style.display = 'none';
+            var new_event = new event.constructor(event.type, event);
+            document.elementFromPoint(event.clientX, event.clientY).dispatchEvent(new_event);
+            dialog_overlay.style.display = 'block';
+        }
+        var click_function = function() {
+            dialog.remove();
+            dialog_overlay.remove();
+        }
+        dialog_overlay.addEventListener('contextmenu', contextmenu_function);
+        dialog_overlay.addEventListener('click', click_function);
+        var dialog_question = document.createElement('h3');
+        dialog_question.append(question);
+        var dialog_confirm_button = document.createElement('button');
+        dialog_confirm_button.append(confirm_text);
+        dialog_confirm_button.onclick = confirm_function;
+        dialog.append(dialog_question, dialog_confirm_button);
+        if (reject_text !== '') {
             var dialog_cancel_button =  document.createElement('button');
             dialog_cancel_button.append(reject_text);
             dialog_cancel_button.onclick = reject_function;
-            dialog.append(dialog_question, dialog_confirm_button, dialog_cancel_button);
-            document.body.append(dialog, dialog_overlay);
+            dialog.append(dialog_cancel_button);
         } else {
-            console.warn('Attempting to display a custom dialog when one is already displayed!');
+            dialog_confirm_button.style.marginRight = '0px';
         }
+        document.body.append(dialog, dialog_overlay);
     }
 }
 
