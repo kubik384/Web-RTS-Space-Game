@@ -332,7 +332,11 @@ class Game {
                 this.map_ctx.save();
                 this.map_ctx.translate(this.xOffset, this.yOffset);
                 this.map_ctx.beginPath();
-                this.map_ctx.fillStyle = "red";
+                if (fleets[i].abandoned === undefined) {
+                    this.map_ctx.fillStyle = "red";
+                } else {
+                    this.map_ctx.fillStyle = "gray";
+                }
                 this.map_ctx.rect(x_position  * this.zoom - 2 * this.zoom, y_position  * this.zoom - 2 * this.zoom, 4 * this.zoom, 4 * this.zoom);
                 this.map_ctx.fill();
                 this.map_ctx.restore();
@@ -481,6 +485,7 @@ class Game {
                 }
                 fleets[i].last_x = fleets[i].x;
                 fleets[i].last_y = fleets[i].y;
+                fleets[i].abandoned = updated_fleets[i].abandoned;
                 fleets[i].x = updated_fleets[i].x;
                 fleets[i].y = updated_fleets[i].y;
                 /* Velocity is not currently used anywhere anyway

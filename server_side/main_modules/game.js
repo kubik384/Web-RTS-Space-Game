@@ -117,12 +117,25 @@ module.exports = class Game {
                     this.space_objects[i].y += this.space_objects[i].velocity.y * this.time_passed;
                 }
 
-                for (var i = 0; i < this.fleets.length; i++) {
+                for (var i = this.fleets.length - 1; i >= 0; i--) {
                     if (this.fleets[i].abandon_timer !== undefined) {
                         this.fleets[i].abandon_timer -= this.time_passed;
                         if (this.fleets[i].abandon_timer + 1000 <= 0) {
                             this.fleets[i].abandon_timer = undefined;
                             this.fleets[i].owner = undefined;
+                            this.fleets[i].abandoned = true;
+                            var resources = 0;
+                            var unit_details = await this.dbManager.get_unit_details(this.fleets[i].units);
+                            for (var j = 0; j < this.fleets[i].units.length; j++) {
+                                var unit_detail = unit_details.find(unit_detail => unit_detail.unit_id == this.fleets[i].units[j].unit_id);
+                                resources += unit_detail.cost.timber * this.fleets[i].units[j].count;
+                            }
+                            this.fleets[i].resources += Math.floor(resources * 0.35);
+                            if (this.fleets[i].resources <= 0) {
+                                this.deleted_fleets.push(i);
+                                this.fleets.splice(i, 1);
+                                continue;
+                            }
                         }
                     }
                     if (this.fleets[i].engaged_fleet_id === undefined) {
@@ -176,7 +189,7 @@ module.exports = class Game {
                                                         }
                                                         if (this.fleets[i].resources != this.fleets[i].capacity && space_object.resources !== undefined && space_object.resources > 0) {
                                                             if (this.fleets[i].resources + resources <= this.fleets[i].capacity) {
-                                                                if (space_object.resources - resources < 0) {
+                                                                if (space_object.resources - resources > 0) {
                                                                     this.fleets[i].resources += resources;
                                                                     space_object.resources -= resources;
                                                                 } else {
@@ -185,8 +198,13 @@ module.exports = class Game {
                                                                 }
                                                             } else {
                                                                 resources = this.fleets[i].capacity - this.fleets[i].resources;
-                                                                this.fleets[i].resources += resources;
-                                                                space_object.resources -= resources;
+                                                                if (space_object.resources - resources > 0) {
+                                                                    this.fleets[i].resources += resources;
+                                                                    space_object.resources -= resources;
+                                                                } else {
+                                                                    this.fleets[i].resources += space_object.resources;
+                                                                    space_object.resources = 0;
+                                                                }
                                                             }
                                                         }
                                                     }
@@ -209,17 +227,65 @@ module.exports = class Game {
                                     if (fleet !== undefined) {
                                         var distance = await new Vector(this.fleets[i], fleet).length();
                                         if (distance < 100) {
-                                            this.fleets[i].move_point = undefined;
-                                            this.fleets[i].velocity = new Vector(0,0);
-                                            fleet.velocity = new Vector(0,0);
-                                            fleet.move_point = undefined;
-                                            if (distance != 0) {
-                                                this.fleets[i].x = fleet.x;
-                                                this.fleets[i].y = fleet.y;
-                                                //engage the fleet somehow
-                                                this.fleets[i].fighting_cooldown = 1000;
-                                                this.fleets[i].engaged_fleet_id = fleet.fleet_id;
-                                                fleet.engaged_fleet_id = this.fleets[i].fleet_id;
+                                            if (fleet.abandoned !== undefined) {
+                                                this.fleets[i].move_point = undefined;
+                                                this.fleets[i].velocity = fleet.velocity;
+                                                if (distance != 0) {
+                                                    this.fleets[i].status_cooldown = 10000;
+                                                    this.fleets[i].x = fleet.x;
+                                                    this.fleets[i].y = fleet.y;
+                                                } else {
+                                                    if (this.fleets[i].status_cooldown < 1) {
+                                                    var resources;
+                                                    if (this.fleets[i].status_cooldown != 0) {
+                                                        resources = Math.abs(this.fleets[i].status_cooldown)/100;
+                                                        this.fleets[i].status_cooldown = 0;
+                                                    } else {
+                                                        resources = this.time_passed/100;
+                                                    }
+                                                    if (this.fleets[i].resources != this.fleets[i].capacity && fleet.resources > 0) {
+                                                        if (this.fleets[i].resources + resources <= this.fleets[i].capacity) {
+                                                            if (fleet.resources - resources > 0) {
+                                                                this.fleets[i].resources += resources;
+                                                                fleet.resources -= resources;
+                                                            } else {
+                                                                this.fleets[i].resources += fleet.resources;
+                                                                var fleet_index = this.fleets.findIndex(f_fleet => f_fleet.fleet_id == fleet.fleet_id);
+                                                                this.deleted_fleets.push(fleet_index);
+                                                                this.fleets.splice(fleet_index, 1);
+                                                                continue;
+                                                            }
+                                                        } else {
+                                                            resources = this.fleets[i].capacity - this.fleets[i].resources;
+                                                            if (fleet.resources - resources > 0) {
+                                                                this.fleets[i].resources += resources;
+                                                                fleet.resources -= resources;
+                                                            } else {
+                                                                this.fleets[i].resources += fleet.resources;
+                                                                var fleet_index = this.fleets.findIndex(f_fleet => f_fleet.fleet_id == fleet.fleet_id);
+                                                                this.deleted_fleets.push(fleet_index);
+                                                                this.fleets.splice(fleet_index, 1);
+                                                                continue;
+                                                            }
+                                                        }
+                                                    }
+                                                    } else {
+                                                        this.fleets[i].status_cooldown -= this.time_passed;
+                                                    }
+                                                }
+                                            } else {
+                                                this.fleets[i].move_point = undefined;
+                                                this.fleets[i].velocity = new Vector(0,0);
+                                                fleet.velocity = new Vector(0,0);
+                                                fleet.move_point = undefined;
+                                                if (distance != 0) {
+                                                    this.fleets[i].x = fleet.x;
+                                                    this.fleets[i].y = fleet.y;
+                                                    //engage the fleet somehow
+                                                    this.fleets[i].fighting_cooldown = 1000;
+                                                    this.fleets[i].engaged_fleet_id = fleet.fleet_id;
+                                                    fleet.engaged_fleet_id = this.fleets[i].fleet_id;
+                                                }
                                             }
                                         } else {
                                             this.fleets[i].move_point = {x: fleet.x, y: fleet.y};
@@ -387,7 +453,7 @@ module.exports = class Game {
                             fleets.push(this.fleets[j]);
                         } else {
                             //don't like giving clients the actual fleets id, since if the fleet can get out of sight and then the player finds it again, they can check the id to see if it's the same fleet
-                            fleets.push({fleet_id:this.fleets[j].fleet_id, x: this.fleets[j].x, y: this.fleets[j].y});
+                            fleets.push({fleet_id:this.fleets[j].fleet_id, x: this.fleets[j].x, y: this.fleets[j].y, abandoned: this.fleets[j].abandoned});
                         }
                     }
                     this.players[i].socket.emit('game_update', [fleets, this.deleted_fleets, this.space_objects, this.deleted_space_objects, this.time_passed]);
@@ -572,7 +638,7 @@ module.exports = class Game {
                                     fleets.push(this.fleets[j]);
                                 } else {
                                     //don't like giving clients the actual fleets id, since if the fleet can get out of sight and then the player finds it again, they can check the id to see if it's the same fleet
-                                    fleets.push({fleet_id: this.fleets[j].fleet_id, x: this.fleets[j].x, y: this.fleets[j].y});
+                                    fleets.push({fleet_id: this.fleets[j].fleet_id, x: this.fleets[j].x, y: this.fleets[j].y, abandoned: this.fleets[j].abandoned});
                                 }
                             }
                             resolve({home_planet_id: this.players[i].space_object_id, space_objects: this.space_objects, fleets: fleets, last_update: this.last_tick, time_passed: this.time_passed, boundaries: this.boundaries, available_units: units});
@@ -706,11 +772,13 @@ module.exports = class Game {
         var hull = 0;
         var shield = 0;
         var damage = 0;
+        var resources = 0;
         
         for (var i = 0; i < fleet.units.length; i++) {
             var unit_detail = unit_details.find(unit_detail => unit_detail.unit_id == fleet.units[i].unit_id);
             hull += fleet.units[i].count * unit_detail.hull;
             shield += fleet.units[i].count * unit_detail.shield;
+            resources += fleet.units[i].count * unit_detail.cost.timber;
             for (var j = 0; j < unit_detail.weapons.length; j++) {
                 damage += fleet.units[i].count * unit_detail.weapons[j].damage * unit_detail.weapons[j].count;
             }
@@ -719,10 +787,12 @@ module.exports = class Game {
         var opponents_hull = 0;
         var opponents_shield = 0;
         var opponents_damage = 0;
+        var opponents_resources = 0;
         for (var i = 0; i < opposing_fleet.units.length; i++) {
             var unit_detail = unit_details.find(unit_detail => unit_detail.unit_id == opposing_fleet.units[i].unit_id);
             opponents_hull += opposing_fleet.units[i].count * unit_detail.hull;
             opponents_shield += opposing_fleet.units[i].count * unit_detail.shield;
+            opponents_resources += opposing_fleet.units[i].count * unit_detail.cost.timber;
             for (var j = 0; j < unit_detail.weapons.length; j++) {
                 opponents_damage += opposing_fleet.units[i].count * unit_detail.weapons[j].damage * unit_detail.weapons[j].count;
             }
@@ -732,8 +802,9 @@ module.exports = class Game {
         while (hull > 0 && opponents_hull > 0) {
             var round_damage = damage;
             var round_shield = shield/round_count;
-            var opponents_round_damage = damage;
+            var opponents_round_damage = opponents_damage;
             var opponents_round_shield = opponents_shield/round_count;
+            
             opponents_round_damage -= round_shield;
             if (opponents_round_damage > 0) {
                 hull -= opponents_round_damage;
@@ -745,24 +816,39 @@ module.exports = class Game {
             round_count++;
         }
 
+        fleet.engaged_fleet_id = undefined;
+        fleet.fighting_cooldown = undefined;
+        fleet.assigned_object_id = undefined;
+        fleet.assigned_object_type = undefined;
+        fleet.move_point = undefined;
+        opposing_fleet.engaged_fleet_id = undefined;
+        opposing_fleet.fighting_cooldown = undefined;
+        opposing_fleet.assigned_object_id = undefined;
+        opposing_fleet.assigned_object_type = undefined;
+        opposing_fleet.move_point = undefined;
+
         if (opponents_hull <= 0) {
-            fleet.engaged_fleet_id = undefined;
-            fleet.fighting_cooldown = undefined;
-            fleet.assigned_object_id = undefined;
-            fleet.assigned_object_type = undefined;
-            fleet.move_point = undefined;
-            this.deleted_fleets.push(opposing_fleet_index);
-            this.fleets.splice(opposing_fleet_index, 1);
+            opposing_fleet.owner = undefined;
+            opposing_fleet.abandoned = true;
+            opposing_fleet.velocity =  new Vector(Math.floor((0.0003 + Math.random() * 0.002) * Math.sign(Math.random() - 0.49) * 1e4) / 1e4, Math.floor((0.0003 + Math.random() * 0.002) * Math.sign(Math.random() - 0.49) * 1e4) / 1e4);
+            opposing_fleet.resources += Math.floor(opponents_resources * 0.35);
+
+            if (opposing_fleet.resources <= 0) {
+                this.deleted_fleets.push(opposing_fleet_index);
+                this.fleets.splice(opposing_fleet_index, 1);
+            }
         }
-        if (hull <= 0) {
-            opposing_fleet.engaged_fleet_id = undefined;
-            opposing_fleet.fighting_cooldown = undefined;
-            opposing_fleet.assigned_object_id = undefined;
-            opposing_fleet.assigned_object_type = undefined;
-            opposing_fleet.move_point = undefined;
-            var fleet_index = this.fleets.findIndex(f_fleet => f_fleet.fleet_id == fleet.fleet_id)
-            this.deleted_fleets.push(fleet_index);
-            this.fleets.splice(fleet_index, 1);
+        if (hull <= 0) {            
+            fleet.owner = undefined;
+            fleet.abandoned = true;
+            fleet.velocity = new Vector(Math.floor((0.0003 + Math.random() * 0.002) * Math.sign(Math.random() - 0.49) * 1e4) / 1e4, (0.0003 + Math.floor(Math.random() * 0.002) * Math.sign(Math.random() - 0.49)* 1e4) / 1e4);
+            fleet.resources += Math.floor(resources * 0.35);
+
+            if (fleet.resources <= 0) {
+                var fleet_index = this.fleets.findIndex(f_fleet => f_fleet.fleet_id == fleet.fleet_id)
+                this.deleted_fleets.push(fleet_index);
+                this.fleets.splice(fleet_index, 1);
+            }
         }
     }
 
