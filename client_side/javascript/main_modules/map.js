@@ -45,26 +45,32 @@ class Game {
             this.updates[0].tick_be_time_passed = datapack.time_passed;
             this.boundaries = datapack.boundaries;
             this.available_units = datapack.available_units;
-            var assemble_fleet_html = `<button id="assemble_fleet">Assemble a fleet</button>
-            <table><tr>`;
+            var assemble_fleet_table = document.getElementById('available_units_table');
             var disable_button = true;
             for (var i = 0; i < this.available_units.length; i++) {
                 if (this.available_units[i].count > 0) {
                     disable_button = false;
-                    assemble_fleet_html += `
-                    <td>
-                        <label for="${(this.available_units[i].name).toLowerCase()}">${(this.available_units[i].name)}</label>
-                    </td>
-                    <td>
-                        <input type='number' id='unit_${(this.available_units[i].unit_id)}' name="${(this.available_units[i].name).toLowerCase()}" class="game_unit" placeholder="0"></input>
-                    </td>
-                    <td>
-                    <span onclick="document.getElementById('unit_${(this.available_units[i].unit_id)}').value=+this.innerText.substr(1, this.innerText.length-2);">(${this.available_units[i].count})</span>
-                    </td>
-                    </tr>`;
+                    var row = assemble_fleet_table.insertRow();
+                    var unit_label_cell = row.insertCell();
+                    var unit_input_cell = row.insertCell();
+                    var unit_count = row.insertCell();
+                    
+                    var unit_name_label = document.createElement('label');
+                    unit_name_label.append(this.available_units[i].name);
+                    unit_label_cell.append(unit_name_label);
+                    var unit_number_input = document.createElement('input');
+                    unit_number_input.setAttribute("type", "number");
+                    unit_number_input.setAttribute("id", this.available_units[i].unit_id);
+                    unit_input_cell.append(unit_number_input);
+                    var unit_number_input = document.createElement('span');
+                    unit_number_input.append('(' + this.available_units[i].count + ')');
+                    unit_number_input.setAttribute("data-input_id", this.available_units[i].unit_id);
+                    unit_number_input.addEventListener('click', function() {
+                        document.getElementById(this.dataset.input_id).value = +this.textContent.substr(1, this.textContent.length-2)
+                    });
+                    unit_count.append(unit_number_input);
                 }
             }
-            document.getElementById('assemble_fleet_wrapper').innerHTML = assemble_fleet_html + '</table>';
             if (disable_button) {
                 document.getElementById('assemble_fleet').disabled = true;
             }
