@@ -529,7 +529,7 @@ class Game {
     }
 
     check_updates(timestamp) {
-        for (var i = this.updates.length - 1; i >= 0; i--) {
+        for (var i = 0; i < this.updates.length; i++) {
             var update = this.updates[i];
             if (timestamp - update.tick_timestamp > update.tick_be_time_passed) {
                 if (this.updates.length < 2) {
