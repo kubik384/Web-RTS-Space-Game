@@ -1,6 +1,6 @@
 "use strict"
 
-class Vector {
+module.exports = class Vector {
     /**
      * If only a is defined, a normalized vector is created from a (a = angle). If a and b are defined and are numbers, vector is created where a = x and b = y. If they are objects, same happens. If all 4 parameters are defined, the vector x and y coordinates are calculated going from object1(x = a, y = b) to object2(x = c, y = d).
     */
@@ -19,15 +19,23 @@ class Vector {
                 this.x = c-a;
                 this.y = d-b;
             }
-        } else if (typeof a === 'object' && typeof b === 'object') {
-            this.x = b.x-a.x;
-            this.y = b.y-a.y;
+        } else if (typeof a === 'object') {
+            if (typeof b === 'object') {
+                this.x = b.x-a.x;
+                this.y = b.y-a.y;
+            } else {
+                this.x = a.x;
+                this.y = a.y;
+            }
         } else throw new Error("Cannot create Vector - Invalid value!");
     }
 
     async normalize(length) {
         if (typeof length !== "number") {
             length = await this.length();
+        }
+        if (length == 0) {
+            throw new Error('Attempting to normalize a null vector');
         }
 	    return new Vector(this.x/length, this.y/length);
     }
@@ -87,7 +95,4 @@ class Vector {
     async isNull() {
         return (this.x == 0 && this.y == 0);
     }
-    
 }
-
-export { Vector };

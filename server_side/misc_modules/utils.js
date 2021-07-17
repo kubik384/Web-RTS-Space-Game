@@ -12,4 +12,8 @@ module.exports = class Utils {
     async get_timestamp() {
         return Math.floor(Date.now()/1000);
     }
+
+    async angleToRad(angle) {
+        return angle/180 * Math.PI;
+    }
 }

@@ -1,7 +1,6 @@
 * {
     margin:0px;
 	padding:0px;
-	font-size: 0px;
 }
 
 html {
@@ -10,6 +9,15 @@ html {
 
 body {
 	height: 100%;
+	font-size: 0px;
+	overflow: hidden;
+	overflow-y: scroll;
+}
+
+body::-webkit-scrollbar {
+	display: none;
+	-ms-overflow-style: none;  /* IE and Edge */
+	scrollbar-width: none;  /* Firefox */
 }
 
 #image_holder {
@@ -24,7 +32,6 @@ body {
 
 #navbar {
 	height: 48px;
-	overflow: auto;
 	background-color: #333;
 }
 
@@ -103,9 +110,121 @@ body {
 }
 
 #map_column {
+	user-select: none;
 	width: 50% !important;
 }
 
-#assemble_fleet {
+#fleet_ui {
+	text-align: center;
+}
+
+#fleet_ui > p {
+	margin-top: 20px;
+	margin-bottom: 20px;
+}
+
+#fleet_ui p {
+	padding-top: 10px;
+}
+
+#fleet_ui input {
+	width: 60px;
+	margin-bottom: 10px;
 	font-size: 20px;
+}
+
+#fleet_ui button {
+	margin-left: 5px;
+	user-select: none;
+}
+
+#fleet_ui, #fleet_ui button, input {
+	font-size: 20px;
+}
+
+#assemble_fleet_wrapper table {
+	width: 100%;
+}
+
+#assemble_fleet_wrapper label {
+	padding-right: 5px;
+}
+
+#assemble_fleet_wrapper input {
+	width: 80px;
+}
+
+#assemble_fleet_wrapper table span {
+	cursor: pointer;
+}
+
+#assemble_fleet_wrapper > button {
+	margin-bottom: 10px;
+}
+
+#abandon_timer {
+	color: red;
+	font-weight: bold;
+	padding: 0 0 10px 0;
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	align-items: center;
+}
+
+#abandon_timer > span {
+	padding-left: 5px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+
+#abandon_timer > span > span {
+	padding-left: 5px;
+}
+
+.cancel {
+	height: 20px;
+	padding-left: 15px;
+	cursor: pointer;
+}
+
+#dialog_div {
+	font-size: 22px;
+	text-align: center;
+	position: fixed;
+	transform: translateX(-50%);
+	top: 8%;
+	left: 50%;
+	right: 0;
+	background-color: rgb(155, 155, 155);
+	z-index: 3;
+	padding: 10px;
+	max-width: 25%;
+	min-width: 350px;
+	white-space: pre-line;
+	text-align: justify;
+}
+
+#dialog_div > button {
+	font-size: 20px;
+	margin-top: 10px;
+	padding: 6px 12px;
+	margin-top: 20px;
+	background-color: rgba(255, 255, 255, 1);
+}
+
+#dialog_div > button:first-of-type {
+	margin-right: 20%;
+}
+
+#dialog_overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	z-index: 2;
+	background-color: rgba(255, 255, 255, 0);
 }
