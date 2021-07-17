@@ -144,17 +144,17 @@ class Game {
                             }
                             if (!empty_fleet) {
                                 if (this.controlled_fleet_index !== undefined) {
-                                    if (this.updates[0].fleets[this.controlled_fleet_index].engaged_fleet_id === undefined) {
-                                        utils.display_custom_confirm_dialog('Are you sure you want to abandon your other fleet? Due to technical limitations, a player can currently have only one fleet', function() {this.socket.emit('request', 'abandon_fleet');}.bind(this), function() {}, 'Abandon');
-                                    } else {
-                                        utils.display_custom_confirm_dialog('Due to technical limitations, a player can currently have only one fleet. This fleet has however entered combat and therefore cannot be abandoned right now', function() {}, function() {}, 'OK', '');
-                                    }
-                                } else {
-                                    if (this.updates[0].fleets[controlled_fleet_index].abandon_timer === undefined) {
-                                        this.socket.emit('request', e.target.id, units);
+                                    if (this.updates[0].fleets[this.controlled_fleet_index].abandon_timer === undefined) {
+                                        if (this.updates[0].fleets[this.controlled_fleet_index].engaged_fleet_id === undefined) {
+                                            utils.display_custom_confirm_dialog('Are you sure you want to abandon your other fleet? Due to technical limitations, a player can currently have only one fleet', function() {this.socket.emit('request', 'abandon_fleet');}.bind(this), function() {}, 'Abandon');
+                                        } else {
+                                            utils.display_custom_confirm_dialog('Due to technical limitations, a player can currently have only one fleet. This fleet has however entered combat and therefore cannot be abandoned right now', function() {}, function() {}, 'OK', '');
+                                        }
                                     } else {
                                         utils.display_custom_confirm_dialog('Due to technical limitations, a player can currently have only one fleet. This fleet is in proccess of being abandoned and until the proccess has finished, another fleet cannot be assembled', function() {}, function() {}, 'OK', '');
                                     }
+                                } else {
+                                    this.socket.emit('request', e.target.id, units);
                                 }
                             }
                             break;
@@ -178,60 +178,76 @@ class Game {
                             if (!empty_fleet) {
                                 if (this.controlled_fleet_index !== undefined) {
                                     if (this.updates[0].fleets[this.controlled_fleet_index].engaged_fleet_id === undefined) {
-                                        utils.display_custom_confirm_dialog('Are you sure you want to abandon your other fleet? Due to technical limitations, a player can currently have only one fleet, that includes fleets sent for expeditions.', function() {this.socket.emit('request', 'abandon_fleet');}.bind(this), function() {}, 'Abandon');
+                                        if (this.updates[0].fleets[this.controlled_fleet_index].engaged_fleet_id === undefined) {
+                                            utils.display_custom_confirm_dialog('Are you sure you want to abandon your other fleet? Due to technical limitations, a player can currently have only one fleet, that includes fleets sent on expeditions.', function() {this.socket.emit('request', 'abandon_fleet');}.bind(this), function() {}, 'Abandon');
+                                        } else {
+                                            utils.display_custom_confirm_dialog('Due to technical limitations, a player can currently have only one fleet, including fleets sent on expeditions. This fleet is in proccess of being abandoned and until the proccess has finished, another fleet cannot be assembled', function() {}, function() {}, 'OK', '');
+                                        }
+                                    } else {
+                                        utils.display_custom_confirm_dialog('Due to technical limitations, a player can currently have only one fleet, including fleets sent on expeditions. This fleet has however entered combat and therefore cannot be abandoned right now', function() {}, function() {}, 'OK', '');
                                     }
                                 } else {
-                                    if (this.updates[0].fleets[controlled_fleet_index].abandon_timer === undefined) {
-                                        var expedition_function = function(length_type) {
-                                            this.socket.emit('send_expedition', length_type);
-                                        }.bind(this);
-                                        var old_dialog = document.getElementById('dialog_div');
-                                        if (old_dialog !== null) {
-                                            old_dialog.remove();
-                                        }
-                                        var dialog_id = 'dialog_div';
-                                        var dialog_verlay_id = 'dialog_overlay';
-                                        var dialog = document.createElement('div');
-                                        dialog.setAttribute("id", dialog_id);
-                                        var dialog_overlay = document.createElement('div');
-                                        dialog_overlay.setAttribute("id", dialog_verlay_id);
-                                        dialog_overlay.addEventListener('contextmenu', function(event) {
-                                            event.preventDefault();
-                                            dialog_overlay.style.display = 'none';
-                                            var new_event = new event.constructor(event.type, event);
-                                            document.elementFromPoint(event.clientX, event.clientY).dispatchEvent(new_event);
-                                            dialog_overlay.style.display = 'block';
-                                        });
-                                        dialog_overlay.addEventListener('click', function() {
-                                            dialog.remove();
-                                            dialog_overlay.remove();
-                                        });
-                                        var dialog_question = document.createElement('h3');
-                                        dialog_question.append(`You can send an expedition fleet deep into the unexplored corners of the cosmos to search for anything worth of value that could be very difficult to find source of otherwise. However, this of course carries with it's own risks - such as encountering enemy fleets, environmental challenges and dangers and other unexpected situations. 
-                                        The longer you send the fleet out, the more time to reach deeper into the more unexplored parts of the space and access it's vast riches, but this also means more time for the fleet to encounter dangerous situations.
-                                        NOTE: Fleets sent for expeditions also count into the maximum fleet number limit`);
-                                        var dialog_confirm_button = document.createElement('button');
-                                        dialog_confirm_button.append('2h 10m');
-                                        dialog_confirm_button.addEventListener('click', function() {
-                                            expedition_function(1);
-                                        });
-                                        dialog_confirm_button_2.append('4h 45m');
-                                        dialog_confirm_button_2.addEventListener('click', function() {
-                                            expedition_function(2);
-                                        });
-                                        dialog_confirm_button_3.append('8h 30m');
-                                        dialog_confirm_button_3.addEventListener('click', function() {
-                                            expedition_function(3);
-                                        });
-                                        dialog_confirm_button_4.append('14h 00m');
-                                        dialog_confirm_button_4.addEventListener('click', function() {
-                                            expedition_function(4);
-                                        });
-                                        dialog.append(dialog_question, dialog_confirm_button, dialog_confirm_button_2, dialog_confirm_button_3, dialog_confirm_button_4);
-                                        document.body.append(dialog, dialog_overlay);
-                                    } else {
-                                        utils.display_custom_confirm_dialog('Due to technical limitations, a player can currently have only one fleet. This fleet is in proccess of being abandoned and until the proccess has finished, another fleet cannot be assembled for expedition', function() {}, function() {}, 'OK', '');
+                                    var old_dialog = document.getElementById('dialog_div');
+                                    if (old_dialog !== null) {
+                                        old_dialog.remove();
                                     }
+                                    var dialog_id = 'dialog_div';
+                                    var dialog_verlay_id = 'dialog_overlay';
+                                    var dialog = document.createElement('div');
+                                    dialog.setAttribute("id", dialog_id);
+                                    dialog.style.maxWidth = '85%';
+                                    dialog.style.width = '85%';
+                                    var dialog_overlay = document.createElement('div');
+                                    dialog_overlay.setAttribute("id", dialog_verlay_id);
+                                    dialog_overlay.addEventListener('contextmenu', function(event) {
+                                        event.preventDefault();
+                                        dialog_overlay.style.display = 'none';
+                                        var new_event = new event.constructor(event.type, event);
+                                        document.elementFromPoint(event.clientX, event.clientY).dispatchEvent(new_event);
+                                        dialog_overlay.style.display = 'block';
+                                    });
+                                    dialog_overlay.addEventListener('click', function() {
+                                        dialog.remove();
+                                        dialog_overlay.remove();
+                                    });
+                                    var expedition_function = function(length_type) {
+                                        this.socket.emit('send_expedition', units, length_type);
+                                        dialog.remove();
+                                        dialog_overlay.remove();
+                                    }.bind(this);
+                                    var dialog_question = document.createElement('p');
+                                    dialog_question.append(`You can send an expedition fleet deep into the unexplored corners of the cosmos to search for anything worth of value that could be very difficult to find a source of otherwise. However, this of course carries with it's own risks - such as encountering enemy fleets, environmental challenges and dangers and other unexpected situations.
+
+                                    The longer you send the fleet out, the more time to reach deeper into the more unexplored parts of the space and access it's vast riches, but this also means more time for the fleet to encounter dangerous situations.
+
+                                    NOTE: Fleets sent for expeditions also count into the maximum fleet number limit`);
+                                    dialog_question.style.fontSize = '24px';
+                                    var dialog_confirm_button = document.createElement('button');
+                                    dialog_confirm_button.append('2h 10m');
+                                    dialog_confirm_button.style.width = '100%';
+                                    dialog_confirm_button.addEventListener('click', function() {
+                                        expedition_function(1);
+                                    });
+                                    var dialog_confirm_button_2 = document.createElement('button');
+                                    dialog_confirm_button_2.append('4h 45m');
+                                    dialog_confirm_button_2.style.width = '100%';
+                                    dialog_confirm_button_2.addEventListener('click', function() {
+                                        expedition_function(2);
+                                    });
+                                    var dialog_confirm_button_3 = document.createElement('button');
+                                    dialog_confirm_button_3.append('8h 30m');
+                                    dialog_confirm_button_3.style.width = '100%';
+                                    dialog_confirm_button_3.addEventListener('click', function() {
+                                        expedition_function(3);
+                                    });
+                                    var dialog_confirm_button_4 = document.createElement('button');
+                                    dialog_confirm_button_4.append('14h 00m');
+                                    dialog_confirm_button_4.style.width = '100%';
+                                    dialog_confirm_button_4.addEventListener('click', function() {
+                                        expedition_function(4);
+                                    });
+                                    dialog.append(dialog_question, dialog_confirm_button, dialog_confirm_button_2, dialog_confirm_button_3, dialog_confirm_button_4);
+                                    document.body.append(dialog, dialog_overlay);
                                 }
                             }
                             break;

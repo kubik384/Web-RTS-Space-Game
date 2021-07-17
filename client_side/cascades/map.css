@@ -203,6 +203,8 @@ body::-webkit-scrollbar {
 	padding: 10px;
 	max-width: 25%;
 	min-width: 350px;
+	white-space: pre-line;
+	text-align: justify;
 }
 
 #dialog_div > button {

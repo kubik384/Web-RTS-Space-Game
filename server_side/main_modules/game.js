@@ -525,17 +525,20 @@ module.exports = class Game {
         });
     }
 
-    async assemble_fleet(username, p_units) {
+    async assemble_fleet(username, p_units, expedition_timer) {
+        var player = this.players.find(player => player.username == username);
         var player_fleet = this.fleets.find( fleet => fleet.owner == username);
         if (player_fleet === undefined) {
-            var player_planet;
-            for (var i = 0; i < this.space_objects.length; i++) {
-                if (player.space_object_id == this.space_objects[i].space_object_id) {
-                    player_planet = this.space_objects[i];
-                    break;
+            if (expedition_timer !== undefined) {
+                var player_planet;
+                for (var i = 0; i < this.space_objects.length; i++) {
+                    if (player.space_object_id == this.space_objects[i].space_object_id) {
+                        player_planet = this.space_objects[i];
+                        break;
+                    }
                 }
             }
-            if (player_planet !== undefined) {
+            if (player_planet !== undefined || expedition_timer !== undefined) {
                 var units = await this.dbManager.get_player_units(username, 'all');
                 for (var i = p_units.length - 1; i >= 0; i--) {
                     var unit_index;
@@ -562,6 +565,11 @@ module.exports = class Game {
                         }
                     }
                     var fleet = {fleet_id: this.fleet_id++, owner: username, x: player_planet.x - player_planet.width, y: player_planet.y - player_planet.height, acceleration: 0.00025, velocity: new Vector(player_planet.velocity), units: units, capacity: capacity, resources: 0};
+                    if (expedition_timer !== undefined) {
+                        var fleet = {fleet_id: this.fleet_id++, owner: username, x: 0, y: 0, acceleration: 0.00025, velocity: new Vector(player_planet.velocity), units: units, capacity: capacity, resources: 0, expedition_timer: expedition_timer};
+                    } else {
+                        var fleet = {fleet_id: this.fleet_id++, owner: username, x: player_planet.x - player_planet.width, y: player_planet.y - player_planet.height, acceleration: 0.00025, velocity: new Vector(player_planet.velocity), units: units, capacity: capacity, resources: 0};
+                    }
                     this.fleets.push(fleet);
                 }
             }
@@ -593,7 +601,7 @@ module.exports = class Game {
     async set_movepoint(socket_id, x, y) {
         var username = this.players.find( player => player.socket.id == socket_id ).username;
         var player_fleet = this.fleets.find( fleet => fleet.owner == username );
-        if (player_fleet !== undefined && player_fleet.abandon_timer === undefined && player_fleet.engaged_fleet_id === undefined) {
+        if (player_fleet !== undefined && player_fleet.abandon_timer === undefined && player_fleet.engaged_fleet_id === undefined && player_fleet.expedition_timer === undefined) {
             player_fleet.move_point = {x:x, y:y};
             player_fleet.assigned_object_id = undefined;
             player_fleet.assigned_object_type = undefined;
@@ -753,7 +761,7 @@ module.exports = class Game {
     async assign_fleet(socket_id, p_object_type, object_id) {
         var username = this.players.find( player => player.socket.id == socket_id ).username;
         var player_fleet = this.fleets.find( fleet => fleet.owner == username );
-        if (player_fleet !== undefined && player_fleet.abandon_timer === undefined && player_fleet.engaged_fleet_id === undefined) {
+        if (player_fleet !== undefined && player_fleet.abandon_timer === undefined && player_fleet.engaged_fleet_id === undefined && player_fleet.expedition_timer === undefined) {
             var valid_object_types = ['space_object', 'fleet'];
             if (p_object_type !== undefined && typeof p_object_type == 'string' && valid_object_types.includes(p_object_type)) {
                 if (object_id !== undefined && typeof object_id == 'number' && object_id >= 0) {
@@ -853,6 +861,30 @@ module.exports = class Game {
                 this.fleets.splice(fleet_index, 1);
             }
         }
+    }
+
+    async send_expedition(socket_id, units, length_type) {
+        if (length_type !== undefined)
+            var player = this.players.find(player => player.socket.id == socket_id);
+            var player_fleet = this.fleets.find( fleet => fleet.owner == player.username );
+            if (player_fleet === undefined) {
+                var expedition_timer;
+                switch (length_type) {
+                    case 1:
+                        expedition_timer = 7800000;
+                        break;
+                    case 2:
+                        expedition_timer = 17100000;
+                        break;
+                    case 3:
+                        expedition_timer = 36000000;
+                        break;
+                    case 4:
+                        expedition_timer = 50400000;
+                        break;
+                }
+                this.assemble_fleet(player.username, units, expedition_timer);
+            }
     }
 
     async stop() {

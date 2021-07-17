@@ -217,6 +217,10 @@ io.on('connection', socket => {
 		game.assign_fleet(socket.id, object_type, object_id);
 	});
 
+	socket.on('send_expedition', (units, length_type) => {
+		game.send_expedition(socket.id, units, length_type);
+	});
+
 	socket.on('disconnect', () => {
 		//doing this "logs out" the user every time they try to switch pages (e.g. go from planet to map - causes disconnect and is removed from the tokens, which causes them to end up the next time on the login page)
 		//tokens.splice(tokens.findIndex(token => token == socketTable[socket.id]), 1);
