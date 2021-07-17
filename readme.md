@@ -6,6 +6,9 @@ Installed all dependancies (use 'npm install' command)
 To start the server, start the MySQL server (wamp), then use script start ('npm start')
 MySQL will most likely require a certain databse with set tables, etc.
 
+Use the following parameter order for passing command line arguments:
+1 - string: the path to the save file from the root directory (e.g. server_side/save_files/save.txt)
+
 
 
 *Was trying to use MariaDB, but found out it way too complicated for me to establish a connection with the db server alone. Searching for any type of general advice or already answered similar/same issue proved futile. The database does not seem to be very popular among/friendly to amateurs/beginner programmers

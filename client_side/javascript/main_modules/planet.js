@@ -121,7 +121,7 @@ class Game {
             units_table_html += `
             <tr>
                 <td>
-                    <img src="/client_side/images/units/${this.units[i].name}.png" height="20px"></img>
+                    <img src="/client_side/images/units/${this.units[i].name}.png"></img>
                 </td>
                 <td id="unit_count_${this.units[i].unit_id}" class="unit_cell">
                     <span>${this.units[i].count}</span>

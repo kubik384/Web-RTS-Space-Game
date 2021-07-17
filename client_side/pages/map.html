@@ -9,23 +9,24 @@
 		<script type="module" src="/client_side/javascript/map_init.js"></script>
 	</head>
 	<body>
-		<div id='image_holder'>
-			<img src='/client_side/images/canvas/planet2.png' id='planet2'></img>
-			<img src='/client_side/images/canvas/star.png' id='star'></img>
-			<img src='/client_side/images/canvas/galaxy1.png' id='galaxy1'></img>
+		<div id="image_holder">
+			<img src="/client_side/images/canvas/planet2.png" id="planet2"></img>
+			<img src="/client_side/images/canvas/asteroid.png" id="asteroid"></img>
+			<img src="/client_side/images/canvas/star.png" id="star"></img>
+			<img src="/client_side/images/canvas/galaxy1.png" id="galaxy1"></img>
 		</div>
-		<div id='container'>
-			<div id='navbar'>
-				<a href='/game/planet'>Planet</a>
+		<div id="container">
+			<div id="navbar">
+				<a href="/game/planet">Planet</a>
 				<div id="dropdown_select">
 					<button id="dropdown_btn">Map</button>
 					<div id="dropdown_menu">
-						<a href='/game/map?layout=system'>System</a>
-						<a href='/game/map?layout=galaxy'>Galaxy</a>
+						<a href="/game/map?layout=system">System</a>
+						<a href="/game/map?layout=galaxy">Galaxy</a>
 					</div>
 				</div> 
-				<a href='/game/message'>Messages</a>
-				<a href='/game/research'>Research</a>
+				<a href="/game/message">Messages</a>
+				<a href="/game/research">Research</a>
 			</div>
 			<table id="layout_table">
 				<tbody>
@@ -33,13 +34,38 @@
 						<td>
 						</td>
 						<td id="map_column">
-							<div id='map_container'>
-								<canvas id='map'></canvas>
+							<div id="map_container">
+								<canvas id="map"></canvas>
 							</div>
 						</td>
 						<td>
-							<div id='fleet_ui'>
-								<button id="assemble_fleet">Assemble a fleet</button>
+							<div id="fleet_ui">
+								<div id="ui_controls">
+									<div id="assemble_fleet_wrapper">
+										<button id="assemble_fleet">Assemble a fleet</button>
+										<table id='available_units_table'>
+										</table>
+										<button id="send_expedition">Send an Expedition</button>
+									</div>
+								</div>
+								<p>-----Debugging tools-----</p>
+								<div>
+									<p>Time flow</p>
+									<button id="+">Increase</button>
+									<button id="-">Decrease</button>
+									<button id="=">Restart</button>
+									<p>Move point</p>
+									<button id="cancel">Cancel</button>
+									<p>Switch</p>
+									<label for="space_object_id">Space Object ID to switch to </label>
+									<input type="number" id="space_object_id" name="space_object_id"></input>
+									<button id="switch_space_object">Space Object ID</button>
+									<p>Generate</p>
+									<button id="generate_system">System</button>
+									<button id="generate_asteroid">Asteroid</button>
+									<p>Restart</p>
+									<button id="restart">Server</button>
+								</div>
 							</div>
 						</td>
 					</tr>
