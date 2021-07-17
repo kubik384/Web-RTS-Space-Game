@@ -45,39 +45,35 @@ class Utils {
         dialog.setAttribute("id", dialog_id);
         var dialog_overlay = document.createElement('div');
         dialog_overlay.setAttribute("id", dialog_verlay_id);
-        var confirm_function = function() {
-            dialog.remove();
-            dialog_overlay.remove();
-            confirm_callback();
-        }
-        var reject_function = function() {
-            dialog.remove();
-            dialog_overlay.remove();
-            reject_callback();
-        }
-        var contextmenu_function = function(event) {
+        dialog_overlay.addEventListener('contextmenu', function(event) {
             event.preventDefault();
             dialog_overlay.style.display = 'none';
             var new_event = new event.constructor(event.type, event);
             document.elementFromPoint(event.clientX, event.clientY).dispatchEvent(new_event);
             dialog_overlay.style.display = 'block';
-        }
-        var click_function = function() {
+        });
+        dialog_overlay.addEventListener('click', function() {
             dialog.remove();
             dialog_overlay.remove();
-        }
-        dialog_overlay.addEventListener('contextmenu', contextmenu_function);
-        dialog_overlay.addEventListener('click', click_function);
+        });
         var dialog_question = document.createElement('h3');
         dialog_question.append(question);
         var dialog_confirm_button = document.createElement('button');
         dialog_confirm_button.append(confirm_text);
-        dialog_confirm_button.onclick = confirm_function;
+        dialog_confirm_button.addEventListener('click', function() {
+            dialog.remove();
+            dialog_overlay.remove();
+            confirm_callback();
+        });
         dialog.append(dialog_question, dialog_confirm_button);
         if (reject_text !== '') {
             var dialog_cancel_button =  document.createElement('button');
             dialog_cancel_button.append(reject_text);
-            dialog_cancel_button.onclick = reject_function;
+            dialog_cancel_button.addEventListener('click', function() {
+                dialog.remove();
+                dialog_overlay.remove();
+                reject_callback();
+            });
             dialog.append(dialog_cancel_button);
         } else {
             dialog_confirm_button.style.marginRight = '0px';

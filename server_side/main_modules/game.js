@@ -525,9 +525,8 @@ module.exports = class Game {
         });
     }
 
-    async assemble_fleet(socket_id, p_units, abandon) {
-        var player = this.players.find( player => player.socket.id == socket_id );
-        var player_fleet = this.fleets.find( fleet => fleet.owner == player.username);
+    async assemble_fleet(username, p_units) {
+        var player_fleet = this.fleets.find( fleet => fleet.owner == username);
         if (player_fleet === undefined) {
             var player_planet;
             for (var i = 0; i < this.space_objects.length; i++) {
@@ -537,7 +536,7 @@ module.exports = class Game {
                 }
             }
             if (player_planet !== undefined) {
-                var units = await this.dbManager.get_player_units(player.username, 'all');
+                var units = await this.dbManager.get_player_units(username, 'all');
                 for (var i = p_units.length - 1; i >= 0; i--) {
                     var unit_index;
                     if (units[i].unit_id != p_units[i].unit_id) {
@@ -562,14 +561,16 @@ module.exports = class Game {
                             capacity += unit_details[i].capacity * units[i].count;
                         }
                     }
-                    var fleet = {fleet_id: this.fleet_id++, owner: player.username, x: player_planet.x - player_planet.width, y: player_planet.y - player_planet.height, acceleration: 0.00025, velocity: new Vector(player_planet.velocity), units: units, capacity: capacity, resources: 0};
-
-                    if (!abandon) {
-                        this.fleets.push(fleet);
-                    }
+                    var fleet = {fleet_id: this.fleet_id++, owner: username, x: player_planet.x - player_planet.width, y: player_planet.y - player_planet.height, acceleration: 0.00025, velocity: new Vector(player_planet.velocity), units: units, capacity: capacity, resources: 0};
+                    this.fleets.push(fleet);
                 }
             }
-        } else {
+        }
+    }
+
+    async abandon_fleet(username) {
+        var player_fleet = this.fleets.find( fleet => fleet.owner == username);
+        if (player_fleet !== undefined) {
             if (abandon && player_fleet.abandon_timer === undefined && player_fleet.engaged_fleet_id === undefined) {
                 player_fleet.assigned_object_type = undefined;
                 player_fleet.assigned_object_id = undefined;
@@ -702,8 +703,10 @@ module.exports = class Game {
             if (!this.updating) {
                 switch(request_id) {
                     case 'assemble_fleet':
-                        this.assemble_fleet(socket.id, passed_args[0], passed_args[1]);
+                        this.assemble_fleet(username, passed_args[0]);
                         break;
+                    case 'abandon_fleet':
+                        this.abandon_fleet(username);
                     case '=':
                         this.tick_offset = 0;
                         break;
