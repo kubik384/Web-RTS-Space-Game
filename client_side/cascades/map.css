@@ -204,7 +204,8 @@ body::-webkit-scrollbar {
 	max-width: 25%;
 	min-width: 350px;
 	white-space: pre-line;
-	text-align: justify;
+	border: 2px solid black;
+	box-shadow: 2px 2px 10px black;
 }
 
 #dialog_div > button {

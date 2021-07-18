@@ -197,6 +197,7 @@ class Game {
                                     dialog.setAttribute("id", dialog_id);
                                     dialog.style.maxWidth = '85%';
                                     dialog.style.width = '85%';
+                                    dialog.style.textAlign = 'justify';
                                     var dialog_overlay = document.createElement('div');
                                     dialog_overlay.setAttribute("id", dialog_verlay_id);
                                     dialog_overlay.addEventListener('contextmenu', function(event) {
@@ -216,7 +217,7 @@ class Game {
                                         dialog_overlay.remove();
                                     }.bind(this);
                                     var dialog_question = document.createElement('p');
-                                    dialog_question.append(`You can send an expedition fleet deep into the unexplored corners of the cosmos to search for anything worth of value that could be very difficult to find a source of otherwise. However, this of course carries with it's own risks - such as encountering enemy fleets, environmental challenges and dangers and other unexpected situations.
+                                    dialog_question.append(`You can send an expedition fleet deep into the unexplored corners of the cosmos to search for anything worth of value that could be very difficult to find a source of otherwise. However, this of course carries it's own risks - such as encountering enemy fleets, environmental challenges and dangers and other unexpected situations.
 
                                     The longer you send the fleet out, the more time to reach deeper into the more unexplored parts of the space and access it's vast riches, but this also means more time for the fleet to encounter dangerous situations.
 
@@ -263,7 +264,7 @@ class Game {
 
             document.getElementById('map').addEventListener('contextmenu', e => { 
                 e.preventDefault();
-                if (this.controlled_fleet_index !== undefined && this.updates[0].fleets[this.controlled_fleet_index].engaged_fleet_id === undefined && this.updates[0].fleets[this.controlled_fleet_index].abandon_timer === undefined) {
+                if (this.controlled_fleet_index !== undefined && this.updates[0].fleets[this.controlled_fleet_index].engaged_fleet_id === undefined && this.updates[0].fleets[this.controlled_fleet_index].abandon_timer === undefined && this.updates[0].fleets[this.controlled_fleet_index].expedition_timer === undefined) {
                     const rect = this.map_canvas.getBoundingClientRect();
                     var x = e.clientX - this.xOffset - rect.left - this.map_canvas_border;
                     var y = e.clientY - this.yOffset - rect.top - this.map_canvas_border;
@@ -429,29 +430,31 @@ class Game {
             }
             var fleets = update.fleets;
             for (var i = 0; i < fleets.length; i++) {
-                var x_position = ((fleets[i].x - fleets[i].last_x) * be_interpolation_coefficient + fleets[i].last_x);
-                var y_position = ((fleets[i].y - fleets[i].last_y) * be_interpolation_coefficient + fleets[i].last_y);
-                this.map_ctx.save();
-                this.map_ctx.translate(this.xOffset, this.yOffset);
-                this.map_ctx.beginPath();
-                if (fleets[i].abandoned === undefined) {
-                    this.map_ctx.fillStyle = "red";
-                } else {
-                    this.map_ctx.fillStyle = "gray";
-                }
-                this.map_ctx.rect(x_position  * this.zoom - 2 * this.zoom, y_position  * this.zoom - 2 * this.zoom, 4 * this.zoom, 4 * this.zoom);
-                this.map_ctx.fill();
-                this.map_ctx.restore();
-
-                if (fleets[i].move_point !== undefined) {
+                if (fleets[i].expedition_timer === undefined) {
+                    var x_position = ((fleets[i].x - fleets[i].last_x) * be_interpolation_coefficient + fleets[i].last_x);
+                    var y_position = ((fleets[i].y - fleets[i].last_y) * be_interpolation_coefficient + fleets[i].last_y);
                     this.map_ctx.save();
                     this.map_ctx.translate(this.xOffset, this.yOffset);
                     this.map_ctx.beginPath();
-                    this.map_ctx.moveTo(x_position * this.zoom, y_position * this.zoom);
-                    this.map_ctx.lineTo(fleets[i].move_point.x * this.zoom, fleets[i].move_point.y * this.zoom);
-                    this.map_ctx.strokeStyle = "red";
-                    this.map_ctx.stroke();
+                    if (fleets[i].abandoned === undefined) {
+                        this.map_ctx.fillStyle = "red";
+                    } else {
+                        this.map_ctx.fillStyle = "gray";
+                    }
+                    this.map_ctx.rect(x_position  * this.zoom - 2 * this.zoom, y_position  * this.zoom - 2 * this.zoom, 4 * this.zoom, 4 * this.zoom);
+                    this.map_ctx.fill();
                     this.map_ctx.restore();
+
+                    if (fleets[i].move_point !== undefined) {
+                        this.map_ctx.save();
+                        this.map_ctx.translate(this.xOffset, this.yOffset);
+                        this.map_ctx.beginPath();
+                        this.map_ctx.moveTo(x_position * this.zoom, y_position * this.zoom);
+                        this.map_ctx.lineTo(fleets[i].move_point.x * this.zoom, fleets[i].move_point.y * this.zoom);
+                        this.map_ctx.strokeStyle = "red";
+                        this.map_ctx.stroke();
+                        this.map_ctx.restore();
+                    }
                 }
             }
             this.map_ctx.save();
@@ -588,6 +591,7 @@ class Game {
                 fleets[i].last_x = fleets[i].x;
                 fleets[i].last_y = fleets[i].y;
                 fleets[i].abandoned = updated_fleets[i].abandoned;
+                fleets[i].expedition_timer = updated_fleets[i].expedition_timer;
                 fleets[i].x = updated_fleets[i].x;
                 fleets[i].y = updated_fleets[i].y;
                 /* Velocity is not currently used anywhere anyway
