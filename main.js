@@ -17,6 +17,7 @@ const saltRounds = 10;
 const gameURL = '/game';
 const planetURL = gameURL + '/planet';
 const mapURL = gameURL + '/map';
+const reportURL = gameURL + '/report';
 const messageURL = gameURL + '/message';
 const researchURL = gameURL + '/research';
 var dbManager = new DbManager();
@@ -141,6 +142,19 @@ app.get(researchURL, function(req,res) {
 	}
 });
 
+app.get(reportURL, function(req,res) {
+	if (req.cookies.token !== undefined) {
+		if (tokens.findIndex(token => token == req.cookies.token) != -1) {
+			res.sendFile(path.join(root + '/client_side', 'pages/report.html'));
+		} else {
+			res.clearCookie('token');
+			res.redirect(303, '/');
+		}
+	} else {
+		res.redirect(303, '/');
+	}
+});
+
 app.use(function(req, res){
 	res.redirect('/');
 });
@@ -219,6 +233,11 @@ io.on('connection', socket => {
 
 	socket.on('send_expedition', (units, length_type) => {
 		game.send_expedition(socket.id, units, length_type);
+	});
+
+	socket.on('report_datapack_request', token => {
+		socketTable[socket.id] = token;
+		dbManager.get_report_datapack(token).then(datapack => { socket.emit('report_datapack', JSON.stringify(datapack)); });
 	});
 
 	socket.on('disconnect', () => {

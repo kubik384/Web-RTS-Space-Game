@@ -18,6 +18,7 @@ class Game {
 
     async setup_game(p_datapack) {
         var datapack = JSON.parse(p_datapack);
+        this.new_reports_count = datapack.new_reports_count;
         console.log(datapack);
 
         this.resources = datapack.resources;

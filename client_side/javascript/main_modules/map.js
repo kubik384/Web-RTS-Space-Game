@@ -16,6 +16,7 @@ class Game {
         this.tick_time = 50;
         this.tick_fe_time_passed;
         this.zoom = 0.025;
+        this.new_reports_count = 0;
 
         this.xOffset = 0;
         this.yOffset = 0;
@@ -38,43 +39,52 @@ class Game {
 
     async setup_game(p_datapack) {
         var datapack = JSON.parse(p_datapack);
+        console.log(datapack);
+        this.new_reports_count = datapack.new_reports_count;
+        if (this.new_reports_count !== 0) {
+            var new_reports_count_div = document.getElementById('new_report_count');
+            new_reports_count_div.textContent = '(' + this.new_reports_count + ')';
+            new_reports_count_div.setAttribute('style', 'display: block');
+        }
         this.updates = [{}];
         if (this.layout === 'system') {
             this.last_fe_tick = datapack.last_update;
             this.updates[0].tick_timestamp = datapack.last_update;
             this.updates[0].tick_be_time_passed = datapack.time_passed;
             this.boundaries = datapack.boundaries;
-            this.available_units = datapack.available_units;
-            var assemble_fleet_table = document.getElementById('available_units_table');
-            var disable_button = true;
-            for (var i = 0; i < this.available_units.length; i++) {
-                if (this.available_units[i].count > 0) {
-                    disable_button = false;
-                    var row = assemble_fleet_table.insertRow();
-                    var unit_label_cell = row.insertCell();
-                    var unit_input_cell = row.insertCell();
-                    var unit_count = row.insertCell();
-                    
-                    var unit_name_label = document.createElement('label');
-                    unit_name_label.append(this.available_units[i].name);
-                    unit_label_cell.append(unit_name_label);
-                    var unit_number_input = document.createElement('input');
-                    unit_number_input.setAttribute("type", "number");
-                    unit_number_input.classList.add('game_unit');
-                    unit_number_input.setAttribute("id", 'unit_id_' + this.available_units[i].unit_id);
-                    unit_number_input.placeholder = 0;
-                    unit_input_cell.append(unit_number_input);
-                    var unit_number_input = document.createElement('span');
-                    unit_number_input.append('(' + this.available_units[i].count + ')');
-                    unit_number_input.setAttribute("data-input_id", this.available_units[i].unit_id);
-                    unit_number_input.addEventListener('click', function() {
-                        document.getElementById('unit_id_' + this.dataset.input_id).value = +this.textContent.substr(1, this.textContent.length-2)
-                    });
-                    unit_count.append(unit_number_input);
+            if (this.map_canvas === undefined) {
+                this.available_units = datapack.available_units;
+                var assemble_fleet_table = document.getElementById('available_units_table');
+                var disable_button = true;
+                for (var i = 0; i < this.available_units.length; i++) {
+                    if (this.available_units[i].count > 0) {
+                        disable_button = false;
+                        var row = assemble_fleet_table.insertRow();
+                        var unit_label_cell = row.insertCell();
+                        var unit_input_cell = row.insertCell();
+                        var unit_count = row.insertCell();
+                        
+                        var unit_name_label = document.createElement('label');
+                        unit_name_label.append(this.available_units[i].name);
+                        unit_label_cell.append(unit_name_label);
+                        var unit_number_input = document.createElement('input');
+                        unit_number_input.setAttribute("type", "number");
+                        unit_number_input.classList.add('game_unit');
+                        unit_number_input.setAttribute("id", 'unit_id_' + this.available_units[i].unit_id);
+                        unit_number_input.placeholder = 0;
+                        unit_input_cell.append(unit_number_input);
+                        var unit_number_input = document.createElement('span');
+                        unit_number_input.append('(' + this.available_units[i].count + ')');
+                        unit_number_input.setAttribute("data-input_id", this.available_units[i].unit_id);
+                        unit_number_input.addEventListener('click', function() {
+                            document.getElementById('unit_id_' + this.dataset.input_id).value = +this.textContent.substr(1, this.textContent.length-2)
+                        });
+                        unit_count.append(unit_number_input);
+                    }
                 }
-            }
-            if (disable_button) {
-                document.getElementById('assemble_fleet').disabled = true;
+                if (disable_button) {
+                    document.getElementById('assemble_fleet').disabled = true;
+                }
             }
             var space_objects = datapack.space_objects;
             for (var i = 0; i < space_objects.length; i++) {

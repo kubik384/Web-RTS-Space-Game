@@ -532,7 +532,7 @@ module.exports = class Game {
         });
     }
 
-    async assemble_fleet(username, p_units, expedition_timer, expedition_type) {
+    async assemble_fleet(username, p_units, expedition_timer, expedition_length_id) {
         var player = this.players.find(player => player.username == username);
         var player_fleet = this.fleets.find( fleet => fleet.owner == username);
         if (player_fleet === undefined) {
@@ -573,7 +573,7 @@ module.exports = class Game {
                     }
                     var fleet = {fleet_id: this.fleet_id++, owner: username, x: player_planet.x - player_planet.width, y: player_planet.y - player_planet.height, acceleration: 0.00025, velocity: new Vector(player_planet.velocity), units: units, capacity: capacity, resources: 0};
                     if (expedition_timer !== undefined) {
-                        var fleet = {fleet_id: this.fleet_id++, owner: username, x: 0, y: 0, acceleration: 0.00025, velocity: new Vector(player_planet.velocity), units: units, capacity: capacity, resources: 0, expedition_timer: expedition_timer, expedition_type: expedition_type};
+                        var fleet = {fleet_id: this.fleet_id++, owner: username, x: 0, y: 0, acceleration: 0.00025, velocity: new Vector(player_planet.velocity), units: units, capacity: capacity, resources: 0, expedition_timer: expedition_timer, expedition_length_id: expedition_length_id};
                     } else {
                         var fleet = {fleet_id: this.fleet_id++, owner: username, x: player_planet.x - player_planet.width, y: player_planet.y - player_planet.height, acceleration: 0.00025, velocity: new Vector(player_planet.velocity), units: units, capacity: capacity, resources: 0};
                     }
@@ -657,7 +657,8 @@ module.exports = class Game {
                                     fleets.push({fleet_id: this.fleets[j].fleet_id, x: this.fleets[j].x, y: this.fleets[j].y, abandoned: this.fleets[j].abandoned});
                                 }
                             }
-                            resolve({home_planet_id: this.players[i].space_object_id, space_objects: this.space_objects, fleets: fleets, last_update: this.last_tick, time_passed: this.time_passed, boundaries: this.boundaries, available_units: units});
+                            var new_reports_count =  await this.dbManager.get_new_reports_count(this.players[i].username);
+                            resolve({home_planet_id: this.players[i].space_object_id, space_objects: this.space_objects, fleets: fleets, last_update: this.last_tick, time_passed: this.time_passed, boundaries: this.boundaries, available_units: units, new_reports_count: new_reports_count});
                             return;
                         }
                     }
@@ -870,15 +871,15 @@ module.exports = class Game {
         }
     }
 
-    async send_expedition(socket_id, units, length_type) {
-        if (length_type !== undefined) {
+    async send_expedition(socket_id, units, expedition_length_id) {
+        if (expedition_length_id !== undefined) {
             var player = this.players.find(player => player.socket.id == socket_id);
             var player_fleet = this.fleets.find( fleet => fleet.owner == player.username );
             if (player_fleet === undefined) {
                 var expedition_timer;
-                switch (length_type) {
+                switch (expedition_length_id) {
                     case 1:
-                        expedition_timer = 7800000;
+                        expedition_timer = 100;
                         break;
                     case 2:
                         expedition_timer = 17100000;
@@ -890,7 +891,7 @@ module.exports = class Game {
                         expedition_timer = 50400000;
                         break;
                 }
-                this.assemble_fleet(player.username, units, expedition_timer, expedition_type);
+                this.assemble_fleet(player.username, units, expedition_timer, expedition_length_id);
             }
         }
     }
@@ -898,7 +899,7 @@ module.exports = class Game {
     async resolve_expedition(fleet) {
         fleet.expedition_timer = undefined;
         var result_type = Math.random();
-        switch (fleet.expedition_type) {
+        switch (fleet.expedition_length_id) {
             case 1: 
             result_type = Math.floor(result_type * 8);
                 break;
@@ -917,7 +918,7 @@ module.exports = class Game {
         switch (result_type) {
             case 0:
                 //found abandoned ships
-                var fighters = fleet.units.find(unit => unit_id == 1);
+                var fighters = fleet.units.find(unit => unit.unit_id == 1);
                 fighters.count += 10 + Math.random() * 91;
                 break;
             case 1:
@@ -970,8 +971,9 @@ module.exports = class Game {
 
             //bind the expedition results to tech tree? certain techs make certain outcomes more or less likely (or impossible)?//a booby trapped abandoned fleet - explosion
         }
-        var result_text = expedition_results[result_type[Math.floor(Math.random() * expedition_results[result_type].length)]];
-        fleet.expedition_type = undefined;
+        var result_text = expedition_results[result_type][Math.floor(Math.random() * expedition_results[result_type].length)];
+        this.dbManager.save_report(fleet.owner, 'Expedition Result', result_text, await utils.get_timestamp());
+        fleet.expedition_length_id = undefined;
     }
 
     async stop() {
