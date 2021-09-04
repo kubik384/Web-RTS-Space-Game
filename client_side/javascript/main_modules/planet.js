@@ -1,10 +1,12 @@
 "use strict"
 
 import { Utils } from '../misc_modules/utils.js';
+import { Base_Page } from './base_page.js';
 var utils = new Utils();
 
-class Game {
+class Game extends Base_Page {
     constructor(socket) {
+        super();
         this.socket = socket;
         this.lastUpdateTime;
         this.updateLoop;
@@ -20,6 +22,7 @@ class Game {
         var datapack = JSON.parse(p_datapack);
         this.new_reports_count = datapack.new_reports_count;
         console.log(datapack);
+        super.setup_page(datapack);
 
         this.resources = datapack.resources;
         var resource_building_ui_html = '<table id="resource_table"><tbody>';

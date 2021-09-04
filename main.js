@@ -240,6 +240,19 @@ io.on('connection', socket => {
 		dbManager.get_report_datapack(token).then(datapack => { socket.emit('report_datapack', JSON.stringify(datapack)); });
 	});
 
+	socket.on('load_report', report_id => {
+		dbManager.get_report_details(report_id).then(report_details => { socket.emit('report_details', JSON.stringify(report_details)); });
+	});
+
+	socket.on('reports_displayed', timestamp => {
+		var token = socketTable[socket.id];
+		dbManager.mark_reports_displayed(token, timestamp);
+	});
+
+	socket.on('report_read', report_id => {
+		dbManager.mark_report_displayed(report_id);
+	});
+
 	socket.on('disconnect', () => {
 		//doing this "logs out" the user every time they try to switch pages (e.g. go from planet to map - causes disconnect and is removed from the tokens, which causes them to end up the next time on the login page)
 		//tokens.splice(tokens.findIndex(token => token == socketTable[socket.id]), 1);

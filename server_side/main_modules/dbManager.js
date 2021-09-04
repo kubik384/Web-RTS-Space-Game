@@ -502,6 +502,30 @@ module.exports = class DbManager {
         WHERE p.username = ?
         ORDER BY pr.timestamp
         LIMIT 25`;
-        return ((await this.execute_query(query, [username])));
+        var newest_reports = await this.execute_query(query, [username][0]);
+        var new_reports_count =  await this.get_new_reports_count(username);
+        return {reports: newest_reports, new_reports_count: new_reports_count};
+    }
+
+    async get_report_details(report_id) {
+        var query = `SELECT report_id, title, text, timestamp
+        FROM player_reports
+        WHERE report_id = ?`;
+        return ((await this.execute_query(query, [report_id]))[0]);
+    }
+
+    async mark_reports_displayed(username, timestamp) {
+        var query = `UPDATE player_reports pr
+        INNER JOIN players p ON p.player_id = pr.player_id
+        SET gotDisplayed = 1
+        WHERE p.username = ? AND pr.gotDisplayed = 0 AND pr.timestamp <= ?`;
+        return this.execute_query(query, [username, timestamp]);
+    }
+
+    async mark_report_displayed(report_id) {
+        var query = `UPDATE player_reports
+        SET isRead = 1
+        WHERE report_id = ?`;
+        return this.execute_query(query, [report_id]);
     }
 }

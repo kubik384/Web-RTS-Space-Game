@@ -2,10 +2,12 @@
 
 import { Utils } from '../misc_modules/utils.js';
 import { Vector } from '../misc_modules/vector.js';
+import { Base_Page } from './base_page.js';
 var utils = new Utils();
 
-class Game {
+class Game extends Base_Page {
     constructor(socket) {
+        super();
         this.socket = socket;
         this.map_canvas;
         this.map_canvas_border;
@@ -40,12 +42,7 @@ class Game {
     async setup_game(p_datapack) {
         var datapack = JSON.parse(p_datapack);
         console.log(datapack);
-        this.new_reports_count = datapack.new_reports_count;
-        if (this.new_reports_count !== 0) {
-            var new_reports_count_div = document.getElementById('new_report_count');
-            new_reports_count_div.textContent = '(' + this.new_reports_count + ')';
-            new_reports_count_div.setAttribute('style', 'display: block');
-        }
+        super.setup_page(datapack);
         this.updates = [{}];
         if (this.layout === 'system') {
             this.last_fe_tick = datapack.last_update;
@@ -197,19 +194,21 @@ class Game {
                                         utils.display_custom_confirm_dialog('Due to technical limitations, a player can currently have only one fleet, including fleets sent on expeditions. This fleet has however entered combat and therefore cannot be abandoned right now', function() {}, function() {}, 'OK', '');
                                     }
                                 } else {
-                                    var old_dialog = document.getElementById('dialog_div');
-                                    if (old_dialog !== null) {
-                                        old_dialog.remove();
-                                    }
                                     var dialog_id = 'dialog_div';
-                                    var dialog_verlay_id = 'dialog_overlay';
+                                    var dialog_overlay_id = 'dialog_overlay';
+                                    var old_dialog = document.getElementById(dialog_id);
+                                    if (old_dialog !== null) {
+                                        var old_overlay = document.getElementById(dialog_overlay_id);
+                                        old_dialog.remove();
+                                        old_overlay.remove();
+                                    }
                                     var dialog = document.createElement('div');
                                     dialog.setAttribute("id", dialog_id);
                                     dialog.style.maxWidth = '85%';
                                     dialog.style.width = '85%';
                                     dialog.style.textAlign = 'justify';
                                     var dialog_overlay = document.createElement('div');
-                                    dialog_overlay.setAttribute("id", dialog_verlay_id);
+                                    dialog_overlay.setAttribute("id", dialog_overlay_id);
                                     dialog_overlay.addEventListener('contextmenu', function(event) {
                                         event.preventDefault();
                                         dialog_overlay.style.display = 'none';

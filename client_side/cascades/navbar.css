@@ -1,0 +1,8 @@
+#new_report_count {
+	padding: 0px 2px;
+	font-size: 18px;
+	position: fixed;
+	color: black;
+	background-color: red;
+	transform: translateX(-50%);
+}

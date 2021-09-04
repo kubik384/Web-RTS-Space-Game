@@ -4,14 +4,14 @@ import { Game } from './main_modules/report.js';
 
 var socket = io();
 var game = new Game(socket);
-game.request_data();
+game.request_datapack();
 
 //socket events
-socket.on('message', game.process_incoming_message);
 socket.on('report_datapack', game.save_reports.bind(game));
+socket.on('report_details', game.load_report.bind(game));
 
 async function start() {
-	game.setup_game();
+	game.display_reports();
 	document.removeEventListener('DOMContentLoaded', start);
 }
 
