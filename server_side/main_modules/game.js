@@ -447,7 +447,7 @@ module.exports = class Game {
                     } else if (this.fleets[i].fighting_cooldown !== undefined) {
                         this.fleets[i].fighting_cooldown -= this.time_passed;
                         if (this.fleets[i].fighting_cooldown <= 0) {
-                            await this.calculate_round(this.fleets[i]);
+                            await this.execute_fight(this.fleets[i], timestamp);
                         }
                     }
                 }
@@ -536,8 +536,8 @@ module.exports = class Game {
         var player = this.players.find(player => player.username == username);
         var player_fleet = this.fleets.find( fleet => fleet.owner == username);
         if (player_fleet === undefined) {
-            if (expedition_timer !== undefined) {
-                var player_planet;
+            var player_planet;
+            if (expedition_timer === undefined) {
                 for (var i = 0; i < this.space_objects.length; i++) {
                     if (player.space_object_id == this.space_objects[i].space_object_id) {
                         player_planet = this.space_objects[i];
@@ -545,7 +545,7 @@ module.exports = class Game {
                     }
                 }
             }
-            if (player_planet !== undefined || expedition_timer !== undefined) {
+            if (player_planet !== undefined && expedition_timer === undefined) {
                 var units = await this.dbManager.get_player_units(username, 'all');
                 for (var i = p_units.length - 1; i >= 0; i--) {
                     var unit_index;
@@ -784,7 +784,8 @@ module.exports = class Game {
         }
     }
 
-    async calculate_round(fleet) {
+    async execute_fight(fleet, timestamp) {
+        timestamp = Math.floor(timestamp/1000);
         var unit_details = await this.dbManager.get_unit_details('all');
         var opposing_fleet_index = this.fleets.findIndex(opposing_fleet => opposing_fleet.fleet_id == fleet.engaged_fleet_id);
         var opposing_fleet = this.fleets[opposing_fleet_index];
@@ -818,11 +819,13 @@ module.exports = class Game {
         }
         
         var round_count = 1;
+        var rounds_text = '';
+        //once calculated for each unit, when a unit's shield has been completely broken, make it's recharge rate slower
         while (hull > 0 && opponents_hull > 0) {
             var round_damage = damage;
-            var round_shield = shield/round_count;
+            var round_shield = shield;
             var opponents_round_damage = opponents_damage;
-            var opponents_round_shield = opponents_shield/round_count;
+            var opponents_round_shield = opponents_shield;
             
             opponents_round_damage -= round_shield;
             if (opponents_round_damage > 0) {
@@ -832,8 +835,11 @@ module.exports = class Game {
             if (round_damage > 0) {
                 opponents_hull -= round_damage;
             }
+            rounds_text += `Round ${round_count}: \n\n Fleet 1: Hull: ${hull + opponents_round_damage} - ${opponents_round_damage} \n Fleet 2: Hull: ${opponents_hull + round_damage} - ${round_damage} \n\n`;
             round_count++;
         }
+        this.dbManager.save_report(fleet.owner, 'Attack result', rounds_text, timestamp);
+        this.dbManager.save_report(opposing_fleet.owner, 'Fleet attacked', rounds_text, timestamp);
 
         fleet.engaged_fleet_id = undefined;
         fleet.fighting_cooldown = undefined;
