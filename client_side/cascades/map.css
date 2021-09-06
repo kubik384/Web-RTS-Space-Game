@@ -142,10 +142,6 @@ body::-webkit-scrollbar {
 	font-size: 20px;
 }
 
-#assemble_fleet {
-	margin-bottom: 10px;
-}
-
 #assemble_fleet_wrapper table {
 	width: 100%;
 }
@@ -160,6 +156,10 @@ body::-webkit-scrollbar {
 
 #assemble_fleet_wrapper table span {
 	cursor: pointer;
+}
+
+#assemble_fleet_wrapper > button {
+	margin-bottom: 10px;
 }
 
 #abandon_timer {
@@ -193,7 +193,7 @@ body::-webkit-scrollbar {
 #dialog_div {
 	font-size: 22px;
 	text-align: center;
-	position: fixed;
+	position: absolute;
 	transform: translateX(-50%);
 	top: 8%;
 	left: 50%;
@@ -203,6 +203,12 @@ body::-webkit-scrollbar {
 	padding: 10px;
 	max-width: 25%;
 	min-width: 350px;
+	max-height: 80%;
+	white-space: pre-line;
+	border: 2px solid black;
+	box-shadow: 2px 2px 10px black;
+	overflow-y: auto;
+	overflow-x: hidden;
 }
 
 #dialog_div > button {

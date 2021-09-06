@@ -14,6 +14,7 @@ async function start() {
 	socket.on('map_datapack', game.setup_game.bind(game));
 	socket.on('game_update', game.process_server_update.bind(game));
 	socket.on('system_generated', game.switch_focus.bind(game));
+	socket.on('new_report', game.add_new_report_counter);
 
     game.request_data();
 }

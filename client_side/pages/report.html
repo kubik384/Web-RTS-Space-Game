@@ -4,8 +4,10 @@
 		<title>Unfinished project #219</title>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 		<meta http-equiv="content-type" content="text/html; charset=utf-8" />
-		<link rel="stylesheet" type="text/css" href="/client_side/cascades/message.css">
+		<link rel="stylesheet" type="text/css" href="/client_side/cascades/report.css">
 		<link rel="stylesheet" type="text/css" href="/client_side/cascades/navbar.css">
+		<script src="/socket.io/socket.io.js"></script>
+		<script type="module" src="/client_side/javascript/report_init.js"></script>
 	</head>
 	<body>
 		<div id='navbar'>
@@ -20,12 +22,16 @@
 			<a href="/game/report" id="reports_tab">
 				Reports<span id="new_report_count" style="display: none">0</span>
 			</a>
-			<a href="/game/research">Reports</a>
 			<a href='/game/message'>Messages</a>
+			<a href='/game/research'>Research</a>
 		</div>
-		<div id='resource_building_ui'>
-		</div>
-		<div id='button_menu'>
+		<div id='report_table_container'>
+			<table id="report_table">
+				<tr>
+					<td>Report</td>
+					<td>Received</td>
+				</tr>
+			</table>
 		</div>
 	</body>
 </html>

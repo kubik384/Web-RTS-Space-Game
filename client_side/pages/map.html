@@ -5,6 +5,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 		<meta http-equiv="content-type" content="text/html; charset=utf-8" />
 		<link rel="stylesheet" type="text/css" href="/client_side/cascades/map.css">
+		<link rel="stylesheet" type="text/css" href="/client_side/cascades/navbar.css">
 		<script src="/socket.io/socket.io.js"></script>
 		<script type="module" src="/client_side/javascript/map_init.js"></script>
 	</head>
@@ -24,7 +25,10 @@
 						<a href="/game/map?layout=system">System</a>
 						<a href="/game/map?layout=galaxy">Galaxy</a>
 					</div>
-				</div> 
+				</div>
+				<a href="/game/report" id="reports_tab">
+					Reports<span id="new_report_count" style="display: none">0</span>
+				</a>
 				<a href="/game/message">Messages</a>
 				<a href="/game/research">Research</a>
 			</div>
@@ -43,9 +47,9 @@
 								<div id="ui_controls">
 									<div id="assemble_fleet_wrapper">
 										<button id="assemble_fleet">Assemble a fleet</button>
+										<button id="send_expedition">Send an Expedition</button>
 										<table id='available_units_table'>
 										</table>
-										<button id="send_expedition">Send an Expedition</button>
 									</div>
 								</div>
 								<p>-----Debugging tools-----</p>

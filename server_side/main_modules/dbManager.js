@@ -15,7 +15,7 @@ module.exports = class DbManager {
             host: "localhost",
             user: "root",
             password: null,
-            port: 3308,
+            port: 3306,
             database: "improvisationalDB"
         });
         this.con.connect( err => { if (err) throw err; });
@@ -419,7 +419,8 @@ module.exports = class DbManager {
         for (var i = 0; i < unit_results.length; i++) {
             unit_results[i].count = player_units[i].count;
         }
-        return {resources: resources, buildings: building_details, units: unit_results, unit_ques: player_ques, building_details: building_results};
+        var new_reports_count =  await this.get_new_reports_count(username);
+        return {resources: resources, buildings: building_details, units: unit_results, unit_ques: player_ques, building_details: building_results, new_reports_count: new_reports_count};
     }
 
     async build_units(username, p_units) {
@@ -472,5 +473,59 @@ module.exports = class DbManager {
             promises.push(this.execute_query(query, [p_units[i].count, username, p_units[i].unit_id]));
         }
         await Promise.all(promises);
+    }
+
+    //certain information is being saved (e.g. fleets, space objects, etc.) in a file. This is however being saved only every x minutes. In case the server shut downs or something happens to the data, everything that happens before the last save will be rolled back. However, since reports are being saved on the db (since keeping them in RAM makes no sense), they are permanently saved immediately. Which can result in players keeping reports of actions that have been reverted and therefore haven't happened.
+    async save_report(username, title, content, timestamp) {
+        var query = `SELECT player_id 
+        FROM players
+        WHERE username = ?`;
+        var player_id = (await this.execute_query(query, [username]))[0].player_id;
+
+        var query = `INSERT INTO player_reports
+        VALUES (?,UUID(),?,?,0,0,?)`;
+        return this.execute_query(query, [player_id, title, content, timestamp]);
+    }
+
+    async get_new_reports_count(username) {
+        var query = `SELECT COUNT(pr.player_id) AS not_displayed_report_count
+        FROM player_reports pr
+        INNER JOIN players p ON p.player_id = pr.player_id
+        WHERE p.username = ? && pr.gotDisplayed = 0`;
+        return ((await this.execute_query(query, [username]))[0].not_displayed_report_count);
+    }
+
+    async get_report_datapack(username) {
+        var query = `SELECT report_id, title, isRead, gotDisplayed, timestamp
+        FROM player_reports pr
+        INNER JOIN players p ON p.player_id = pr.player_id
+        WHERE p.username = ?
+        ORDER BY pr.timestamp DESC
+        LIMIT 25`;
+        var newest_reports = await this.execute_query(query, [username][0]);
+        var new_reports_count =  await this.get_new_reports_count(username);
+        return {reports: newest_reports, new_reports_count: new_reports_count};
+    }
+
+    async get_report_details(report_id) {
+        var query = `SELECT report_id, title, text, timestamp
+        FROM player_reports
+        WHERE report_id = ?`;
+        return ((await this.execute_query(query, [report_id]))[0]);
+    }
+
+    async mark_reports_displayed(username, timestamp) {
+        var query = `UPDATE player_reports pr
+        INNER JOIN players p ON p.player_id = pr.player_id
+        SET gotDisplayed = 1
+        WHERE p.username = ? AND pr.gotDisplayed = 0 AND pr.timestamp <= ?`;
+        return this.execute_query(query, [username, timestamp]);
+    }
+
+    async mark_report_displayed(report_id) {
+        var query = `UPDATE player_reports
+        SET isRead = 1
+        WHERE report_id = ?`;
+        return this.execute_query(query, [report_id]);
     }
 }
