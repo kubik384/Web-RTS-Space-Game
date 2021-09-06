@@ -5,9 +5,10 @@ var expedition_results = require('./../game_properties/expedition_results.json')
 var fs = require('fs');
 
 module.exports = class Game {
-    constructor(dbManager, server) {
+    constructor(dbManager, server, connections) {
         this.dbManager = dbManager;
         this.server = server;
+        this.connections = connections;
         this.interval_time = 20;
         this.overall_time_passed = 0;
         this.tick_time = 90;
@@ -537,15 +538,13 @@ module.exports = class Game {
         var player_fleet = this.fleets.find( fleet => fleet.owner == username);
         if (player_fleet === undefined) {
             var player_planet;
-            if (expedition_timer === undefined) {
-                for (var i = 0; i < this.space_objects.length; i++) {
-                    if (player.space_object_id == this.space_objects[i].space_object_id) {
-                        player_planet = this.space_objects[i];
-                        break;
-                    }
+            for (var i = 0; i < this.space_objects.length; i++) {
+                if (player.space_object_id == this.space_objects[i].space_object_id) {
+                    player_planet = this.space_objects[i];
+                    break;
                 }
             }
-            if (player_planet !== undefined && expedition_timer === undefined) {
+            if (player_planet !== undefined || expedition_timer !== undefined) {
                 var units = await this.dbManager.get_player_units(username, 'all');
                 for (var i = p_units.length - 1; i >= 0; i--) {
                     var unit_index;
@@ -571,11 +570,11 @@ module.exports = class Game {
                             capacity += unit_details[i].capacity * units[i].count;
                         }
                     }
-                    var fleet = {fleet_id: this.fleet_id++, owner: username, x: player_planet.x - player_planet.width, y: player_planet.y - player_planet.height, acceleration: 0.00025, velocity: new Vector(player_planet.velocity), units: units, capacity: capacity, resources: 0};
+                    var fleet;
                     if (expedition_timer !== undefined) {
-                        var fleet = {fleet_id: this.fleet_id++, owner: username, x: 0, y: 0, acceleration: 0.00025, velocity: new Vector(player_planet.velocity), units: units, capacity: capacity, resources: 0, expedition_timer: expedition_timer, expedition_length_id: expedition_length_id};
+                        fleet = {fleet_id: this.fleet_id++, owner: username, x: 0, y: 0, acceleration: 0.00025, velocity: new Vector(player_planet.velocity), units: units, capacity: capacity, resources: 0, expedition_timer: expedition_timer, expedition_length_id: expedition_length_id};
                     } else {
-                        var fleet = {fleet_id: this.fleet_id++, owner: username, x: player_planet.x - player_planet.width, y: player_planet.y - player_planet.height, acceleration: 0.00025, velocity: new Vector(player_planet.velocity), units: units, capacity: capacity, resources: 0};
+                        fleet = {fleet_id: this.fleet_id++, owner: username, x: player_planet.x - player_planet.width, y: player_planet.y - player_planet.height, acceleration: 0.00025, velocity: new Vector(player_planet.velocity), units: units, capacity: capacity, resources: 0};
                     }
                     this.fleets.push(fleet);
                 }
@@ -838,8 +837,8 @@ module.exports = class Game {
             rounds_text += `Round ${round_count}: \n\n Fleet 1: Hull: ${hull + opponents_round_damage} - ${opponents_round_damage} \n Fleet 2: Hull: ${opponents_hull + round_damage} - ${round_damage} \n\n`;
             round_count++;
         }
-        this.dbManager.save_report(fleet.owner, 'Attack result', rounds_text, timestamp);
-        this.dbManager.save_report(opposing_fleet.owner, 'Fleet attacked', rounds_text, timestamp);
+        this.generate_report(fleet.owner, 'Attack result', rounds_text, timestamp);
+        this.generate_report(opposing_fleet.owner, 'Fleet attacked', rounds_text, timestamp);
 
         fleet.engaged_fleet_id = undefined;
         fleet.fighting_cooldown = undefined;
@@ -978,8 +977,22 @@ module.exports = class Game {
             //bind the expedition results to tech tree? certain techs make certain outcomes more or less likely (or impossible)?//a booby trapped abandoned fleet - explosion
         }
         var result_text = expedition_results[result_type][Math.floor(Math.random() * expedition_results[result_type].length)];
-        this.dbManager.save_report(fleet.owner, 'Expedition Result', result_text, await utils.get_timestamp());
+        this.generate_report(fleet.owner, 'Expedition Result', result_text, await utils.get_timestamp());
         fleet.expedition_length_id = undefined;
+    }
+
+    async generate_report(username, title, content, timestamp) {
+        var socket;
+        for (var socket_id in this.connections) {
+            if (this.connections[socket_id] == username) {
+                socket = this.server.sockets.connected[socket_id];
+                break;
+            }
+        }
+        if (socket !== undefined) {
+            socket.emit('new_report');
+        }
+        this.dbManager.save_report(username, title, content, timestamp);
     }
 
     async stop() {

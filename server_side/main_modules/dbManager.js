@@ -476,7 +476,7 @@ module.exports = class DbManager {
     }
 
     //certain information is being saved (e.g. fleets, space objects, etc.) in a file. This is however being saved only every x minutes. In case the server shut downs or something happens to the data, everything that happens before the last save will be rolled back. However, since reports are being saved on the db (since keeping them in RAM makes no sense), they are permanently saved immediately. Which can result in players keeping reports of actions that have been reverted and therefore haven't happened.
-    async save_report(username, title, report, timestamp) {
+    async save_report(username, title, content, timestamp) {
         var query = `SELECT player_id 
         FROM players
         WHERE username = ?`;
@@ -484,7 +484,7 @@ module.exports = class DbManager {
 
         var query = `INSERT INTO player_reports
         VALUES (?,UUID(),?,?,0,0,?)`;
-        return this.execute_query(query, [player_id, title, report, timestamp]);
+        return this.execute_query(query, [player_id, title, content, timestamp]);
     }
 
     async get_new_reports_count(username) {
@@ -500,7 +500,7 @@ module.exports = class DbManager {
         FROM player_reports pr
         INNER JOIN players p ON p.player_id = pr.player_id
         WHERE p.username = ?
-        ORDER BY pr.timestamp
+        ORDER BY pr.timestamp DESC
         LIMIT 25`;
         var newest_reports = await this.execute_query(query, [username][0]);
         var new_reports_count =  await this.get_new_reports_count(username);

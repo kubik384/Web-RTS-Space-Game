@@ -20,7 +20,6 @@ class Game extends Base_Page {
 
     async setup_game(p_datapack) {
         var datapack = JSON.parse(p_datapack);
-        this.new_reports_count = datapack.new_reports_count;
         console.log(datapack);
         super.setup_page(datapack);
 

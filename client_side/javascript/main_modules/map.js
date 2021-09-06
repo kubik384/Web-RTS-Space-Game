@@ -18,7 +18,6 @@ class Game extends Base_Page {
         this.tick_time = 50;
         this.tick_fe_time_passed;
         this.zoom = 0.025;
-        this.new_reports_count = 0;
 
         this.xOffset = 0;
         this.yOffset = 0;

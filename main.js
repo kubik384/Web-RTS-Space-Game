@@ -20,11 +20,11 @@ const mapURL = gameURL + '/map';
 const reportURL = gameURL + '/report';
 const messageURL = gameURL + '/message';
 const researchURL = gameURL + '/research';
-var dbManager = new DbManager();
-var game = new Game(dbManager, io);
-const root = __dirname;
 var tokens = [];
 var socketTable = {};
+var dbManager = new DbManager();
+var game = new Game(dbManager, io, socketTable);
+const root = __dirname;
 
 app.set('port', 8080);
 app.use('/client_side', express.static(root + '/client_side'));// Routing
@@ -196,9 +196,9 @@ io.on('connection', socket => {
 	});
 
 	socket.on('map_datapack_request', (token, layout) => {
+		socketTable[socket.id] = token;
 		game.addPlayer(socket, token).then(() => {
 			socket.gameAdded = true;
-			socketTable[socket.id] = token;
 			game.get_map_datapack(layout, socket.id).then(result => {socket.emit('map_datapack', JSON.stringify(result))});
 		});
 	});
@@ -259,6 +259,7 @@ io.on('connection', socket => {
 		delete socketTable[socket.id];
 		if (socket.gameAdded !== undefined) {
 			game.removePlayer(socket);
+			socket.gameAdded = undefined;
 		}
 	});
 });
@@ -275,7 +276,7 @@ function restart_server(socket, layout) {
 	const Game = require('./server_side/main_modules/Game.js');
 	dbManager = new DbManager();
 	game.stop();
-	game = new Game(dbManager, io);
+	game = new Game(dbManager, io, socketTable);
 	game.setup_game().then(() => {
 		if (socket !== undefined) {
 			game.addPlayer(socket, token).then(() => {

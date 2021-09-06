@@ -9,6 +9,7 @@ game.request_datapack();
 //socket events
 socket.on('report_datapack', game.save_reports.bind(game));
 socket.on('report_details', game.load_report.bind(game));
+socket.on('new_report', game.add_new_report_counter);
 
 async function start() {
 	game.display_reports();

@@ -17,7 +17,7 @@ class Game extends Base_Page {
             console.log(this.report_datapack)
             var reports = this.report_datapack.reports;
             var report_table = document.getElementById('report_table');
-            for (var i = reports.length - 1; i >= 0; i--) {
+            for (var i = 0; i < reports.length; i++) {
                 var row = report_table.insertRow();
                 var report_title_cell = row.insertCell();
                 var report_link = document.createElement('a');
@@ -46,7 +46,7 @@ class Game extends Base_Page {
             //send list of the displayed reports to the server
             this.reports = undefined;
             this.displayed_reports = undefined;
-            setTimeout(async function() { this.socket.emit('reports_displayed', reports[reports.length - 1].timestamp) }.bind(this), 500);
+            setTimeout(async function() { this.socket.emit('reports_displayed', reports[0].timestamp) }.bind(this), 500);
         } else {
             setTimeout(this.display_reports.bind(this), 200);
         }
