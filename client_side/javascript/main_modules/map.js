@@ -2,10 +2,12 @@
 
 import { Utils } from '../misc_modules/utils.js';
 import { Vector } from '../misc_modules/vector.js';
+import { Base_Page } from './base_page.js';
 var utils = new Utils();
 
-class Game {
+class Game extends Base_Page {
     constructor(socket) {
+        super();
         this.socket = socket;
         this.map_canvas;
         this.map_canvas_border;
@@ -38,43 +40,47 @@ class Game {
 
     async setup_game(p_datapack) {
         var datapack = JSON.parse(p_datapack);
+        console.log(datapack);
+        super.setup_page(datapack);
         this.updates = [{}];
         if (this.layout === 'system') {
             this.last_fe_tick = datapack.last_update;
             this.updates[0].tick_timestamp = datapack.last_update;
             this.updates[0].tick_be_time_passed = datapack.time_passed;
             this.boundaries = datapack.boundaries;
-            this.available_units = datapack.available_units;
-            var assemble_fleet_table = document.getElementById('available_units_table');
-            var disable_button = true;
-            for (var i = 0; i < this.available_units.length; i++) {
-                if (this.available_units[i].count > 0) {
-                    disable_button = false;
-                    var row = assemble_fleet_table.insertRow();
-                    var unit_label_cell = row.insertCell();
-                    var unit_input_cell = row.insertCell();
-                    var unit_count = row.insertCell();
-                    
-                    var unit_name_label = document.createElement('label');
-                    unit_name_label.append(this.available_units[i].name);
-                    unit_label_cell.append(unit_name_label);
-                    var unit_number_input = document.createElement('input');
-                    unit_number_input.setAttribute("type", "number");
-                    unit_number_input.classList.add('game_unit');
-                    unit_number_input.setAttribute("id", 'unit_id_' + this.available_units[i].unit_id);
-                    unit_number_input.placeholder = 0;
-                    unit_input_cell.append(unit_number_input);
-                    var unit_number_input = document.createElement('span');
-                    unit_number_input.append('(' + this.available_units[i].count + ')');
-                    unit_number_input.setAttribute("data-input_id", this.available_units[i].unit_id);
-                    unit_number_input.addEventListener('click', function() {
-                        document.getElementById('unit_id_' + this.dataset.input_id).value = +this.textContent.substr(1, this.textContent.length-2)
-                    });
-                    unit_count.append(unit_number_input);
+            if (this.map_canvas === undefined) {
+                this.available_units = datapack.available_units;
+                var assemble_fleet_table = document.getElementById('available_units_table');
+                var disable_button = true;
+                for (var i = 0; i < this.available_units.length; i++) {
+                    if (this.available_units[i].count > 0) {
+                        disable_button = false;
+                        var row = assemble_fleet_table.insertRow();
+                        var unit_label_cell = row.insertCell();
+                        var unit_input_cell = row.insertCell();
+                        var unit_count = row.insertCell();
+                        
+                        var unit_name_label = document.createElement('label');
+                        unit_name_label.append(this.available_units[i].name);
+                        unit_label_cell.append(unit_name_label);
+                        var unit_number_input = document.createElement('input');
+                        unit_number_input.setAttribute("type", "number");
+                        unit_number_input.classList.add('game_unit');
+                        unit_number_input.setAttribute("id", 'unit_id_' + this.available_units[i].unit_id);
+                        unit_number_input.placeholder = 0;
+                        unit_input_cell.append(unit_number_input);
+                        var unit_number_input = document.createElement('span');
+                        unit_number_input.append('(' + this.available_units[i].count + ')');
+                        unit_number_input.setAttribute("data-input_id", this.available_units[i].unit_id);
+                        unit_number_input.addEventListener('click', function() {
+                            document.getElementById('unit_id_' + this.dataset.input_id).value = +this.textContent.substr(1, this.textContent.length-2)
+                        });
+                        unit_count.append(unit_number_input);
+                    }
                 }
-            }
-            if (disable_button) {
-                document.getElementById('assemble_fleet').disabled = true;
+                if (disable_button) {
+                    document.getElementById('assemble_fleet').disabled = true;
+                }
             }
             var space_objects = datapack.space_objects;
             for (var i = 0; i < space_objects.length; i++) {
@@ -187,18 +193,21 @@ class Game {
                                         utils.display_custom_confirm_dialog('Due to technical limitations, a player can currently have only one fleet, including fleets sent on expeditions. This fleet has however entered combat and therefore cannot be abandoned right now', function() {}, function() {}, 'OK', '');
                                     }
                                 } else {
-                                    var old_dialog = document.getElementById('dialog_div');
-                                    if (old_dialog !== null) {
-                                        old_dialog.remove();
-                                    }
                                     var dialog_id = 'dialog_div';
-                                    var dialog_verlay_id = 'dialog_overlay';
+                                    var dialog_overlay_id = 'dialog_overlay';
+                                    var old_dialog = document.getElementById(dialog_id);
+                                    if (old_dialog !== null) {
+                                        var old_overlay = document.getElementById(dialog_overlay_id);
+                                        old_dialog.remove();
+                                        old_overlay.remove();
+                                    }
                                     var dialog = document.createElement('div');
                                     dialog.setAttribute("id", dialog_id);
                                     dialog.style.maxWidth = '85%';
                                     dialog.style.width = '85%';
+                                    dialog.style.textAlign = 'justify';
                                     var dialog_overlay = document.createElement('div');
-                                    dialog_overlay.setAttribute("id", dialog_verlay_id);
+                                    dialog_overlay.setAttribute("id", dialog_overlay_id);
                                     dialog_overlay.addEventListener('contextmenu', function(event) {
                                         event.preventDefault();
                                         dialog_overlay.style.display = 'none';
@@ -216,7 +225,7 @@ class Game {
                                         dialog_overlay.remove();
                                     }.bind(this);
                                     var dialog_question = document.createElement('p');
-                                    dialog_question.append(`You can send an expedition fleet deep into the unexplored corners of the cosmos to search for anything worth of value that could be very difficult to find a source of otherwise. However, this of course carries with it's own risks - such as encountering enemy fleets, environmental challenges and dangers and other unexpected situations.
+                                    dialog_question.append(`You can send an expedition fleet deep into the unexplored corners of the cosmos to search for anything worth of value that could be very difficult to find a source of otherwise. However, this of course carries it's own risks - such as encountering enemy fleets, environmental challenges and dangers and other unexpected situations.
 
                                     The longer you send the fleet out, the more time to reach deeper into the more unexplored parts of the space and access it's vast riches, but this also means more time for the fleet to encounter dangerous situations.
 
@@ -263,7 +272,7 @@ class Game {
 
             document.getElementById('map').addEventListener('contextmenu', e => { 
                 e.preventDefault();
-                if (this.controlled_fleet_index !== undefined && this.updates[0].fleets[this.controlled_fleet_index].engaged_fleet_id === undefined && this.updates[0].fleets[this.controlled_fleet_index].abandon_timer === undefined) {
+                if (this.controlled_fleet_index !== undefined && this.updates[0].fleets[this.controlled_fleet_index].engaged_fleet_id === undefined && this.updates[0].fleets[this.controlled_fleet_index].abandon_timer === undefined && this.updates[0].fleets[this.controlled_fleet_index].expedition_timer === undefined) {
                     const rect = this.map_canvas.getBoundingClientRect();
                     var x = e.clientX - this.xOffset - rect.left - this.map_canvas_border;
                     var y = e.clientY - this.yOffset - rect.top - this.map_canvas_border;
@@ -429,29 +438,31 @@ class Game {
             }
             var fleets = update.fleets;
             for (var i = 0; i < fleets.length; i++) {
-                var x_position = ((fleets[i].x - fleets[i].last_x) * be_interpolation_coefficient + fleets[i].last_x);
-                var y_position = ((fleets[i].y - fleets[i].last_y) * be_interpolation_coefficient + fleets[i].last_y);
-                this.map_ctx.save();
-                this.map_ctx.translate(this.xOffset, this.yOffset);
-                this.map_ctx.beginPath();
-                if (fleets[i].abandoned === undefined) {
-                    this.map_ctx.fillStyle = "red";
-                } else {
-                    this.map_ctx.fillStyle = "gray";
-                }
-                this.map_ctx.rect(x_position  * this.zoom - 2 * this.zoom, y_position  * this.zoom - 2 * this.zoom, 4 * this.zoom, 4 * this.zoom);
-                this.map_ctx.fill();
-                this.map_ctx.restore();
-
-                if (fleets[i].move_point !== undefined) {
+                if (fleets[i].expedition_timer === undefined) {
+                    var x_position = ((fleets[i].x - fleets[i].last_x) * be_interpolation_coefficient + fleets[i].last_x);
+                    var y_position = ((fleets[i].y - fleets[i].last_y) * be_interpolation_coefficient + fleets[i].last_y);
                     this.map_ctx.save();
                     this.map_ctx.translate(this.xOffset, this.yOffset);
                     this.map_ctx.beginPath();
-                    this.map_ctx.moveTo(x_position * this.zoom, y_position * this.zoom);
-                    this.map_ctx.lineTo(fleets[i].move_point.x * this.zoom, fleets[i].move_point.y * this.zoom);
-                    this.map_ctx.strokeStyle = "red";
-                    this.map_ctx.stroke();
+                    if (fleets[i].abandoned === undefined) {
+                        this.map_ctx.fillStyle = "red";
+                    } else {
+                        this.map_ctx.fillStyle = "gray";
+                    }
+                    this.map_ctx.rect(x_position  * this.zoom - 2 * this.zoom, y_position  * this.zoom - 2 * this.zoom, 4 * this.zoom, 4 * this.zoom);
+                    this.map_ctx.fill();
                     this.map_ctx.restore();
+
+                    if (fleets[i].move_point !== undefined) {
+                        this.map_ctx.save();
+                        this.map_ctx.translate(this.xOffset, this.yOffset);
+                        this.map_ctx.beginPath();
+                        this.map_ctx.moveTo(x_position * this.zoom, y_position * this.zoom);
+                        this.map_ctx.lineTo(fleets[i].move_point.x * this.zoom, fleets[i].move_point.y * this.zoom);
+                        this.map_ctx.strokeStyle = "red";
+                        this.map_ctx.stroke();
+                        this.map_ctx.restore();
+                    }
                 }
             }
             this.map_ctx.save();
@@ -588,6 +599,7 @@ class Game {
                 fleets[i].last_x = fleets[i].x;
                 fleets[i].last_y = fleets[i].y;
                 fleets[i].abandoned = updated_fleets[i].abandoned;
+                fleets[i].expedition_timer = updated_fleets[i].expedition_timer;
                 fleets[i].x = updated_fleets[i].x;
                 fleets[i].y = updated_fleets[i].y;
                 /* Velocity is not currently used anywhere anyway

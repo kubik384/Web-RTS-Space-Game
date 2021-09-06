@@ -1,12 +1,14 @@
 var Vector = require('../misc_modules/vector.js');
 var Utils = require('./../misc_modules/utils.js');
 var utils = new Utils();
+var expedition_results = require('./../game_properties/expedition_results.json');
 var fs = require('fs');
 
 module.exports = class Game {
-    constructor(dbManager, server) {
+    constructor(dbManager, server, connections) {
         this.dbManager = dbManager;
         this.server = server;
+        this.connections = connections;
         this.interval_time = 20;
         this.overall_time_passed = 0;
         this.tick_time = 90;
@@ -136,6 +138,12 @@ module.exports = class Game {
                                 this.fleets.splice(i, 1);
                                 continue;
                             }
+                        }
+                    } else if (this.fleets[i].expedition_timer !== undefined) {
+                        this.fleets[i].expedition_timer -= this.time_passed;
+                        if (this.fleets[i].expedition_timer <= 0) {
+                            this.resolve_expedition(this.fleets[i]);
+                            continue;
                         }
                     }
                     if (this.fleets[i].engaged_fleet_id === undefined) {
@@ -440,7 +448,7 @@ module.exports = class Game {
                     } else if (this.fleets[i].fighting_cooldown !== undefined) {
                         this.fleets[i].fighting_cooldown -= this.time_passed;
                         if (this.fleets[i].fighting_cooldown <= 0) {
-                            await this.calculate_round(this.fleets[i]);
+                            await this.execute_fight(this.fleets[i], timestamp);
                         }
                     }
                 }
@@ -525,17 +533,15 @@ module.exports = class Game {
         });
     }
 
-    async assemble_fleet(username, p_units, expedition_timer) {
+    async assemble_fleet(username, p_units, expedition_timer, expedition_length_id) {
         var player = this.players.find(player => player.username == username);
         var player_fleet = this.fleets.find( fleet => fleet.owner == username);
         if (player_fleet === undefined) {
-            if (expedition_timer !== undefined) {
-                var player_planet;
-                for (var i = 0; i < this.space_objects.length; i++) {
-                    if (player.space_object_id == this.space_objects[i].space_object_id) {
-                        player_planet = this.space_objects[i];
-                        break;
-                    }
+            var player_planet;
+            for (var i = 0; i < this.space_objects.length; i++) {
+                if (player.space_object_id == this.space_objects[i].space_object_id) {
+                    player_planet = this.space_objects[i];
+                    break;
                 }
             }
             if (player_planet !== undefined || expedition_timer !== undefined) {
@@ -564,11 +570,11 @@ module.exports = class Game {
                             capacity += unit_details[i].capacity * units[i].count;
                         }
                     }
-                    var fleet = {fleet_id: this.fleet_id++, owner: username, x: player_planet.x - player_planet.width, y: player_planet.y - player_planet.height, acceleration: 0.00025, velocity: new Vector(player_planet.velocity), units: units, capacity: capacity, resources: 0};
+                    var fleet;
                     if (expedition_timer !== undefined) {
-                        var fleet = {fleet_id: this.fleet_id++, owner: username, x: 0, y: 0, acceleration: 0.00025, velocity: new Vector(player_planet.velocity), units: units, capacity: capacity, resources: 0, expedition_timer: expedition_timer};
+                        fleet = {fleet_id: this.fleet_id++, owner: username, x: 0, y: 0, acceleration: 0.00025, velocity: new Vector(player_planet.velocity), units: units, capacity: capacity, resources: 0, expedition_timer: expedition_timer, expedition_length_id: expedition_length_id};
                     } else {
-                        var fleet = {fleet_id: this.fleet_id++, owner: username, x: player_planet.x - player_planet.width, y: player_planet.y - player_planet.height, acceleration: 0.00025, velocity: new Vector(player_planet.velocity), units: units, capacity: capacity, resources: 0};
+                        fleet = {fleet_id: this.fleet_id++, owner: username, x: player_planet.x - player_planet.width, y: player_planet.y - player_planet.height, acceleration: 0.00025, velocity: new Vector(player_planet.velocity), units: units, capacity: capacity, resources: 0};
                     }
                     this.fleets.push(fleet);
                 }
@@ -579,7 +585,7 @@ module.exports = class Game {
     async abandon_fleet(username) {
         var player_fleet = this.fleets.find( fleet => fleet.owner == username);
         if (player_fleet !== undefined) {
-            if (abandon && player_fleet.abandon_timer === undefined && player_fleet.engaged_fleet_id === undefined) {
+            if (player_fleet.abandon_timer === undefined && player_fleet.engaged_fleet_id === undefined) {
                 player_fleet.assigned_object_type = undefined;
                 player_fleet.assigned_object_id = undefined;
                 player_fleet.move_point = undefined;
@@ -650,7 +656,8 @@ module.exports = class Game {
                                     fleets.push({fleet_id: this.fleets[j].fleet_id, x: this.fleets[j].x, y: this.fleets[j].y, abandoned: this.fleets[j].abandoned});
                                 }
                             }
-                            resolve({home_planet_id: this.players[i].space_object_id, space_objects: this.space_objects, fleets: fleets, last_update: this.last_tick, time_passed: this.time_passed, boundaries: this.boundaries, available_units: units});
+                            var new_reports_count =  await this.dbManager.get_new_reports_count(this.players[i].username);
+                            resolve({home_planet_id: this.players[i].space_object_id, space_objects: this.space_objects, fleets: fleets, last_update: this.last_tick, time_passed: this.time_passed, boundaries: this.boundaries, available_units: units, new_reports_count: new_reports_count});
                             return;
                         }
                     }
@@ -776,7 +783,8 @@ module.exports = class Game {
         }
     }
 
-    async calculate_round(fleet) {
+    async execute_fight(fleet, timestamp) {
+        timestamp = Math.floor(timestamp/1000);
         var unit_details = await this.dbManager.get_unit_details('all');
         var opposing_fleet_index = this.fleets.findIndex(opposing_fleet => opposing_fleet.fleet_id == fleet.engaged_fleet_id);
         var opposing_fleet = this.fleets[opposing_fleet_index];
@@ -810,11 +818,13 @@ module.exports = class Game {
         }
         
         var round_count = 1;
+        var rounds_text = '';
+        //once calculated for each unit, when a unit's shield has been completely broken, make it's recharge rate slower
         while (hull > 0 && opponents_hull > 0) {
             var round_damage = damage;
-            var round_shield = shield/round_count;
+            var round_shield = shield;
             var opponents_round_damage = opponents_damage;
-            var opponents_round_shield = opponents_shield/round_count;
+            var opponents_round_shield = opponents_shield;
             
             opponents_round_damage -= round_shield;
             if (opponents_round_damage > 0) {
@@ -824,8 +834,11 @@ module.exports = class Game {
             if (round_damage > 0) {
                 opponents_hull -= round_damage;
             }
+            rounds_text += `Round ${round_count}: \n\n Fleet 1: Hull: ${hull + opponents_round_damage} - ${opponents_round_damage} \n Fleet 2: Hull: ${opponents_hull + round_damage} - ${round_damage} \n\n`;
             round_count++;
         }
+        this.generate_report(fleet.owner, 'Attack result', rounds_text, timestamp);
+        this.generate_report(opposing_fleet.owner, 'Fleet attacked', rounds_text, timestamp);
 
         fleet.engaged_fleet_id = undefined;
         fleet.fighting_cooldown = undefined;
@@ -863,15 +876,15 @@ module.exports = class Game {
         }
     }
 
-    async send_expedition(socket_id, units, length_type) {
-        if (length_type !== undefined)
+    async send_expedition(socket_id, units, expedition_length_id) {
+        if (expedition_length_id !== undefined) {
             var player = this.players.find(player => player.socket.id == socket_id);
             var player_fleet = this.fleets.find( fleet => fleet.owner == player.username );
             if (player_fleet === undefined) {
                 var expedition_timer;
-                switch (length_type) {
+                switch (expedition_length_id) {
                     case 1:
-                        expedition_timer = 7800000;
+                        expedition_timer = 100;
                         break;
                     case 2:
                         expedition_timer = 17100000;
@@ -883,8 +896,103 @@ module.exports = class Game {
                         expedition_timer = 50400000;
                         break;
                 }
-                this.assemble_fleet(player.username, units, expedition_timer);
+                this.assemble_fleet(player.username, units, expedition_timer, expedition_length_id);
             }
+        }
+    }
+
+    async resolve_expedition(fleet) {
+        fleet.expedition_timer = undefined;
+        var result_type = Math.random();
+        switch (fleet.expedition_length_id) {
+            case 1: 
+            result_type = Math.floor(result_type * 8);
+                break;
+            case 2:
+                result_type = Math.floor(result_type * 10);
+                break;
+            case 3:
+                result_type = Math.floor(result_type * 12);
+                break;
+            case 4: 
+            result_type = Math.floor(result_type * 14);
+                break;
+        }
+
+        //make expeditions multiple-layered? Multiple possible events in one expedition? Make the timed -> like a fleet found an abandoned fleet, took over the ships -> the player receives a report, but halfway on the return the crew inside the ships is suddenly attacked by some biological creatures, overruning most of the fleet. (aliens). Or anything else can happen after an event on the way back...
+        switch (result_type) {
+            case 0:
+                //found abandoned ships
+                var fighters = fleet.units.find(unit => unit.unit_id == 1);
+                fighters.count += 10 + Math.random() * 91;
+                break;
+            case 1:
+                //infected with virus (lost fleet, lost contact -> unknown time of return, fleet gets lost -> unknown time of return, ambushed shortly after -> taken over by pirates/aliens, destroyed, ...)
+                break;
+            case 2:
+                //a booby trapped abandoned fleet - explosion
+                break;
+            case 3:
+                //a booby trapped abandoned fleet - explosion + pirates ambush
+                break;
+            case 4:
+                //a distress beacon - found ships, all crew on the ships is found dead (give a choice - accepting the ships has a chance of the entire crew of the current fleet dying, losing everything?)
+                break;
+            case 5:
+                //distress beacon - ambushed by pirates (or give choice to ignore or follow - if ignored, the ignore option will be auto-selected after some time)
+                break;
+            case 6:
+                //scrapped event idea
+                break;
+            case 7:
+                //particle storm - fleet moved too close to a star and got hit -> damaged/lose fuel/delayed return/lost contact - unknown time of return (if at all)?
+                break;
+            case 8:
+                //attacked/ambushed by pirates (e.g. a ship appears inside the fleet formation and explodes, attempt to transmit a virus, ...)
+                break;
+            case 9:
+                //Found some strange anomalies/abandon civilizations/abandoned repair station/ ... -> nothing happens
+                break;
+            case 10:
+                //Find resources (asteroid/planet/remains of a fleet/deactivated defense systems around a planet's orbit/...)
+                break;
+            case 11:
+                //scrapped event idea
+                break;
+            case 12:
+                //scrapped event idea
+                break;
+            case 13:
+                //The fleet has been lost to a nearby star that has suddenly started rapidly expanding, engulfing the fleet before it could move out of it's reach
+                //The crew from the fleet starts going suddenly mad or losing consciousness. Contact with the fleet is quickly lost
+                break;
+            
+            //fleet attempts to enter a wormhole
+            //powerful gravitaional field from a nearby planetoid -> part of the fleet that couldn't move out has been captured by pirates/entire fleet - rest of the fleet has been ambushed by pirates
+            //attacked by undetected defense systems on a nearby planet
+            //find some very special types of resources only available through expeditions?
+            //ambushed pirates -> detected them before getting detected/they are badly damaged/...
+            //sudden powerful radiation is being emitted, making most of the crew sick, losing conciousness and quickly leading to death
+
+            //bind the expedition results to tech tree? certain techs make certain outcomes more or less likely (or impossible)?//a booby trapped abandoned fleet - explosion
+        }
+        var result_text = expedition_results[result_type][Math.floor(Math.random() * expedition_results[result_type].length)];
+        this.generate_report(fleet.owner, 'Expedition Result', result_text, await utils.get_timestamp());
+        fleet.expedition_length_id = undefined;
+    }
+
+    async generate_report(username, title, content, timestamp) {
+        var socket;
+        for (var socket_id in this.connections) {
+            if (this.connections[socket_id] == username) {
+                socket = this.server.sockets.connected[socket_id];
+                break;
+            }
+        }
+        if (socket !== undefined) {
+            socket.emit('new_report');
+        }
+        this.dbManager.save_report(username, title, content, timestamp);
     }
 
     async stop() {

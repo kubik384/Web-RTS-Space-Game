@@ -14,6 +14,11 @@ class Utils {
         return (days != 0 ? days + ":" : '') + (hours < 10 ? "0" + hours : hours) + ":" + (minutes < 10 ? "0" + minutes : minutes) + (days == 0 ? ":" + (seconds < 10 ? "0" + seconds : seconds) : '');
     }
 
+    async miliseconds_to_date(p_seconds) {
+        var date = new Date(p_seconds);
+        return (date.toString().split(' G')[0]);
+    }
+
     async get_timestamp() {
         return Math.floor(Date.now()/1000);
     }
@@ -35,16 +40,18 @@ class Utils {
     }
 
     display_custom_confirm_dialog(question, confirm_callback, reject_callback, confirm_text = 'Confirm', reject_text = 'Cancel') {
-        var old_dialog = document.getElementById('dialog_div');
-        if (old_dialog !== null) {
-            old_dialog.remove();
-        }
         var dialog_id = 'dialog_div';
-        var dialog_verlay_id = 'dialog_overlay';
+        var dialog_overlay_id = 'dialog_overlay';
+        var old_dialog = document.getElementById(dialog_id);
+        if (old_dialog !== null) {
+            var old_overlay = document.getElementById(dialog_overlay_id);
+            old_dialog.remove();
+            old_overlay.remove();
+        }
         var dialog = document.createElement('div');
         dialog.setAttribute("id", dialog_id);
         var dialog_overlay = document.createElement('div');
-        dialog_overlay.setAttribute("id", dialog_verlay_id);
+        dialog_overlay.setAttribute("id", dialog_overlay_id);
         dialog_overlay.addEventListener('contextmenu', function(event) {
             event.preventDefault();
             dialog_overlay.style.display = 'none';

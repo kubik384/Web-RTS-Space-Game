@@ -17,13 +17,14 @@ const saltRounds = 10;
 const gameURL = '/game';
 const planetURL = gameURL + '/planet';
 const mapURL = gameURL + '/map';
+const reportURL = gameURL + '/report';
 const messageURL = gameURL + '/message';
 const researchURL = gameURL + '/research';
-var dbManager = new DbManager();
-var game = new Game(dbManager, io);
-const root = __dirname;
 var tokens = [];
 var socketTable = {};
+var dbManager = new DbManager();
+var game = new Game(dbManager, io, socketTable);
+const root = __dirname;
 
 app.set('port', 8080);
 app.use('/client_side', express.static(root + '/client_side'));// Routing
@@ -141,6 +142,19 @@ app.get(researchURL, function(req,res) {
 	}
 });
 
+app.get(reportURL, function(req,res) {
+	if (req.cookies.token !== undefined) {
+		if (tokens.findIndex(token => token == req.cookies.token) != -1) {
+			res.sendFile(path.join(root + '/client_side', 'pages/report.html'));
+		} else {
+			res.clearCookie('token');
+			res.redirect(303, '/');
+		}
+	} else {
+		res.redirect(303, '/');
+	}
+});
+
 app.use(function(req, res){
 	res.redirect('/');
 });
@@ -182,9 +196,9 @@ io.on('connection', socket => {
 	});
 
 	socket.on('map_datapack_request', (token, layout) => {
+		socketTable[socket.id] = token;
 		game.addPlayer(socket, token).then(() => {
 			socket.gameAdded = true;
-			socketTable[socket.id] = token;
 			game.get_map_datapack(layout, socket.id).then(result => {socket.emit('map_datapack', JSON.stringify(result))});
 		});
 	});
@@ -221,12 +235,31 @@ io.on('connection', socket => {
 		game.send_expedition(socket.id, units, length_type);
 	});
 
+	socket.on('report_datapack_request', token => {
+		socketTable[socket.id] = token;
+		dbManager.get_report_datapack(token).then(datapack => { socket.emit('report_datapack', JSON.stringify(datapack)); });
+	});
+
+	socket.on('load_report', report_id => {
+		dbManager.get_report_details(report_id).then(report_details => { socket.emit('report_details', JSON.stringify(report_details)); });
+	});
+
+	socket.on('reports_displayed', timestamp => {
+		var token = socketTable[socket.id];
+		dbManager.mark_reports_displayed(token, timestamp);
+	});
+
+	socket.on('report_read', report_id => {
+		dbManager.mark_report_displayed(report_id);
+	});
+
 	socket.on('disconnect', () => {
 		//doing this "logs out" the user every time they try to switch pages (e.g. go from planet to map - causes disconnect and is removed from the tokens, which causes them to end up the next time on the login page)
 		//tokens.splice(tokens.findIndex(token => token == socketTable[socket.id]), 1);
 		delete socketTable[socket.id];
 		if (socket.gameAdded !== undefined) {
 			game.removePlayer(socket);
+			socket.gameAdded = undefined;
 		}
 	});
 });
@@ -243,7 +276,7 @@ function restart_server(socket, layout) {
 	const Game = require('./server_side/main_modules/Game.js');
 	dbManager = new DbManager();
 	game.stop();
-	game = new Game(dbManager, io);
+	game = new Game(dbManager, io, socketTable);
 	game.setup_game().then(() => {
 		if (socket !== undefined) {
 			game.addPlayer(socket, token).then(() => {
