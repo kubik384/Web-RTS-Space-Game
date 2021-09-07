@@ -169,8 +169,6 @@ server.listen(8080, function() {
 });
 
 io.use((socket, next) => {
-	console.log(socket.handshake.auth.token);
-	console.log(tokens);
 	if (socket.handshake.auth.token !== undefined && tokens.findIndex(token => token == socket.handshake.auth.token) != -1) {
 		socket.username = socket.handshake.auth.token;
 		socket.token = socket.handshake.auth.token;
