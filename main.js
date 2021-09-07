@@ -21,9 +21,10 @@ const reportURL = gameURL + '/report';
 const messageURL = gameURL + '/message';
 const researchURL = gameURL + '/research';
 var tokens = [];
-var socketTable = {};
+//switch to jwt token at some point for authentication?
+var token_timeouts = {};
 var dbManager = new DbManager();
-var game = new Game(dbManager, io, socketTable);
+var game = new Game(dbManager, io);
 const root = __dirname;
 
 app.set('port', 8080);
@@ -72,7 +73,9 @@ app.post('/login', function(req, res) {
 				if (err) { throw err; }
 				if (passwordsMatch) {
 					//Client saves username as token, which is then sent from client to the server to authorize actions sent through socket for every action. If players object does not have attribute equal to token, then action is not executed and user is redirected back to login page instead
-					tokens.push(username);
+					if (!is_valid_token(username)) {
+						tokens.push(username);
+					}
 					//res.cookie('token', username, { maxAge: 900000 });
 					//increased for debugging purposes
 					res.cookie('token', username, { maxAge: 9000000000 });
@@ -91,8 +94,8 @@ app.post('/login', function(req, res) {
 });
 
 app.get(planetURL, function(req,res) {
-	if (req.cookies.token !== undefined) {
-		if (tokens.findIndex(token => token == req.cookies.token) != -1) {
+	if (req.cookies !== undefined && req.cookies.token !== undefined) {
+		if (is_valid_token(req.cookies.token)) {
 			res.sendFile(path.join(root + '/client_side', 'pages/planet.html'));
 		} else {
 			res.clearCookie('token');
@@ -104,8 +107,8 @@ app.get(planetURL, function(req,res) {
 });
 
 app.get(mapURL, function(req,res) {
-	if (req.cookies.token !== undefined) {
-		if (tokens.findIndex(token => token == req.cookies.token) != -1) {
+	if (req.cookies !== undefined && req.cookies.token !== undefined) {
+		if (is_valid_token(req.cookies.token)) {
 			res.sendFile(path.join(root + '/client_side', 'pages/map.html'));
 		} else {
 			res.clearCookie('token');
@@ -117,8 +120,8 @@ app.get(mapURL, function(req,res) {
 });
 
 app.get(messageURL, function(req,res) {
-	if (req.cookies.token !== undefined) {
-		if (tokens.findIndex(token => token == req.cookies.token) != -1) {
+	if (req.cookies !== undefined && req.cookies.token !== undefined) {
+		if (is_valid_token(req.cookies.token)) {
 			res.sendFile(path.join(root + '/client_side', 'pages/message.html'));
 		} else {
 			res.clearCookie('token');
@@ -130,8 +133,8 @@ app.get(messageURL, function(req,res) {
 });
 
 app.get(researchURL, function(req,res) {
-	if (req.cookies.token !== undefined) {
-		if (tokens.findIndex(token => token == req.cookies.token) != -1) {
+	if (req.cookies !== undefined && req.cookies.token !== undefined) {
+		if (is_valid_token(req.cookies.token)) {
 			res.sendFile(path.join(root + '/client_side', 'pages/research.html'));
 		} else {
 			res.clearCookie('token');
@@ -143,8 +146,8 @@ app.get(researchURL, function(req,res) {
 });
 
 app.get(reportURL, function(req,res) {
-	if (req.cookies.token !== undefined) {
-		if (tokens.findIndex(token => token == req.cookies.token) != -1) {
+	if (req.cookies !== undefined && req.cookies.token !== undefined) {
+		if (is_valid_token(req.cookies.token)) {
 			res.sendFile(path.join(root + '/client_side', 'pages/report.html'));
 		} else {
 			res.clearCookie('token');
@@ -165,16 +168,26 @@ server.listen(8080, function() {
 	game.setup_game();
 });
 
+io.use((socket, next) => {
+	console.log(socket.handshake.auth.token);
+	console.log(tokens);
+	if (socket.handshake.auth.token !== undefined && tokens.findIndex(token => token == socket.handshake.auth.token) != -1) {
+		socket.username = socket.handshake.auth.token;
+		socket.token = socket.handshake.auth.token;
+		next();
+	} else {
+		next(new Error("Authentication failed"));
+	}
+});
+
 // Add the WebSocket handlers
 io.on('connection', socket => {
-	socket.on('planet_datapack_request', token => {
-		socketTable[socket.id] = token;
-		dbManager.get_starter_datapack(token).then(datapack => { socket.emit('starter_datapack', JSON.stringify(datapack)); });
+	socket.on('planet_datapack_request', () => {
+		dbManager.get_starter_datapack(socket.username).then(datapack => { socket.emit('starter_datapack', JSON.stringify(datapack)); });
 	});
 
 	socket.on('upgrade_building', building => {
-		var token = socketTable[socket.id];
-		dbManager.upgrade_building(token, building).catch(e => {
+		dbManager.upgrade_building(socket.username, building).catch(e => {
 			if (e != 'Not enough resources to upgrade building') {
 				throw e;
 			}
@@ -186,26 +199,22 @@ io.on('connection', socket => {
 	});
 
 	socket.on('cancel_building_update', building => {
-		var token = socketTable[socket.id];
-		dbManager.cancel_building_update(token, building);
+		dbManager.cancel_building_update(socket.username, building);
 	});
 
 	socket.on('downgrade_building', building => {
-		var token = socketTable[socket.id];
-		dbManager.downgrade_building(token, building);
+		dbManager.downgrade_building(socket.username, building);
 	});
 
-	socket.on('map_datapack_request', (token, layout) => {
-		socketTable[socket.id] = token;
-		game.addPlayer(socket, token).then(() => {
+	socket.on('map_datapack_request', (layout) => {
+		game.addPlayer(socket, socket.username).then(() => {
 			socket.gameAdded = true;
-			game.get_map_datapack(layout, socket.id).then(result => {socket.emit('map_datapack', JSON.stringify(result))});
+			game.get_map_datapack(layout, socket.username).then(result => {socket.emit('map_datapack', JSON.stringify(result))});
 		});
 	});
 
 	socket.on('build_units', (units) => {
-		var token = socketTable[socket.id];
-		dbManager.build_units(token, units).catch(e => {
+		dbManager.build_units(socket.username, units).catch(e => {
 			if (e != 'Not enough resources to build all units' && e != 'Invalid units input received') {
 				throw e;
 			}
@@ -218,26 +227,24 @@ io.on('connection', socket => {
 		if (request_id === 'restart') {
 			restart_server(socket, passed_args[0]);
 		} else {
-			var token = socketTable[socket.id];
-			game.process_request(socket, token, request_id, passed_args);
+			game.process_request(socket.username, request_id, passed_args);
 		}
 	});
 
 	socket.on('set_movepoint', (x, y) => {
-		game.set_movepoint(socket.id, x, y);
+		game.set_movepoint(socket.username, x, y);
 	});
 
 	socket.on('assign_fleet', (object_type, object_id) => {
-		game.assign_fleet(socket.id, object_type, object_id);
+		game.assign_fleet(socket.username, object_type, object_id);
 	});
 
 	socket.on('send_expedition', (units, length_type) => {
-		game.send_expedition(socket.id, units, length_type);
+		game.send_expedition(socket.username, units, length_type);
 	});
 
-	socket.on('report_datapack_request', token => {
-		socketTable[socket.id] = token;
-		dbManager.get_report_datapack(token).then(datapack => { socket.emit('report_datapack', JSON.stringify(datapack)); });
+	socket.on('report_datapack_request', () => {
+		dbManager.get_report_datapack(socket.username).then(datapack => { socket.emit('report_datapack', JSON.stringify(datapack)); });
 	});
 
 	socket.on('load_report', report_id => {
@@ -245,8 +252,7 @@ io.on('connection', socket => {
 	});
 
 	socket.on('reports_displayed', timestamp => {
-		var token = socketTable[socket.id];
-		dbManager.mark_reports_displayed(token, timestamp);
+		dbManager.mark_reports_displayed(socket.username, timestamp);
 	});
 
 	socket.on('report_read', report_id => {
@@ -254,11 +260,10 @@ io.on('connection', socket => {
 	});
 
 	socket.on('disconnect', () => {
-		//doing this "logs out" the user every time they try to switch pages (e.g. go from planet to map - causes disconnect and is removed from the tokens, which causes them to end up the next time on the login page)
-		//tokens.splice(tokens.findIndex(token => token == socketTable[socket.id]), 1);
-		delete socketTable[socket.id];
+		//When the player is switching between pages (map, planet, etc.,), they got the set amount of time specified in the timeout to reconnect before getting logged out
+		token_timeouts[socket.token] = setTimeout(function() { tokens.splice(tokens.findIndex(token => token == socket.username), 1); }.bind(this), 12000);
 		if (socket.gameAdded !== undefined) {
-			game.removePlayer(socket);
+			game.removePlayer(socket.username);
 			socket.gameAdded = undefined;
 		}
 	});
@@ -268,7 +273,7 @@ io.on('connection', socket => {
 function restart_server(socket, layout) {
 	var token;
 	if (socket !== undefined) {
-		token = socketTable[socket.id];
+		token = socket.token;
 	}
 	delete require.cache[require.resolve('./server_side/main_modules/Game.js')];
 	delete require.cache[require.resolve('./server_side/main_modules/dbManager.js')];
@@ -276,13 +281,22 @@ function restart_server(socket, layout) {
 	const Game = require('./server_side/main_modules/Game.js');
 	dbManager = new DbManager();
 	game.stop();
-	game = new Game(dbManager, io, socketTable);
+	game = new Game(dbManager, io);
 	game.setup_game().then(() => {
 		if (socket !== undefined) {
 			game.addPlayer(socket, token).then(() => {
 				socket.gameAdded = true;
-				game.get_map_datapack(layout, socket.id).then(result => {socket.emit('map_datapack', JSON.stringify(result))});
+				game.get_map_datapack(layout, socket.username).then(result => {socket.emit('map_datapack', JSON.stringify(result))});
 			});
 		}
 	});
+}
+
+function is_valid_token(p_token) {
+	var isValid_token = tokens.findIndex(token => token == p_token) != -1
+	if (isValid_token) {
+		var timeout = token_timeouts[p_token];
+		clearTimeout(timeout);
+	}
+	return isValid_token;
 }

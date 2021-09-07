@@ -35,7 +35,7 @@ class Game extends Base_Page {
     }
 
     async request_data() {
-        this.socket.emit('map_datapack_request', document.cookie.split('token=')[1], this.layout);
+        this.socket.emit('map_datapack_request', this.layout);
     }
 
     async setup_game(p_datapack) {

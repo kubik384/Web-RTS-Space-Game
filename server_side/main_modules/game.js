@@ -5,10 +5,9 @@ var expedition_results = require('./../game_properties/expedition_results.json')
 var fs = require('fs');
 
 module.exports = class Game {
-    constructor(dbManager, server, connections) {
+    constructor(dbManager, server) {
         this.dbManager = dbManager;
         this.server = server;
-        this.connections = connections;
         this.interval_time = 20;
         this.overall_time_passed = 0;
         this.tick_time = 90;
@@ -594,9 +593,8 @@ module.exports = class Game {
         }
     }
 
-    async cancel_fleet_abandoning(socket_id) {
-        var player = this.players.find( player => player.socket.id == socket_id );
-        var fleet = this.fleets.find(fleet => fleet.owner == player.username);
+    async cancel_fleet_abandoning(username) {
+        var fleet = this.fleets.find(fleet => fleet.owner == username);
         if (fleet !== undefined) {
             if (fleet.abandon_timer !== undefined) {
                 fleet.abandon_timer = undefined;
@@ -604,8 +602,7 @@ module.exports = class Game {
         }
     }
 
-    async set_movepoint(socket_id, x, y) {
-        var username = this.players.find( player => player.socket.id == socket_id ).username;
+    async set_movepoint(username, x, y) {
         var player_fleet = this.fleets.find( fleet => fleet.owner == username );
         if (player_fleet !== undefined && player_fleet.abandon_timer === undefined && player_fleet.engaged_fleet_id === undefined && player_fleet.expedition_timer === undefined) {
             player_fleet.move_point = {x:x, y:y};
@@ -614,7 +611,7 @@ module.exports = class Game {
         }
     }
 
-    async get_map_datapack(layout, socket_id) {
+    async get_map_datapack(layout, username) {
         if (this.updating) {
             await new Promise((resolve, reject) => {setTimeout(resolve, 0)});
             return this.get_map_datapack();
@@ -626,7 +623,7 @@ module.exports = class Game {
                     return;
                 } else if (layout === 'system') {
                     for (var i = 0; i < this.players.length; i++) {
-                        if (this.players[i].socket.id == socket_id) {
+                        if (this.players[i].username == username) {
                             /*
                             var player_planet = this.space_objects.find(space_object => space_object.space_object_id == this.players[i].space_object_id);
                             var space_objects = [];
@@ -676,9 +673,9 @@ module.exports = class Game {
         this.players.push({socket: socket, username: username, space_object_id: basic_player_map_info.space_object_id, view_range: 100});
     }
 
-    async removePlayer(socket) {
+    async removePlayer(username) {
         for (var i = 0; i < this.players.length; i++) {
-            if (this.players[i].socket.id == socket.id) {
+            if (this.players[i].username == username) {
                 this.players.splice(i, 1);
                 return;
             }
@@ -696,7 +693,7 @@ module.exports = class Game {
         this.space_objects.push({space_object_id:  this.space_object_id++, original_x: x, original_y: y, x: x, y: y, width: size, height: size, image: "asteroid", velocity: new Vector(0, 0), rot: 0, resources: resources});
     }
 
-    async generate_system(socket) {
+    async generate_system() {
         var center_x = Math.floor(Math.random() * this.boundaries - 50000 * Math.sign(Math.random() - 0.49));
         var center_y = Math.floor(Math.random() * this.boundaries - 50000 * Math.sign(Math.random() - 0.49));
         var center_size = Math.random() * 9000;
@@ -710,10 +707,10 @@ module.exports = class Game {
             var rot = Math.floor(Math.random() * 360);
             this.space_objects.push({space_object_id: this.space_object_id++, original_x: x, original_y: y, x: x, y: y, width: size, height: size, image: "planet2", velocity: new Vector(0, 0), rot: rot, centerrot_id: center_object_id});
         }
-        socket.emit('system_generated', center_x, center_y);
+        this.server.emit('system_generated', center_x, center_y);
     }
 
-    async process_request(socket, username, request_id, passed_args) {
+    async process_request(username, request_id, passed_args) {
         if (typeof request_id === 'string') {
             if (!this.updating) {
                 switch(request_id) {
@@ -748,13 +745,13 @@ module.exports = class Game {
                         }
                         break;
                     case 'generate_system':
-                        this.generate_system(socket);
+                        this.generate_system();
                         break;
                     case 'generate_asteroid':
                         this.generate_asteroid();
                         break;
                     case 'cancel_fleet_abandoning':
-                        this.cancel_fleet_abandoning(socket.id);
+                        this.cancel_fleet_abandoning(username);
                         break;
                 }
             } else {
@@ -765,8 +762,7 @@ module.exports = class Game {
         }
     }
 
-    async assign_fleet(socket_id, p_object_type, object_id) {
-        var username = this.players.find( player => player.socket.id == socket_id ).username;
+    async assign_fleet(username, p_object_type, object_id) {
         var player_fleet = this.fleets.find( fleet => fleet.owner == username );
         if (player_fleet !== undefined && player_fleet.abandon_timer === undefined && player_fleet.engaged_fleet_id === undefined && player_fleet.expedition_timer === undefined) {
             var valid_object_types = ['space_object', 'fleet'];
@@ -876,15 +872,14 @@ module.exports = class Game {
         }
     }
 
-    async send_expedition(socket_id, units, expedition_length_id) {
+    async send_expedition(username, units, expedition_length_id) {
         if (expedition_length_id !== undefined) {
-            var player = this.players.find(player => player.socket.id == socket_id);
-            var player_fleet = this.fleets.find( fleet => fleet.owner == player.username );
+            var player_fleet = this.fleets.find( fleet => fleet.owner == username );
             if (player_fleet === undefined) {
                 var expedition_timer;
                 switch (expedition_length_id) {
                     case 1:
-                        expedition_timer = 100;
+                        expedition_timer = 3000;
                         break;
                     case 2:
                         expedition_timer = 17100000;
@@ -896,7 +891,7 @@ module.exports = class Game {
                         expedition_timer = 50400000;
                         break;
                 }
-                this.assemble_fleet(player.username, units, expedition_timer, expedition_length_id);
+                this.assemble_fleet(username, units, expedition_timer, expedition_length_id);
             }
         }
     }
@@ -982,17 +977,13 @@ module.exports = class Game {
     }
 
     async generate_report(username, title, content, timestamp) {
-        var socket;
-        for (var socket_id in this.connections) {
-            if (this.connections[socket_id] == username) {
-                socket = this.server.sockets.connected[socket_id];
-                break;
-            }
+        var player_socket;
+        //going through socket connections instead of players because a user can be on other pages than map, which means they won't be in the players array, but they still will be connected through a socket and should be informed of new reports
+        this.server.sockets.sockets.forEach(socket => { if (socket.username == username) {player_socket = socket}});
+        await this.dbManager.save_report(username, title, content, timestamp);
+        if (player_socket !== undefined) {
+            player_socket.emit('new_report');
         }
-        if (socket !== undefined) {
-            socket.emit('new_report');
-        }
-        this.dbManager.save_report(username, title, content, timestamp);
     }
 
     async stop() {
