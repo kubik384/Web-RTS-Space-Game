@@ -4,28 +4,66 @@
 		<title>Unfinished project #219</title>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 		<meta http-equiv="content-type" content="text/html; charset=utf-8" />
-		<link rel="stylesheet" type="text/css" href="/client_side/cascades/research.css">
 		<link rel="stylesheet" type="text/css" href="/client_side/cascades/navbar.css">
+		<link rel="stylesheet" type="text/css" href="/client_side/cascades/research.css">
+		<script src="/socket.io/socket.io.js"></script>
+		<script type="module" src="/client_side/javascript/research_init.js"></script>
 	</head>
 	<body>
-		<div id='navbar'>
-			<a href='/game/planet'>Planet</a>
-			<div id="dropdown_select">
-				<button id="dropdown_btn">Map</button>
-				<div id="dropdown_menu">
-					<a href='/game/map?layout=system'>System</a>
-					<a href='/game/map?layout=galaxy'>Galaxy</a>
+		<div id="image_holder">
+			<img src="/client_side/images/research/rocket_preview.png" id="rocket_preview"></img>
+		</div>
+		<div id="container">
+			<div id="navbar">
+				<a href='/game/planet'>Planet</a>
+				<div id="dropdown_select">
+					<button id="dropdown_btn">Map</button>
+					<div id="dropdown_menu">
+						<a href='/game/map?layout=system'>System</a>
+						<a href='/game/map?layout=galaxy'>Galaxy</a>
+					</div>
+				</div>
+				<a href="/game/report" id="reports_tab">
+					Reports<span id="new_report_count" style="display: none">0</span>
+				</a>
+				<a href='/game/message'>Messages</a>
+				<a href='/game/research'>Research</a>
+			</div>
+			<div id="research_map_container">
+				<canvas id="research_map"></canvas>
+			</div>
+			<div id="research_info_panel" style="display: none">
+				<img src="/client_side/images/ui/cancel.png" id="close_button">
+				<div id="res_img_wrapper">
+					<img src="/client_side/images/research/rocket.png" id="research_image">
+				</div>
+				<p id="research_description"></p>
+				<div id="res_btn_wrapper">
+					<img src="/client_side/images/ui/research_button.png" id="research_button">
 				</div>
 			</div>
-			<a href="/game/report" id="reports_tab">
-				Reports<span id="new_report_count" style="display: none">0</span>
-			</a>
-			<a href='/game/message'>Messages</a>
-			<a href='/game/research'>Research</a>
 		</div>
-		<div id='resource_building_ui'>
-		</div>
-		<div id='button_menu'>
-		</div>
+		<!--
+			<div id="research_options_wrapper">
+				<table>
+					<tr></tr>
+				<div>
+					<img src="/client_side/images/research/rocket.png"></img>
+					<h2>Space Rocket</h2><-- = first research, allows to build rockets (whill will be needed to send spacecrafts, )
+				</div>
+				<div>
+					<img src="/client_side/images/research/rocket.png"></img>
+					<h2>Spacecraft</h2>
+				</div>
+				<div>
+					<img src="/client_side/images/research/rocket.png"></img>
+					<h2>Space Rocket</h2>
+				</div>
+				<-- = space shuttle - costs 60% of a rocket?
+				<-- = spacecraft - satellites, mining devices, attack probe, spy probe? (maybe also add 5th option - railgun as a defence against the attack probes? Or maybe that's in the next column of research to give aggressive players time to try and make some plays with the attack probes?) Divide it into different research options?
+				<-- = Straship - improved Space Rocket?
+				</table>
+			</div>
+		-->
 	</body>
 </html>

@@ -1,0 +1,35 @@
+[
+    {
+        "technology_id": 1,
+        "req_tech_ids": [],
+        "col": 0,
+        "row": 0,
+        "name": "rocket",
+        "cost": {
+            "timber": 0
+        },
+        "description": "Enables the construction of rockets that can be launched into space"
+    },
+    {
+        "technology_id": 2,
+        "req_tech_ids": [1],
+        "col": 1,
+        "row": 0,
+        "name": "spacecraft",
+        "cost": {
+            "timber": 0
+        },
+        "description": "Enables the construction of spacecrafts which can be then launched into space together with a rocket"
+    },
+    {
+        "technology_id": 3,
+        "req_tech_ids": [1],
+        "col": 1,
+        "row": 1,
+        "name": "spacecraft",
+        "cost": {
+            "timber": 0
+        },
+        "description": "Enables the construction of spacecrafts which can be then launched into space together with a rocket"
+    }
+]

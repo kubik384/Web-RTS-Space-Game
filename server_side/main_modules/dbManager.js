@@ -7,6 +7,7 @@ var all_resource_types = 'pop, food, timber, metals, coal, oil, kerosene, hydrog
 var resourceTable = all_resource_types.split(', ');
 var buildings = require('./../game_properties/buildings.json');
 var units = require('./../game_properties/units.json');
+var technologies = require('./../game_properties/technologies.json');
 
 module.exports = class DbManager {
     constructor() {
@@ -527,5 +528,10 @@ module.exports = class DbManager {
         SET isRead = 1
         WHERE report_id = ?`;
         return this.execute_query(query, [report_id]);
+    }
+
+    async get_research_datapack(username) {
+        var new_reports_count =  await this.get_new_reports_count(username);
+        return {new_reports_count: new_reports_count, technologies: technologies};
     }
 }
