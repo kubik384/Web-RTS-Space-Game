@@ -435,7 +435,7 @@ module.exports = class DbManager {
         for (var i = 0; i < p_units.length; i++) {
             var u_index = units.findIndex(unit => unit.unit_id == p_units[i].unit_id);
             for (var resource in units[u_index].cost) {
-                if (updated_player_resources[resource] > units[u_index].cost[resource] * p_units[i].count) {
+                if (updated_player_resources[resource] >= units[u_index].cost[resource] * p_units[i].count) {
                     if (p_units[i].count > 0 && allowed_units.includes(parseInt(p_units[i].unit_id))) {
                         updated_player_resources[resource] -= units[u_index].cost[resource] * p_units[i].count;
                     } else {
@@ -532,6 +532,62 @@ module.exports = class DbManager {
 
     async get_research_datapack(username) {
         var new_reports_count =  await this.get_new_reports_count(username);
-        return {new_reports_count: new_reports_count, technologies: technologies};
+        var researched_techs = await this.get_researched_techs(username);
+        return {new_reports_count: new_reports_count, technologies: technologies, researched_techs: researched_techs};
+    }
+
+    async get_researched_techs(username) {
+        var query = `SELECT researched_techs
+        FROM players
+        WHERE username = ?`;
+        return JSON.parse((await this.execute_query(query, [username]))[0].researched_techs);
+    }
+
+    async research_technology(username, tech_id) {
+        //invalid tech id check
+        var tech_index;
+        for (var i = 0; i < technologies.length; i++) {
+            if (technologies[i].technology_id == tech_id) {
+                tech_index = i;
+                break;
+            }
+        }
+        if (tech_index === undefined) {
+            return false;
+        }
+        //already researched check
+        var query = `SELECT researched_techs
+        FROM players
+        WHERE username = ?`;
+        var researched_techs = await this.get_researched_techs(username);
+        var valid_tech_id = true;
+        for (var i = 0; i < researched_techs.length; i++) {
+            if (researched_techs[i] == tech_id) {
+                valid_tech_id = false;
+            }
+        }
+        if (!valid_tech_id) {
+            return false;
+        }
+
+        //resource check/update
+        var query = 'UPDATE players SET ';
+        var player_resources = await this.get_resource(username, 'all', true);
+        for (var resource in technologies[tech_index].cost) {
+            if (player_resources[resource] < technologies[tech_index].cost[resource]) {
+                return false;
+            } else {
+                query += `${resource} = ${resource} - ${technologies[tech_index].cost[resource]}, `;
+            }
+        }
+        query = query.slice(0, query.length - 2) + ' WHERE username = ?';
+        await this.execute_query(query, [username]);
+        
+        researched_techs.push(tech_id);
+        query = `UPDATE players
+        SET researched_techs = ?
+        WHERE username = ?`;
+        await this.execute_query(query, [JSON.stringify(researched_techs), username]);
+        return true;
     }
 }

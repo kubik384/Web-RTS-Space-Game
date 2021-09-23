@@ -82,13 +82,24 @@ body::-webkit-scrollbar {
 
 #research_button {
 	position: relative;
-	align-self: center;
-	cursor: pointer;
 	width: 100px;
+	height: 33px;
 	z-index: -1;
 }
 
 #res_btn_wrapper {
+	cursor: pointer;
+	height: 33px;
+	width: 100px;
+	align-self: center;
 	margin: 20px 20px;
-	box-shadow: 0px 3px 2px 2px rgb(0 0 255 / 40%), inset 5em 1em black;
+	user-select: none;
+}
+
+.res_btn {
+	box-shadow: 0px 5px 2px rgb(0,0,0,0.4);
+}
+
+.res_btn_clicked {
+	box-shadow: 0px 1px 2px rgb(0,0,0,0.6), inset 0px 9px rgb(0,0,0,0.3), inset 0px -11px 0px 0px rgba(0,0,0,0.4);
 }

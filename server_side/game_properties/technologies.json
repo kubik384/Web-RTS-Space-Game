@@ -6,7 +6,7 @@
         "row": 0,
         "name": "rocket",
         "cost": {
-            "timber": 0
+            "timber": 1
         },
         "description": "Enables the construction of rockets that can be launched into space"
     },
@@ -17,7 +17,7 @@
         "row": 0,
         "name": "spacecraft",
         "cost": {
-            "timber": 0
+            "timber": 2
         },
         "description": "Enables the construction of spacecrafts which can be then launched into space together with a rocket"
     },
@@ -28,7 +28,7 @@
         "row": 1,
         "name": "spacecraft",
         "cost": {
-            "timber": 0
+            "timber": 3
         },
         "description": "Enables the construction of spacecrafts which can be then launched into space together with a rocket"
     }

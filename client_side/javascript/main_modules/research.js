@@ -19,6 +19,7 @@ class Game extends Base_Page {
         this.y_spacing = 300;
         this.tech_img_width = 100;
         this.tech_img_height = 100;
+        this.dist_travelled = {x: 0, y:0};
         
         this.xOffset = 0;
         this.yOffset = 0;
@@ -35,6 +36,7 @@ class Game extends Base_Page {
         console.log(datapack);
         super.setup_page(datapack);
         this.technologies = datapack.technologies;
+        this.researched_techs = datapack.researched_techs;
         for (var i = 0; i < this.technologies.length; i++) {
             this.technologies[i].x1 = this.x_spacing * this.technologies[i].col;
             this.technologies[i].x2 = this.technologies[i].x1 + this.tech_img_width;
@@ -76,7 +78,7 @@ class Game extends Base_Page {
             }
         });
 
-        document.getElementById('research_map').addEventListener('mousedown', e => {
+        this.res_map_canvas.addEventListener('mousedown', e => {
             //left click
             if (e.button == 0) {
                 this.dragging = true;
@@ -95,8 +97,22 @@ class Game extends Base_Page {
                     cursor.x = (e.clientX - this.xOffset - this.res_map_rect.left/*- this.res_map_canvas_border*/)/this.zoom;
                     cursor.y = (e.clientY - this.yOffset - this.res_map_rect.top/*- this.res_map_canvas_border*/)/this.zoom;
                     if (utils.isInsideObject(cursor, this.technologies[this.mousedown_tech_index], this.calc_padding(5))) {
-                        this.display_tech_description(this.technologies[this.mousedown_tech_index]);
+                        var distance_travelled = Math.pow(this.dist_travelled.x, 2) + Math.pow(this.dist_travelled.y, 2);
+                        console.log(distance_travelled);
+                        if (distance_travelled < 80) {
+                            this.display_tech_description(this.technologies[this.mousedown_tech_index]);
+                        }
                     }
+                    this.dist_travelled.x = 0;
+                    this.dist_travelled.y = 0;
+                }
+
+                
+                var res_button_wrappers = document.getElementsByClassName("res_btn_clicked");
+                if (res_button_wrappers.length != 0) {
+                    var button_wrapper = res_button_wrappers[0];
+                    button_wrapper.classList.add("res_btn");
+                    button_wrapper.classList.remove("res_btn_clicked");
                 }
             }
         });
@@ -105,6 +121,8 @@ class Game extends Base_Page {
             if (this.dragging) {
                 this.xOffset += e.movementX;
                 this.yOffset += e.movementY;
+                this.dist_travelled.x += Math.abs(e.movementX);
+                this.dist_travelled.y += Math.abs(e.movementY);
             }
 
             var hovering_tech = this.hovered_technology_index !== undefined;
@@ -131,15 +149,42 @@ class Game extends Base_Page {
             if (document.visibilityState == 'hidden') {
                 this.dragging = false;
             }
+            
+            var res_button_wrappers = document.getElementsByClassName("res_btn_clicked");
+            if (res_button_wrappers.length != 0) {
+                var button_wrapper = res_button_wrappers[0];
+                button_wrapper.classList.add("res_btn");
+                button_wrapper.classList.remove("res_btn_clicked");
+            }
         });
 
         document.getElementById('close_button').addEventListener('click', function() {
             document.getElementById('research_info_panel').style.display = "none";
         });
 
-        document.getElementById('research_button').addEventListener('click', function() {
-            
+        document.getElementById('res_btn_wrapper').addEventListener('mousedown', function(e) {
+            if (e.button == 0) {
+                if (res_btn_wrapper.classList.contains('res_btn')) {
+                    this.classList.add("res_btn_clicked");
+                    this.classList.remove("res_btn");
+                }
+            }
         });
+
+        document.getElementById('res_btn_wrapper').addEventListener('mouseup', function(e) {
+            if (e.button == 0) {
+                var res_button_wrappers = document.getElementsByClassName("res_btn_clicked");
+                if (res_button_wrappers.length != 0) {
+                    var button_wrapper = res_button_wrappers[0];
+                    button_wrapper.classList.add("res_btn");
+                    button_wrapper.classList.remove("res_btn_clicked");
+                    this.socket.emit("research_technology", button_wrapper.dataset.id);
+                    this.researched_techs.push(button_wrapper.dataset.id);
+                    res_btn_wrapper.setAttribute('style', 'background-color: rgba(0,0,0,0.6)');
+                    res_btn_wrapper.classList.remove('res_btn');
+                }
+            }
+        }.bind(this));
         
         window.requestAnimationFrame(this.draw.bind(this));
         this.logic_loop = setTimeout(this.update.bind(this), this.tick_time);
@@ -211,6 +256,16 @@ class Game extends Base_Page {
         panel.style.removeProperty("display");
         document.getElementById('research_image').setAttribute("src", "/client_side/images/research/" + tech.name + ".png");
         document.getElementById('research_description').textContent = tech.description;
+        var res_btn_wrapper = document.getElementById('res_btn_wrapper');
+        res_btn_wrapper.setAttribute('data-id', tech.technology_id);
+        var tech_researched = this.researched_techs.find(tech_id => tech_id == tech.technology_id);
+        if (tech_researched !== undefined) {
+            res_btn_wrapper.setAttribute('style', 'background-color: rgba(0,0,0,0.6)');
+            res_btn_wrapper.classList.remove('res_btn');
+        } else {
+            res_btn_wrapper.classList.add('res_btn');
+            res_btn_wrapper.removeAttribute('style');
+        }
     }
 }
 
