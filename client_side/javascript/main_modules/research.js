@@ -98,7 +98,6 @@ class Game extends Base_Page {
                     cursor.y = (e.clientY - this.yOffset - this.res_map_rect.top/*- this.res_map_canvas_border*/)/this.zoom;
                     if (utils.isInsideObject(cursor, this.technologies[this.mousedown_tech_index], this.calc_padding(5))) {
                         var distance_travelled = Math.pow(this.dist_travelled.x, 2) + Math.pow(this.dist_travelled.y, 2);
-                        console.log(distance_travelled);
                         if (distance_travelled < 80) {
                             this.display_tech_description(this.technologies[this.mousedown_tech_index]);
                         }
@@ -106,7 +105,6 @@ class Game extends Base_Page {
                     this.dist_travelled.x = 0;
                     this.dist_travelled.y = 0;
                 }
-
                 
                 var res_button_wrappers = document.getElementsByClassName("res_btn_clicked");
                 if (res_button_wrappers.length != 0) {
