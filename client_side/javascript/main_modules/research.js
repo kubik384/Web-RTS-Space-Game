@@ -19,7 +19,6 @@ class Game extends Base_Page {
         this.y_spacing = 300;
         this.tech_img_width = 100;
         this.tech_img_height = 100;
-        this.mouse_down = false;
         this.dist_travelled = {x: 0, y:0};
         
         this.xOffset = 0;
@@ -86,10 +85,6 @@ class Game extends Base_Page {
             //left click
             if (e.button == 0) {
                 this.dragging = true;
-                if (this.hovered_technology_index !== undefined) {
-                    this.mousedown_tech_index = this.hovered_technology_index;
-                    this.mouse_down = true;
-                }
             }
         });
 
@@ -97,41 +92,41 @@ class Game extends Base_Page {
             //left click
             if (e.button == 0) {
                 this.dragging = false;
-                if (this.mousedown_tech_index !== undefined) {
-                    var cursor = {};
-                    cursor.x = (e.clientX - this.xOffset - this.res_map_rect.left/*- this.res_map_canvas_border*/)/this.zoom;
-                    cursor.y = (e.clientY - this.yOffset - this.res_map_rect.top/*- this.res_map_canvas_border*/)/this.zoom;
-                    if (utils.isInsideObject(cursor, this.technologies[this.mousedown_tech_index], this.calc_padding(5))) {
-                        var distance_travelled = Math.pow(this.dist_travelled.x, 2) + Math.pow(this.dist_travelled.y, 2);
-                        if (distance_travelled < 80) {
-                            this.display_tech_description(this.technologies[this.mousedown_tech_index]);
-                        }
-                    }
-                    this.dist_travelled.x = 0;
-                    this.dist_travelled.y = 0;
-                    this.mouse_down = false;
-                }
-                
-                var res_button_wrappers = document.getElementsByClassName("res_btn_clicked");
-                if (res_button_wrappers.length != 0) {
-                    var button_wrapper = res_button_wrappers[0];
-                    button_wrapper.classList.add("res_btn");
-                    button_wrapper.classList.remove("res_btn_clicked");
-                }
+                this.dist_travelled.x = 0;
+                this.dist_travelled.y = 0;
+            }
+
+            var res_button_wrappers = document.getElementsByClassName("res_btn_clicked");
+            if (res_button_wrappers.length != 0) {
+                var button_wrapper = res_button_wrappers[0];
+                button_wrapper.classList.add("res_btn");
+                button_wrapper.classList.remove("res_btn_clicked");
             }
         });
+
+        this.res_map_canvas.addEventListener('mouseup', e => {
+            if (this.hovered_technology_index !== undefined) {
+                var cursor = {};
+                cursor.x = (e.clientX - this.xOffset - this.res_map_rect.left/*- this.res_map_canvas_border*/)/this.zoom;
+                cursor.y = (e.clientY - this.yOffset - this.res_map_rect.top/*- this.res_map_canvas_border*/)/this.zoom;
+                if (utils.isInsideObject(cursor, this.technologies[this.hovered_technology_index], this.calc_padding(5))) {
+                    var distance_travelled = Math.pow(this.dist_travelled.x, 2) + Math.pow(this.dist_travelled.y, 2);
+                    if (distance_travelled < 80) {
+                        this.display_tech_description(this.technologies[this.hovered_technology_index]);
+                    }
+                }
+            }
+        })
 
         document.addEventListener('mousemove', e => {
             if (this.dragging) {
                 this.xOffset += e.movementX;
                 this.yOffset += e.movementY;
-                if (this.mouse_down) {
-                    this.dist_travelled.x += Math.abs(e.movementX);
-                    this.dist_travelled.y += Math.abs(e.movementY);
-                }
+                this.dist_travelled.x += Math.abs(e.movementX);
+                this.dist_travelled.y += Math.abs(e.movementY);
             }
 
-            var hovering_tech = this.hovered_technology_index !== undefined;
+            var was_hovering_tech = this.hovered_technology_index !== undefined;
             this.hovered_technology_index = undefined;
             var cursor = {};
             cursor.x = (e.clientX - this.xOffset - this.res_map_rect.left/*- this.res_map_canvas_border*/)/this.zoom;
@@ -146,18 +141,15 @@ class Game extends Base_Page {
                 if (this.res_map_canvas.style.cursor != "pointer") {
                     this.res_map_canvas.style.cursor = "pointer";
                 }
-            } else if (hovering_tech) {
+            } else if (was_hovering_tech) {
                 this.res_map_canvas.style.cursor = "default";
             }
         });
 
         window.addEventListener("visibilitychange", () => {
-            if (document.visibilityState == 'hidden') {
-                this.dragging = false;
-            }
+            this.dragging = false;
             this.dist_travelled.x = 0;
             this.dist_travelled.y = 0;
-            this.mouse_down = false;
             
             var res_button_wrappers = document.getElementsByClassName("res_btn_clicked");
             if (res_button_wrappers.length != 0) {
