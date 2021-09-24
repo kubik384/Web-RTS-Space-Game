@@ -532,18 +532,26 @@ module.exports = class DbManager {
 
     async get_research_datapack(username) {
         var new_reports_count =  await this.get_new_reports_count(username);
-        var researched_techs = await this.get_researched_techs(username);
-        return {new_reports_count: new_reports_count, technologies: technologies, researched_techs: researched_techs};
+        var research_details = await this.get_research_details(username, true);
+        return {new_reports_count: new_reports_count, technologies: technologies, research_details: research_details};
     }
 
-    async get_researched_techs(username) {
-        var query = `SELECT researched_techs
+    async get_research_details(username, update = false) {
+        if (update) {
+            await this.update_research(username);
+        }
+        var query = `SELECT research
         FROM players
         WHERE username = ?`;
-        return JSON.parse((await this.execute_query(query, [username]))[0].researched_techs);
+        return JSON.parse((await this.execute_query(query, [username]))[0].research);
+    }
+
+    async get_researched_techs(username, update = false) {
+        return (await this.get_research_details(username, update)).researched_techs;
     }
 
     async research_technology(username, tech_id) {
+        var start_timestamp = await utils.get_timestamp();
         //invalid tech id check
         var tech_index;
         for (var i = 0; i < technologies.length; i++) {
@@ -559,10 +567,11 @@ module.exports = class DbManager {
         var query = `SELECT researched_techs
         FROM players
         WHERE username = ?`;
-        var researched_techs = await this.get_researched_techs(username);
+        var research_details = await this.get_research_details(username, true);
+        var researched_techs = research_details.researched_techs;
         var valid_tech_id = true;
         for (var i = 0; i < researched_techs.length; i++) {
-            if (researched_techs[i] == tech_id) {
+            if (researched_techs[i] == tech_id || research_details.inResearch !== undefined) {
                 valid_tech_id = false;
             }
         }
@@ -583,11 +592,28 @@ module.exports = class DbManager {
         query = query.slice(0, query.length - 2) + ' WHERE username = ?';
         await this.execute_query(query, [username]);
         
-        researched_techs.push(tech_id);
+        research_details.inResearch = tech_id;
+        research_details.start_timestamp = start_timestamp;
         query = `UPDATE players
-        SET researched_techs = ?
+        SET research = ?
         WHERE username = ?`;
-        await this.execute_query(query, [JSON.stringify(researched_techs), username]);
+        await this.execute_query(query, [JSON.stringify(research_details), username]);
         return true;
+    }
+
+    async update_research(username) {
+        var research_details = await this.get_research_details(username);
+        if (research_details.inResearch !== undefined) {
+            var research_time = technologies.find(tech => tech.technology_id == research_details.inResearch).research_time;
+            if (await utils.get_timestamp() >= research_details.start_timestamp + research_time) {
+                research_details.researched_techs.push(research_details.inResearch);
+                delete research_details.inResearch;
+                delete research_details.start_timestamp;
+                var query = `UPDATE players
+                SET research = ?
+                WHERE username = ?`;
+                return this.execute_query(query, [JSON.stringify(research_details), username]);
+            }
+        }
     }
 }

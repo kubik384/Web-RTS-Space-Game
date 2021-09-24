@@ -19,6 +19,7 @@ class Game extends Base_Page {
         this.y_spacing = 300;
         this.tech_img_width = 100;
         this.tech_img_height = 100;
+        this.mouse_down = false;
         this.dist_travelled = {x: 0, y:0};
         
         this.xOffset = 0;
@@ -36,8 +37,11 @@ class Game extends Base_Page {
         console.log(datapack);
         super.setup_page(datapack);
         this.technologies = datapack.technologies;
-        this.researched_techs = datapack.researched_techs;
+        this.research_details = datapack.research_details;
         for (var i = 0; i < this.technologies.length; i++) {
+            if (this.research_details.inResearch !== undefined && this.research_details.inResearch == this.technologies[i].technology_id) {
+                this.researching_tech = this.technologies[i];
+            }
             this.technologies[i].x1 = this.x_spacing * this.technologies[i].col;
             this.technologies[i].x2 = this.technologies[i].x1 + this.tech_img_width;
             this.technologies[i].y1 = this.y_spacing * this.technologies[i].row;
@@ -84,6 +88,7 @@ class Game extends Base_Page {
                 this.dragging = true;
                 if (this.hovered_technology_index !== undefined) {
                     this.mousedown_tech_index = this.hovered_technology_index;
+                    this.mouse_down = true;
                 }
             }
         });
@@ -104,6 +109,7 @@ class Game extends Base_Page {
                     }
                     this.dist_travelled.x = 0;
                     this.dist_travelled.y = 0;
+                    this.mouse_down = false;
                 }
                 
                 var res_button_wrappers = document.getElementsByClassName("res_btn_clicked");
@@ -119,8 +125,10 @@ class Game extends Base_Page {
             if (this.dragging) {
                 this.xOffset += e.movementX;
                 this.yOffset += e.movementY;
-                this.dist_travelled.x += Math.abs(e.movementX);
-                this.dist_travelled.y += Math.abs(e.movementY);
+                if (this.mouse_down) {
+                    this.dist_travelled.x += Math.abs(e.movementX);
+                    this.dist_travelled.y += Math.abs(e.movementY);
+                }
             }
 
             var hovering_tech = this.hovered_technology_index !== undefined;
@@ -147,6 +155,9 @@ class Game extends Base_Page {
             if (document.visibilityState == 'hidden') {
                 this.dragging = false;
             }
+            this.dist_travelled.x = 0;
+            this.dist_travelled.y = 0;
+            this.mouse_down = false;
             
             var res_button_wrappers = document.getElementsByClassName("res_btn_clicked");
             if (res_button_wrappers.length != 0) {
@@ -169,17 +180,19 @@ class Game extends Base_Page {
             }
         });
 
-        document.getElementById('res_btn_wrapper').addEventListener('mouseup', function(e) {
+        document.getElementById('res_btn_wrapper').addEventListener('mouseup', async function(e) {
             if (e.button == 0) {
                 var res_button_wrappers = document.getElementsByClassName("res_btn_clicked");
                 if (res_button_wrappers.length != 0) {
                     var button_wrapper = res_button_wrappers[0];
                     button_wrapper.classList.add("res_btn");
                     button_wrapper.classList.remove("res_btn_clicked");
-                    this.socket.emit("research_technology", button_wrapper.dataset.id);
-                    this.researched_techs.push(button_wrapper.dataset.id);
-                    res_btn_wrapper.setAttribute('style', 'background-color: rgba(0,0,0,0.6)');
-                    res_btn_wrapper.classList.remove('res_btn');
+                    var tech_id = button_wrapper.dataset.id;
+                    this.socket.emit("research_technology", tech_id);
+                    this.research_details.start_timestamp = await utils.get_timestamp();
+                    this.researching_tech = this.technologies.find(tech => tech.technology_id == tech_id);
+                    this.disable_reseach_button(button_wrapper);
+                    this.display_research_timer();
                 }
             }
         }.bind(this));
@@ -189,8 +202,10 @@ class Game extends Base_Page {
         return;
     }
 
-    update() {
-
+    async update() {
+        var timestamp = await utils.get_timestamp();
+        this.logic_loop = setTimeout(this.update.bind(this), this.tick_time);
+        this.update_research_timer(timestamp);
     }
     
     draw() {
@@ -249,21 +264,70 @@ class Game extends Base_Page {
         return px / (this.zoom > 1 ? this.zoom : 1);
     }
 
-    display_tech_description(tech) {
+    async display_tech_description(tech) {
         var panel = document.getElementById('research_info_panel');
         panel.style.removeProperty("display");
         document.getElementById('research_image').setAttribute("src", "/client_side/images/research/" + tech.name + ".png");
         document.getElementById('research_description').textContent = tech.description;
+        document.getElementById('cost').textContent = tech.research_time + ' ' + tech.cost.timber;
         var res_btn_wrapper = document.getElementById('res_btn_wrapper');
         res_btn_wrapper.setAttribute('data-id', tech.technology_id);
-        var tech_researched = this.researched_techs.find(tech_id => tech_id == tech.technology_id);
-        if (tech_researched !== undefined) {
-            res_btn_wrapper.setAttribute('style', 'background-color: rgba(0,0,0,0.6)');
-            res_btn_wrapper.classList.remove('res_btn');
+        if (this.researching_tech === undefined) {
+            console.log(this.research_details);
+            var tech_researched = this.research_details.researched_techs.find(tech_id => tech_id == tech.technology_id);
+            if (tech_researched !== undefined) {
+                this.disable_reseach_button(res_btn_wrapper);
+            } else {
+                res_btn_wrapper.classList.add('res_btn');
+                res_btn_wrapper.removeAttribute('style');
+            }
         } else {
-            res_btn_wrapper.classList.add('res_btn');
-            res_btn_wrapper.removeAttribute('style');
+            if (this.researching_tech.technology_id == tech.technology_id) {
+                if (this.research_details.start_timestamp + tech.research_time > await utils.get_timestamp()) {
+                    this.display_research_timer();
+                } else {
+                    this.complete_research();
+                }
+            } else {
+                this.remove_research_timer();
+            }
+            this.disable_reseach_button(res_btn_wrapper);
         }
+    }
+
+    disable_reseach_button(btn_wrapper) {
+        btn_wrapper.setAttribute('style', 'background-color: rgba(0,0,0,0.6)');
+        btn_wrapper.classList.remove('res_btn');
+    }
+
+    async display_research_timer() {
+        this.update_research_timer(await utils.get_timestamp());
+        document.getElementById('timer').removeAttribute('style');
+    }
+
+    async update_research_timer(timestamp) {
+        var panel = document.getElementById('research_info_panel');
+        if (panel.style.display != 'none') {
+            var timer = document.getElementById('timer');
+            if (timer.style.display != 'none') {
+                var time_left = this.researching_tech.research_time + this.research_details.start_timestamp - timestamp;
+                if (time_left > 0) {
+                    timer.textContent = await utils.seconds_to_time(time_left);
+                } else {
+                    this.complete_research();
+                }
+            }
+        }
+    }
+
+    remove_research_timer() {
+        document.getElementById('timer').setAttribute('style', "display: none");
+    }
+
+    complete_research() {
+        this.remove_research_timer();
+        this.research_details.researched_techs.push(this.researching_tech.technology_id);
+        delete this.researching_tech;
     }
 }
 

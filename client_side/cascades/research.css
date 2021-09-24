@@ -103,3 +103,11 @@ body::-webkit-scrollbar {
 .res_btn_clicked {
 	box-shadow: 0px 1px 2px rgb(0,0,0,0.6), inset 0px 9px rgb(0,0,0,0.3), inset 0px -11px 0px 0px rgba(0,0,0,0.4);
 }
+
+#cost {
+	align-self: center;
+}
+
+#timer {
+	align-self: center;
+}

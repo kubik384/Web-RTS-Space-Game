@@ -8,6 +8,7 @@
         "cost": {
             "timber": 1
         },
+        "research_time": 120,
         "description": "Enables the construction of rockets that can be launched into space"
     },
     {
@@ -19,6 +20,7 @@
         "cost": {
             "timber": 2
         },
+        "research_time": 240,
         "description": "Enables the construction of spacecrafts which can be then launched into space together with a rocket"
     },
     {
@@ -30,6 +32,7 @@
         "cost": {
             "timber": 3
         },
+        "research_time": 240,
         "description": "Enables the construction of spacecrafts which can be then launched into space together with a rocket"
     }
 ]
