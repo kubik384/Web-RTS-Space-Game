@@ -2,3 +2,112 @@
     margin:0px;
     padding:0px;
 }
+
+html, body {
+    height: 100%;
+    width: 100%;
+}
+
+body::-webkit-scrollbar {
+	display: none;
+	-ms-overflow-style: none;  /* IE and Edge */
+	scrollbar-width: none;  /* Firefox */
+}
+
+#image_holder {
+	display: none;
+}
+
+#container {
+	display: flex;
+	flex-flow: column;
+	height: 100%;
+}
+
+#research_options_wrapper {
+    width: 100%;
+    height: 100%;
+    padding: 0 10%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#research_map_container {
+	text-align: center;
+	height: calc(100% - 48px);
+}
+
+#research_map {
+	background-color: rgb(88, 88, 88);
+	width: 100%;
+	height: 100%;
+}
+
+#navbar {
+    margin-bottom: 0px;
+}
+
+#research_info_panel {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	background-color: white;
+	position: fixed;
+	margin-top: 48px;
+	width: 40%;
+	min-width: 200px;
+	top: 0;
+	right: 0;
+	bottom: 0;
+}
+
+#close_button {
+	width: 24px;
+	cursor: pointer;
+	padding: 2px 2px;
+}
+
+#research_description {
+	padding: 0 20px;
+	height: 40%;
+	overflow: auto;
+}
+
+#res_img_wrapper {
+	padding: 20px 20px;
+	height: 30%;
+	align-self: center;
+}
+
+#research_button {
+	position: relative;
+	width: 100px;
+	height: 33px;
+	z-index: -1;
+}
+
+#res_btn_wrapper {
+	cursor: pointer;
+	height: 33px;
+	width: 100px;
+	align-self: center;
+	margin: 20px 20px;
+	user-select: none;
+}
+
+.res_btn {
+	box-shadow: 0px 5px 2px rgb(0,0,0,0.4);
+}
+
+.res_btn_clicked {
+	box-shadow: 0px 1px 2px rgb(0,0,0,0.6), inset 0px 9px rgb(0,0,0,0.3), inset 0px -11px 0px 0px rgba(0,0,0,0.4);
+}
+
+#cost {
+	align-self: center;
+}
+
+#timer {
+	align-self: center;
+}

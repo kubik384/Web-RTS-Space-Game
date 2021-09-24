@@ -25,7 +25,6 @@ class Game extends Base_Page {
         this.center_system;
         this.fleets = [];
         this.time_passed;
-        this.lastScrollTop = 0;
         this.dragging = false;
         this.boundaries;
         

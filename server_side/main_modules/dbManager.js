@@ -7,6 +7,7 @@ var all_resource_types = 'pop, food, timber, metals, coal, oil, kerosene, hydrog
 var resourceTable = all_resource_types.split(', ');
 var buildings = require('./../game_properties/buildings.json');
 var units = require('./../game_properties/units.json');
+var technologies = require('./../game_properties/technologies.json');
 
 module.exports = class DbManager {
     constructor() {
@@ -434,7 +435,7 @@ module.exports = class DbManager {
         for (var i = 0; i < p_units.length; i++) {
             var u_index = units.findIndex(unit => unit.unit_id == p_units[i].unit_id);
             for (var resource in units[u_index].cost) {
-                if (updated_player_resources[resource] > units[u_index].cost[resource] * p_units[i].count) {
+                if (updated_player_resources[resource] >= units[u_index].cost[resource] * p_units[i].count) {
                     if (p_units[i].count > 0 && allowed_units.includes(parseInt(p_units[i].unit_id))) {
                         updated_player_resources[resource] -= units[u_index].cost[resource] * p_units[i].count;
                     } else {
@@ -527,5 +528,92 @@ module.exports = class DbManager {
         SET isRead = 1
         WHERE report_id = ?`;
         return this.execute_query(query, [report_id]);
+    }
+
+    async get_research_datapack(username) {
+        var new_reports_count =  await this.get_new_reports_count(username);
+        var research_details = await this.get_research_details(username, true);
+        return {new_reports_count: new_reports_count, technologies: technologies, research_details: research_details};
+    }
+
+    async get_research_details(username, update = false) {
+        if (update) {
+            await this.update_research(username);
+        }
+        var query = `SELECT research
+        FROM players
+        WHERE username = ?`;
+        return JSON.parse((await this.execute_query(query, [username]))[0].research);
+    }
+
+    async get_researched_techs(username, update = false) {
+        return (await this.get_research_details(username, update)).researched_techs;
+    }
+
+    async research_technology(username, tech_id) {
+        var start_timestamp = await utils.get_timestamp();
+        //invalid tech id check
+        var tech_index;
+        for (var i = 0; i < technologies.length; i++) {
+            if (technologies[i].technology_id == tech_id) {
+                tech_index = i;
+                break;
+            }
+        }
+        if (tech_index === undefined) {
+            return false;
+        }
+        //already researched check
+        var query = `SELECT researched_techs
+        FROM players
+        WHERE username = ?`;
+        var research_details = await this.get_research_details(username, true);
+        var researched_techs = research_details.researched_techs;
+        var valid_tech_id = true;
+        for (var i = 0; i < researched_techs.length; i++) {
+            if (researched_techs[i] == tech_id || research_details.inResearch !== undefined) {
+                valid_tech_id = false;
+            }
+        }
+        if (!valid_tech_id) {
+            return false;
+        }
+
+        //resource check/update
+        var query = 'UPDATE players SET ';
+        var player_resources = await this.get_resource(username, 'all', true);
+        for (var resource in technologies[tech_index].cost) {
+            if (player_resources[resource] < technologies[tech_index].cost[resource]) {
+                return false;
+            } else {
+                query += `${resource} = ${resource} - ${technologies[tech_index].cost[resource]}, `;
+            }
+        }
+        query = query.slice(0, query.length - 2) + ' WHERE username = ?';
+        await this.execute_query(query, [username]);
+        
+        research_details.inResearch = tech_id;
+        research_details.start_timestamp = start_timestamp;
+        query = `UPDATE players
+        SET research = ?
+        WHERE username = ?`;
+        await this.execute_query(query, [JSON.stringify(research_details), username]);
+        return true;
+    }
+
+    async update_research(username) {
+        var research_details = await this.get_research_details(username);
+        if (research_details.inResearch !== undefined) {
+            var research_time = technologies.find(tech => tech.technology_id == research_details.inResearch).research_time;
+            if (await utils.get_timestamp() >= research_details.start_timestamp + research_time) {
+                research_details.researched_techs.push(research_details.inResearch);
+                delete research_details.inResearch;
+                delete research_details.start_timestamp;
+                var query = `UPDATE players
+                SET research = ?
+                WHERE username = ?`;
+                return this.execute_query(query, [JSON.stringify(research_details), username]);
+            }
+        }
     }
 }

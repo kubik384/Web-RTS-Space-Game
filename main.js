@@ -257,6 +257,14 @@ io.on('connection', socket => {
 		dbManager.mark_report_displayed(report_id);
 	});
 
+	socket.on('research_datapack_request', () => {
+		dbManager.get_research_datapack(socket.username).then(datapack => { socket.emit('research_datapack', JSON.stringify(datapack)); });
+	});
+
+	socket.on('research_technology', tech_id => {
+		dbManager.research_technology(socket.username, tech_id);
+	});
+
 	socket.on('disconnect', () => {
 		//When the player is switching between pages (map, planet, etc.,), they got the set amount of time specified in the timeout to reconnect before getting logged out
 		token_timeouts[socket.token] = setTimeout(function() { tokens.splice(tokens.findIndex(token => token == socket.username), 1); }.bind(this), 12000);
