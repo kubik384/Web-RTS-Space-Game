@@ -213,7 +213,18 @@ class Game extends Base_Page {
         this.ctx.save();
         this.ctx.translate(this.xOffset, this.yOffset);
         for (var i = 0; i < this.technologies.length; i++) {
-            this.ctx.drawImage(this.image, this.technologies[i].x1 * this.zoom, this.technologies[i].y1 * this.zoom, this.tech_img_width * this.zoom, this.tech_img_height * this.zoom);
+            var x = this.technologies[i].x1 * this.zoom;
+            var y = this.technologies[i].y1 * this.zoom;
+            var width = this.tech_img_width * this.zoom;
+            var height = this.tech_img_height * this.zoom;
+            this.ctx.drawImage(this.image, x, y, width, height);
+            var researched_tech = this.research_details.researched_techs.find(resed_tech => resed_tech == this.technologies[i].technology_id);
+            if (researched_tech !== undefined) {
+                this.ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+                this.ctx.beginPath();
+                this.ctx.rect(x, y, width, height);
+                this.ctx.fill();
+            }
             if (this.technologies[i].req_tech_ids.length > 0) {
                 for (var j = 0; j < this.technologies[i].req_tech_ids.length; j++) {
                     var req_tech = this.technologies.find(technology => technology.technology_id = this.technologies[i].req_tech_ids[j]);
