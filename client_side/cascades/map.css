@@ -51,6 +51,7 @@ body::-webkit-scrollbar {
 #layout_table > tbody > tr > td {
 	width: 20%;
 	padding: 0px 5px;
+	vertical-align: top
 }
 
 #map_column {
@@ -82,12 +83,13 @@ body::-webkit-scrollbar {
 	user-select: none;
 }
 
-#fleet_ui, #fleet_ui button, input {
+#fleet_ui, #fleet_ui button, input, #fleet_details {
 	font-size: 20px;
 }
 
-#assemble_fleet_wrapper table {
-	width: 100%;
+#fleet_details > h3 {
+	text-align: center;
+	margin-bottom: 10px;
 }
 
 #assemble_fleet_wrapper label {
@@ -132,6 +134,22 @@ body::-webkit-scrollbar {
 	height: 20px;
 	padding-left: 15px;
 	cursor: pointer;
+}
+
+#available_units_table, #fleet_units_table {
+	width: 100%;
+}
+
+#available_units_table img, #fleet_units_table img {
+	width: 28px;
+}
+
+.img_cell {
+	vertical-align: middle !important;
+}
+
+#available_units_table > tbody > tr > td {
+	vertical-align: baseline;
 }
 
 #dialog_div {

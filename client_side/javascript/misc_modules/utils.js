@@ -88,8 +88,12 @@ class Utils {
         document.body.append(dialog, dialog_overlay);
     }
 
-    isInsideObject(point, box, padding) {
-        return point.x > (box.x1 - padding) && point.x < (box.x2 + padding) && point.y > (box.y1 - padding) && point.y < (box.y2 + padding);
+    isInsideObjects(point, boxes, padding) {
+        for (var i = 0; i < boxes.length; i++) {
+            if (point.x > (boxes[i].x1 - padding) && point.x < (boxes[i].x2 + padding) && point.y > (boxes[i].y1 - padding) && point.y < (boxes[i].y2 + padding)) {
+                return true;
+            }
+        }
     }
 }
 

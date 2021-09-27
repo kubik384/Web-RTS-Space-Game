@@ -109,7 +109,7 @@ class Game extends Base_Page {
                 var cursor = {};
                 cursor.x = (e.clientX - this.xOffset - this.res_map_rect.left/*- this.res_map_canvas_border*/)/this.zoom;
                 cursor.y = (e.clientY - this.yOffset - this.res_map_rect.top/*- this.res_map_canvas_border*/)/this.zoom;
-                if (utils.isInsideObject(cursor, this.technologies[this.hovered_technology_index], this.calc_padding(5))) {
+                if (utils.isInsideObjects(cursor, [this.technologies[this.hovered_technology_index]], this.calc_padding(5))) {
                     var distance_travelled = Math.pow(this.dist_travelled.x, 2) + Math.pow(this.dist_travelled.y, 2);
                     if (distance_travelled < 80) {
                         this.display_tech_description(this.technologies[this.hovered_technology_index]);
@@ -132,7 +132,7 @@ class Game extends Base_Page {
             cursor.x = (e.clientX - this.xOffset - this.res_map_rect.left/*- this.res_map_canvas_border*/)/this.zoom;
             cursor.y = (e.clientY - this.yOffset - this.res_map_rect.top/*- this.res_map_canvas_border*/)/this.zoom;
             for (var i = 0; i < this.technologies.length; i++) {
-                if (utils.isInsideObject(cursor, this.technologies[i], this.calc_padding(5))) {
+                if (utils.isInsideObjects(cursor, [this.technologies[i]], this.calc_padding(5))) {
                     this.hovered_technology_index = i;
                     break;
                 }

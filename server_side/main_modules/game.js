@@ -50,39 +50,6 @@ module.exports = class Game {
 
                 space_objects_loop:
                 for (var i = this.space_objects.length - 1; i >= 0; i--) {
-                    for (var j = this.fleets.length - 1; j >= 0; j--) {
-                        var vector = new Vector(this.fleets[j], this.space_objects[i]);
-                        //Expect all the space objects to be squares (circles) = same width and height - for now
-                        var object_radius = this.space_objects[i].width/2;
-                        var distance = await vector.length();
-                        var speed;
-                        var space_object = this.space_objects[i];
-                        if (space_object.centerrot_id !== undefined) {
-                            if (space_object.centerrot_id !== space_object.space_object_id) {
-                                var rads = await utils.angleToRad(space_object.rot - 0.001 * this.time_passed);
-                                var centerrot_object = this.space_objects.find(space_obj => space_obj.space_object_id == space_object.centerrot_id);
-                                var [center_x, center_y] = [centerrot_object.x, centerrot_object.y];
-                                var [original_x, original_y] = [space_object.original_x, space_object.original_y];
-                                var x = center_x + (original_x - center_x) * Math.cos(rads) - (original_y - center_y) * Math.sin(rads);
-                                var y = center_y + (original_x - center_x) * Math.sin(rads) + (original_y - center_y) * Math.cos(rads);
-                                previous_space_object_position = new Vector(x, y);
-                                space_object_velocity = await new Vector(previous_space_object_position, space_object).divide(this.time_passed);
-                                speed = await(await this.fleets[j].velocity.subtract(space_object_velocity)).length();
-                            } else {
-                                speed = await this.fleets[j].velocity.length();
-                            }
-                        } else {
-                            speed = await(await this.fleets[j].velocity.subtract(space_object.velocity)).length();
-                        }
-                        if (distance < object_radius && this.fleets[j].safe_space_object_id != this.space_objects[i].space_object_id) {
-                            if (this.fleets[j].assigned_object_type == 'space_object' && this.fleets[j].assigned_object_id == this.space_objects[i].space_object_id && this.space_objects[i].image !== 'star') {//&& speed < this.speed_crash_constant) { - can't use this until the movement calculations have been tweaked
-                                this.fleets[j].safe_space_object_id = this.fleets[j].assigned_object_id;
-                            } else {
-                                this.deleted_fleets.push(j);
-                                this.fleets.splice(j, 1);
-                            }
-                        }
-                    }
                     if (Math.abs(this.space_objects[i].x) > this.boundaries
                     || Math.abs(this.space_objects[i].y) > this.boundaries) {
                         this.deleted_space_objects.push(i);
@@ -225,7 +192,6 @@ module.exports = class Game {
                                     } else {
                                         this.fleets[i].assigned_object_id = undefined;
                                         this.fleets[i].assigned_object_type = undefined;
-                                        this.fleets[i].safe_space_object_id = undefined;
                                         this.fleets[i].move_point = undefined;
                                     }
                                     break;
@@ -306,29 +272,29 @@ module.exports = class Game {
                             }
                         }
                         if (this.fleets[i].move_point !== undefined) {
-                            if (this.fleets[i].safe_space_object_id !== undefined) {
-                                var space_object = this.space_objects.find(space_object => space_object.space_object_id == this.fleets[i].safe_space_object_id);
-                                var object_radius = space_object.width/2;
-                                var distance = await new Vector(this.fleets[i], space_object).length();
-                                if (distance > object_radius) {
-                                    this.fleets[i].safe_space_object_id = undefined;
+                            if (Math.abs(this.fleets[i].x - this.fleets[i].move_point.x) < 1 && Math.abs(this.fleets[i].y - this.fleets[i].move_point.y) < 1 && await this.fleets[i].velocity.length() < 0.6) {
+                                this.fleets[i].x = this.fleets[i].move_point.x;
+                                this.fleets[i].y = this.fleets[i].move_point.y;
+                                this.fleets[i].velocity.x = 0;
+                                this.fleets[i].velocity.y = 0;
+                                delete this.fleets[i].move_point;
+                            } else {
+                                var vector = new Vector(this.fleets[i], this.fleets[i].move_point);
+                                var distance = await vector.length();
+                                var speed = await this.fleets[i].velocity.length() * this.time_passed;
+                                if (this.fleets[i].acceleration != 0) {
+                                    var acceleration_input = speed/(this.fleets[i].acceleration * this.time_passed);
+                                    var adjusted_vector = acceleration_input != 0 ? await vector.divide(acceleration_input) : vector;
+                                    var time_to_slowdown = distance/speed;
+                                    var calculated_vector;
+                                    if ((await adjusted_vector.length() > speed) || (time_to_slowdown < acceleration_input)) {
+                                        calculated_vector = await (new Vector(this.fleets[i].velocity, adjusted_vector)).normalize();
+                                    } else {
+                                        var normalized_velocity = await this.fleets[i].velocity.isNull() ? this.fleets[i].velocity : await this.fleets[i].velocity.normalize();
+                                        calculated_vector = await (new Vector(normalized_velocity, await vector.normalize())).normalize();
+                                    }
+                                    this.fleets[i].velocity = await this.fleets[i].velocity.add(await calculated_vector.multiply(this.fleets[i].acceleration * this.time_passed));
                                 }
-                            }
-                            var vector = new Vector(this.fleets[i], this.fleets[i].move_point);
-                            var distance = await vector.length();
-                            var speed = await this.fleets[i].velocity.length() * this.time_passed;
-                            if (this.fleets[i].acceleration != 0) {
-                                var acceleration_input = speed/(this.fleets[i].acceleration * this.time_passed);
-                                var adjusted_vector = acceleration_input != 0 ? await vector.divide(acceleration_input) : vector;
-                                var time_to_slowdown = distance/speed;
-                                var calculated_vector;
-                                if ((await adjusted_vector.length() > speed) || (time_to_slowdown < acceleration_input)) {
-                                    calculated_vector = await (new Vector(this.fleets[i].velocity, adjusted_vector)).normalize();
-                                } else {
-                                    var normalized_velocity = await this.fleets[i].velocity.isNull() ? this.fleets[i].velocity : await this.fleets[i].velocity.normalize();
-                                    calculated_vector = await (new Vector(normalized_velocity, await vector.normalize())).normalize();
-                                }
-                                this.fleets[i].velocity = await this.fleets[i].velocity.add(await calculated_vector.multiply(this.fleets[i].acceleration * this.time_passed));
                             }
                             /*
                             var calculated_vector;
@@ -460,7 +426,7 @@ module.exports = class Game {
                             fleets.push(this.fleets[j]);
                         } else {
                             //don't like giving clients the actual fleets id, since if the fleet can get out of sight and then the player finds it again, they can check the id to see if it's the same fleet
-                            fleets.push({fleet_id:this.fleets[j].fleet_id, x: this.fleets[j].x, y: this.fleets[j].y, abandoned: this.fleets[j].abandoned});
+                            fleets.push({fleet_id: this.fleets[j].fleet_id, x: this.fleets[j].x, y: this.fleets[j].y, units: this.fleets[j].units, abandoned: this.fleets[j].abandoned});
                         }
                     }
                     this.players[i].socket.emit('game_update', [fleets, this.deleted_fleets, this.space_objects, this.deleted_space_objects, this.time_passed]);
@@ -562,12 +528,13 @@ module.exports = class Game {
                 }
                 if (units.length != 0) {
                     var capacity = 0;
-                    //does not check if the units are at all valid neither if the unit counts are valid
                     var unit_details = await this.dbManager.get_unit_details(units);
                     for (var i = 0; i < unit_details.length; i++) {
                         if (units[i].count > 0) {
                             capacity += unit_details[i].capacity * units[i].count;
                         }
+                        units[i].name = unit_details[i].name;
+                        delete units[i].player_id;
                     }
                     var fleet;
                     if (expedition_timer !== undefined) {
@@ -650,7 +617,7 @@ module.exports = class Game {
                                     fleets.push(this.fleets[j]);
                                 } else {
                                     //don't like giving clients the actual fleets id, since if the fleet can get out of sight and then the player finds it again, they can check the id to see if it's the same fleet
-                                    fleets.push({fleet_id: this.fleets[j].fleet_id, x: this.fleets[j].x, y: this.fleets[j].y, abandoned: this.fleets[j].abandoned});
+                                    fleets.push({fleet_id: this.fleets[j].fleet_id, x: this.fleets[j].x, y: this.fleets[j].y, units: this.fleets[j].units, abandoned: this.fleets[j].abandoned});
                                 }
                             }
                             var new_reports_count =  await this.dbManager.get_new_reports_count(this.players[i].username);
