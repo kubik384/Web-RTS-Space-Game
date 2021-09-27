@@ -199,7 +199,7 @@ module.exports = class Game {
                                     var fleet = this.fleets.find(fleet => fleet.fleet_id == this.fleets[i].assigned_object_id);
                                     if (fleet !== undefined) {
                                         var distance = await new Vector(this.fleets[i], fleet).length();
-                                        if (distance < 100) {
+                                        if (distance < 100 && this.fleets[i].fleet_id != fleet.fleet_id) {
                                             if (fleet.abandoned !== undefined) {
                                                 this.fleets[i].move_point = undefined;
                                                 this.fleets[i].velocity = fleet.velocity;
@@ -254,11 +254,11 @@ module.exports = class Game {
                                                 if (distance != 0) {
                                                     this.fleets[i].x = fleet.x;
                                                     this.fleets[i].y = fleet.y;
-                                                    //engage the fleet somehow
-                                                    this.fleets[i].fighting_cooldown = 1000;
-                                                    this.fleets[i].engaged_fleet_id = fleet.fleet_id;
-                                                    fleet.engaged_fleet_id = this.fleets[i].fleet_id;
                                                 }
+                                                //engage the fleet somehow
+                                                this.fleets[i].fighting_cooldown = 1000;
+                                                this.fleets[i].engaged_fleet_id = fleet.fleet_id;
+                                                fleet.engaged_fleet_id = this.fleets[i].fleet_id;
                                             }
                                         } else {
                                             this.fleets[i].move_point = {x: fleet.x, y: fleet.y};

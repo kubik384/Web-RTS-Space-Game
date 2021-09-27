@@ -30,7 +30,7 @@ class Game extends Base_Page {
         this.boundaries;
         this.fleet_name_spacing = 8;
         this.fleet_size = 4;
-        this.tmp = {};
+        this.assigning_objects = {last_selected_index: -1, objects: []};
         
         const query_string = window.location.search;
         const url_parameters = new URLSearchParams(query_string);
@@ -281,11 +281,9 @@ class Game extends Base_Page {
 
             this.map_canvas.addEventListener('contextmenu', e => {
                 e.preventDefault();
-                if (this.controlled_fleet_index !== undefined && this.updates[0].fleets[this.controlled_fleet_index].engaged_fleet_id === undefined && this.updates[0].fleets[this.controlled_fleet_index].abandon_timer === undefined && this.updates[0].fleets[this.controlled_fleet_index].expedition_timer === undefined) {
-                    var x = e.clientX - this.xOffset - this.map_rect.left - this.map_canvas_border;
-                    var y = e.clientY - this.yOffset - this.map_rect.top - this.map_canvas_border;
-                    this.generate_movepoint(x/this.zoom, y/this.zoom);
-                }
+                var x = e.clientX - this.xOffset - this.map_rect.left - this.map_canvas_border;
+                var y = e.clientY - this.yOffset - this.map_rect.top - this.map_canvas_border;
+                this.generate_movepoint(x/this.zoom, y/this.zoom);
             });
 
             this.map_canvas.addEventListener('wheel', e => {
@@ -575,61 +573,95 @@ class Game extends Base_Page {
     }
 
     async generate_movepoint(x, y) {
-        var cursor = {x:x, y:y};
-        var fleets = this.updates[0].fleets;
-        for (var i = 0; i < fleets.length; i++) {
-            var objects = [];
-            var fleet_name = this.get_fleet_name(fleets[i]);
-            this.map_ctx.font = this.calc_fleet_name_font_size() + "px Arial";
-            var metrics = this.map_ctx.measureText(fleet_name);
-            var fleet_name_width = metrics.width/this.zoom;
-            var fleet_name_height = (metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent)/this.zoom;
-            var text_rect = {};
-            text_rect.x1 = (fleets[i].last_x - fleet_name_width/2);
-            text_rect.x2 = (fleets[i].last_x + fleet_name_width/2);
-            text_rect.y1 = (fleets[i].last_y - (this.fleet_size/2 + this.fleet_name_spacing + fleet_name_height/2));
-            text_rect.y2 = (fleets[i].last_y - (this.fleet_size/2 + this.fleet_name_spacing - fleet_name_height/2));
-            objects.push(text_rect);
-            var fleet_rect = {};
-            fleet_rect.x1 = (fleets[i].last_x - this.fleet_size/2);
-            fleet_rect.x2 = (fleets[i].last_x + this.fleet_size/2);
-            fleet_rect.y1 = (fleets[i].last_y - this.fleet_size/2);
-            fleet_rect.y2 = (fleets[i].last_y + this.fleet_size/2);
-            objects.push(fleet_rect);
-            if (utils.isInsideObjects(cursor, objects, 0)) {
-                this.socket.emit('assign_fleet', 'fleet', fleets[i].fleet_id);
-                return;
+        if (this.controlled_fleet_index !== undefined && this.updates[0].fleets[this.controlled_fleet_index].engaged_fleet_id === undefined && this.updates[0].fleets[this.controlled_fleet_index].abandon_timer === undefined && this.updates[0].fleets[this.controlled_fleet_index].expedition_timer === undefined) {
+            var assigning_objects = [];
+            var cursor = {x:x, y:y};
+            var fleets = this.updates[0].fleets;
+            for (var i = 0; i < fleets.length; i++) {
+                if (this.controlled_fleet_index != i) {
+                    var objects = [];
+                    var fleet_name = this.get_fleet_name(fleets[i]);
+                    this.map_ctx.font = this.calc_fleet_name_font_size() + "px Arial";
+                    var metrics = this.map_ctx.measureText(fleet_name);
+                    var fleet_name_width = metrics.width/this.zoom;
+                    var fleet_name_height = (metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent)/this.zoom;
+                    var text_rect = {};
+                    text_rect.x1 = (fleets[i].last_x - fleet_name_width/2);
+                    text_rect.x2 = (fleets[i].last_x + fleet_name_width/2);
+                    text_rect.y1 = (fleets[i].last_y - (this.fleet_size/2 + this.fleet_name_spacing + fleet_name_height/2));
+                    text_rect.y2 = (fleets[i].last_y - (this.fleet_size/2 + this.fleet_name_spacing - fleet_name_height/2));
+                    objects.push(text_rect);
+                    var fleet_rect = {};
+                    fleet_rect.x1 = (fleets[i].last_x - this.fleet_size/2);
+                    fleet_rect.x2 = (fleets[i].last_x + this.fleet_size/2);
+                    fleet_rect.y1 = (fleets[i].last_y - this.fleet_size/2);
+                    fleet_rect.y2 = (fleets[i].last_y + this.fleet_size/2);
+                    objects.push(fleet_rect);
+                    if (utils.isInsideObjects(cursor, objects, 0)) {
+                        assigning_objects.push({type: 'fleet', id: fleets[i].fleet_id});
+                    }
+                }
+            }
+
+            var space_objects = this.updates[0].space_objects;
+            for (var i = 0; i < space_objects.length; i++) {
+                var objects = [];
+                var object_name = this.get_object_name(space_objects[i]);
+                this.map_ctx.font = this.calc_object_name_font_size(space_objects[i]) + "px Arial";
+                var metrics = this.map_ctx.measureText(object_name);
+                var object_name_height = (metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent)/this.zoom;
+                if (object_name_height > space_objects[i].height/3) {
+                    var object_name_width = metrics.width/this.zoom;
+                    var object_name_spacing = this.calc_so_name_spacing(space_objects[i]);
+                    var text_rect = {};
+                    text_rect.x1 = (space_objects[i].x - object_name_width/2);
+                    text_rect.x2 = (space_objects[i].x + object_name_width/2);
+                    text_rect.y1 = (space_objects[i].y - (space_objects[i].height/2 + object_name_spacing + object_name_height/2));
+                    text_rect.y2 = (space_objects[i].y - (space_objects[i].height/2 + object_name_spacing - object_name_height/2));
+                    objects.push(text_rect);
+                }
+                var object_rect = {};
+                object_rect.x1 = (space_objects[i].x - space_objects[i].width/2);
+                object_rect.x2 = (space_objects[i].x + space_objects[i].width/2);
+                object_rect.y1 = (space_objects[i].y - space_objects[i].height/2);
+                object_rect.y2 = (space_objects[i].y + space_objects[i].height/2);
+                objects.push(object_rect);
+                if (utils.isInsideObjects(cursor, objects, 0)) {
+                    assigning_objects.push({type: 'space_object', id: space_objects[i].space_object_id});
+                }
+            }
+
+            if (assigning_objects.length > 0) {
+                for (var i = this.assigning_objects.objects.length - 1; i >= 0; i--) {
+                    var found = false;
+                    for (var j = assigning_objects.length - 1; j >= 0; j--) {
+                        if (assigning_objects[j].type == this.assigning_objects.objects[i].type && assigning_objects[j].id == this.assigning_objects.objects[i].id) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (found) {
+                        assigning_objects.splice(j,1);
+                    } else {
+                        if (this.assigning_objects.last_selected_index >= i) {
+                            this.assigning_objects.last_selected_index--;
+                        }
+                        this.assigning_objects.objects.splice(i,1);
+                    }
+                }
+                this.assigning_objects.objects = this.assigning_objects.objects.concat(assigning_objects);
+                if (++this.assigning_objects.last_selected_index == this.assigning_objects.objects.length) {
+                    this.assigning_objects.last_selected_index--;
+                    this.socket.emit('set_movepoint', x, y);
+                } else {
+                    this.socket.emit('assign_fleet', this.assigning_objects.objects[this.assigning_objects.last_selected_index].type, this.assigning_objects.objects[this.assigning_objects.last_selected_index].id);
+                }
+            } else {
+                this.assigning_objects.objects = [];
+                this.assigning_objects.last_selected_index = -1;
+                this.socket.emit('set_movepoint', x, y);
             }
         }
-        var space_objects = this.updates[0].space_objects;
-        for (var i = 0; i < space_objects.length; i++) {
-            var objects = [];
-            var object_name = this.get_object_name(space_objects[i]);
-            this.map_ctx.font = this.calc_object_name_font_size(space_objects[i]) + "px Arial";
-            var metrics = this.map_ctx.measureText(object_name);
-            var object_name_height = (metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent)/this.zoom;
-            if (object_name_height > space_objects[i].height/3) {
-                var object_name_width = metrics.width/this.zoom;
-                var object_name_spacing = this.calc_so_name_spacing(space_objects[i]);
-                var text_rect = {};
-                text_rect.x1 = (space_objects[i].x - object_name_width/2);
-                text_rect.x2 = (space_objects[i].x + object_name_width/2);
-                text_rect.y1 = (space_objects[i].y - (space_objects[i].height/2 + object_name_spacing + object_name_height/2));
-                text_rect.y2 = (space_objects[i].y - (space_objects[i].height/2 + object_name_spacing - object_name_height/2));
-                objects.push(text_rect);
-            }
-            var object_rect = {};
-            object_rect.x1 = (space_objects[i].x - space_objects[i].width/2);
-            object_rect.x2 = (space_objects[i].x + space_objects[i].width/2);
-            object_rect.y1 = (space_objects[i].y - space_objects[i].height/2);
-            object_rect.y2 = (space_objects[i].y + space_objects[i].height/2);
-            objects.push(object_rect);
-            if (utils.isInsideObjects(cursor, objects, 0)) {
-                this.socket.emit('assign_fleet', 'space_object', space_objects[i].space_object_id);
-                return;
-            }
-        }
-        this.socket.emit('set_movepoint', x, y);
     }
 
     async process_server_update(p_update) {
