@@ -10,7 +10,6 @@ class Game extends Base_Page {
         super();
         this.socket = socket;
         this.map_canvas;
-        this.map_canvas_border;
         this.map_width;
         this.map_height;
         this.map_ctx;
@@ -81,7 +80,7 @@ class Game extends Base_Page {
                         unit_number_input.append('(' + this.available_units[i].count + ')');
                         unit_number_input.setAttribute("data-input_id", this.available_units[i].unit_id);
                         unit_number_input.addEventListener('click', function() {
-                            document.getElementById('unit_id_' + this.dataset.input_id).value = +this.textContent.substr(1, this.textContent.length-2)
+                            document.getElementById('unit_id_' + this.dataset.input_id).value = +this.textContent.substr(1, this.textContent.length-2);
                         });
                         unit_count.append(unit_number_input);
                     }
@@ -121,7 +120,7 @@ class Game extends Base_Page {
             var home_system = this.updates[0].space_objects.find(space_object => space_object.space_object_id = home_planet.centerrot_id);
             this.switch_focus(home_system);
             //expecting the border to have the same width on all the sides of the canvas
-            this.map_canvas_border = +getComputedStyle(this.map_canvas).getPropertyValue('border-top-width').slice(0, -2);
+            //this.map_canvas_border = +getComputedStyle(this.map_canvas).getPropertyValue('border-top-width').slice(0, -2);
 
             document.getElementById('fleet_ui').addEventListener('click', e => {
                 if (e.target.localName == 'button') {
@@ -281,15 +280,15 @@ class Game extends Base_Page {
 
             this.map_canvas.addEventListener('contextmenu', e => {
                 e.preventDefault();
-                var x = e.clientX - this.xOffset - this.map_rect.left - this.map_canvas_border;
-                var y = e.clientY - this.yOffset - this.map_rect.top - this.map_canvas_border;
+                var x = e.clientX - this.xOffset - this.map_rect.left;// - this.map_canvas_border;
+                var y = e.clientY - this.yOffset - this.map_rect.top;// - this.map_canvas_border;
                 this.generate_movepoint(x/this.zoom, y/this.zoom);
             });
 
             this.map_canvas.addEventListener('wheel', e => {
                 e.preventDefault();
-                var x = e.clientX - this.map_rect.left - this.map_canvas_border;
-                var y = e.clientY - this.map_rect.top - this.map_canvas_border;
+                var x = e.clientX - this.map_rect.left;// - this.map_canvas_border;
+                var y = e.clientY - this.map_rect.top;// - this.map_canvas_border;
                 if (e.deltaY < 0) {
                     if (this.zoom < 24) {
                         const deltaZoom = 1.25;
@@ -314,8 +313,8 @@ class Game extends Base_Page {
             this.map_canvas.addEventListener('mouseup', e => {
                 if (e.button == 0) {
                     var cursor = {};
-                    cursor.x = (e.clientX - this.xOffset - this.map_rect.left - this.map_canvas_border)/this.zoom;
-                    cursor.y = (e.clientY - this.yOffset - this.map_rect.top - this.map_canvas_border)/this.zoom;
+                    cursor.x = (e.clientX - this.xOffset - this.map_rect.left/* - this.map_canvas_border*/)/this.zoom;
+                    cursor.y = (e.clientY - this.yOffset - this.map_rect.top/* - this.map_canvas_border*/)/this.zoom;
                     var update = this.updates[0];
                     var fleets = update.fleets;
                     for (var i = 0; i < fleets.length; i++) {
@@ -334,26 +333,45 @@ class Game extends Base_Page {
                             if (distance_travelled < 80) {
                                 var fleet_name = document.getElementById('fleet_name');
                                 fleet_name.textContent = this.get_fleet_name(fleets[i]);
-                                var table_wrapper = document.getElementById('fleet_details');
-                                table_wrapper.prepend(fleet_name);
                                 var table = document.getElementById('fleet_units_table');
                                 var new_tbody = document.createElement('tbody');
                                 table.getElementsByTagName('tbody')[0].remove();
                                 var new_tbody = document.createElement('tbody');
-                                for (var j = 0; j < fleets[i].units.length; j++) {
+                                var type_cell = document.getElementById('fleet_type_cell');
+                                var number_cell = document.getElementById('fleet_number_cell');
+                                if (fleets[i].abandoned !== undefined) {
+                                    type_cell.textContent = 'Resource';
+                                    number_cell.textContent = 'Amount';
                                     var row = new_tbody.insertRow(-1);
                                     var img = row.insertCell(-1);
-                                    var unit = row.insertCell(-1);
-                                    var count = row.insertCell(-1);
-                                    var unit_img = document.createElement('img');
-                                    unit_img.setAttribute('src','/client_side/images/units/' + fleets[i].units[j].name.toLowerCase() + '.png');
+                                    var resource = row.insertCell(-1);
+                                    var amount = row.insertCell(-1);
+                                    var resource_img = document.createElement('img');
+                                    resource_img.setAttribute('src','/client_side/images/resources/timber.png');
                                     img.classList.add('img_cell');
-                                    img.append(unit_img);
-                                    unit.textContent = fleets[i].units[j].name;
-                                    count.textContent = fleets[i].units[j].count;
+                                    img.append(resource_img);
+                                    resource.textContent = 'Timber';
+                                    amount.textContent = fleets[i].resources;
+                                } else {
+                                    type_cell.textContent = 'Unit';
+                                    number_cell.textContent = 'Count';
+                                    for (var j = 0; j < fleets[i].units.length; j++) {
+                                        var row = new_tbody.insertRow(-1);
+                                        var img = row.insertCell(-1);
+                                        var unit = row.insertCell(-1);
+                                        var count = row.insertCell(-1);
+                                        var unit_img = document.createElement('img');
+                                        unit_img.setAttribute('src','/client_side/images/units/' + fleets[i].units[j].name.toLowerCase() + '.png');
+                                        img.classList.add('img_cell');
+                                        img.append(unit_img);
+                                        unit.textContent = fleets[i].units[j].name;
+                                        count.textContent = fleets[i].units[j].count;
+                                    }
                                 }
                                 table.append(new_tbody);
                             }
+                            document.getElementById('fleet_details').removeAttribute('style');
+                            document.getElementById('fd_expand_button').style.display = "none";
                             break;
                         }
                     }
@@ -389,6 +407,26 @@ class Game extends Base_Page {
                 this.dragging = false;
                 this.dist_travelled.x = 0;
                 this.dist_travelled.y = 0;
+            });
+
+            document.getElementById('fd_close_button').addEventListener('click', function() {
+                document.getElementById('fleet_details').style.display = "none";
+                document.getElementById('fd_expand_button').removeAttribute('style');
+            });
+
+            document.getElementById('fd_expand_button').addEventListener('click', function() {
+                document.getElementById('fleet_details').removeAttribute('style');
+                document.getElementById('fd_expand_button').style.display = "none";
+            });
+
+            document.getElementById('fui_expand_button').addEventListener('click', function() {
+                document.getElementById('fleet_ui').removeAttribute('style');
+                document.getElementById('fui_expand_button').style.display = "none";
+            });
+
+            document.getElementById('fui_close_button').addEventListener('click', function() {
+                document.getElementById('fleet_ui').style.display = "none";
+                document.getElementById('fui_expand_button').removeAttribute('style');
             });
             
             window.requestAnimationFrame(this.draw.bind(this));
@@ -749,6 +787,8 @@ class Game extends Base_Page {
                 fleets[i].expedition_timer = updated_fleets[i].expedition_timer;
                 fleets[i].x = updated_fleets[i].x;
                 fleets[i].y = updated_fleets[i].y;
+                fleets[i].resources = updated_fleets[i].resources;
+                fleets[i].units = updated_fleets[i].units;
                 /* Velocity is not currently used anywhere anyway
                 if (this.fleets.velocity !== undefined) {
                     this.fleets[i].last_velocity = this.fleets[i].velocity;
@@ -861,7 +901,12 @@ class Game extends Base_Page {
     }
 
     get_fleet_name(fleet) {
-        return 'Fleet ' + (fleet.fleet_id + 1);
+        var name = 'Fleet ';
+        if (fleet.abandoned) {
+            name += 'Wreck ';
+        }
+        name += (fleet.fleet_id + 1);
+        return name;
     }
 
     calc_fleet_name_font_size() {

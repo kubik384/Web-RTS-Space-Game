@@ -426,7 +426,10 @@ module.exports = class Game {
                             fleets.push(this.fleets[j]);
                         } else {
                             //don't like giving clients the actual fleets id, since if the fleet can get out of sight and then the player finds it again, they can check the id to see if it's the same fleet
-                            fleets.push({fleet_id: this.fleets[j].fleet_id, x: this.fleets[j].x, y: this.fleets[j].y, units: this.fleets[j].units, abandoned: this.fleets[j].abandoned});
+                            fleets.push({fleet_id: this.fleets[j].fleet_id, x: this.fleets[j].x, y: this.fleets[j].y, units: this.fleets[j].units, abandoned: this.fleets[j].abandoned, resources: this.fleets[j].resources});
+                            if (fleets[fleets.length - 1].abandoned) {
+                                fleets[fleets.length - 1].resources = this.fleets[j].resources;
+                            }
                         }
                     }
                     this.players[i].socket.emit('game_update', [fleets, this.deleted_fleets, this.space_objects, this.deleted_space_objects, this.time_passed]);
@@ -618,6 +621,9 @@ module.exports = class Game {
                                 } else {
                                     //don't like giving clients the actual fleets id, since if the fleet can get out of sight and then the player finds it again, they can check the id to see if it's the same fleet
                                     fleets.push({fleet_id: this.fleets[j].fleet_id, x: this.fleets[j].x, y: this.fleets[j].y, units: this.fleets[j].units, abandoned: this.fleets[j].abandoned});
+                                    if (fleets[fleets.length - 1].abandoned) {
+                                        fleets[fleets.length - 1].resources = this.fleets[j].resources;
+                                    }
                                 }
                             }
                             var new_reports_count =  await this.dbManager.get_new_reports_count(this.players[i].username);
@@ -824,6 +830,7 @@ module.exports = class Game {
                 this.deleted_fleets.push(opposing_fleet_index);
                 this.fleets.splice(opposing_fleet_index, 1);
             }
+            delete opposing_fleet.units;
         }
         if (hull <= 0) {            
             fleet.owner = undefined;
@@ -836,6 +843,7 @@ module.exports = class Game {
                 this.deleted_fleets.push(fleet_index);
                 this.fleets.splice(fleet_index, 1);
             }
+            delete fleet.units;
         }
     }
 

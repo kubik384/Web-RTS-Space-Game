@@ -20,43 +20,24 @@ body::-webkit-scrollbar {
 	scrollbar-width: none;  /* Firefox */
 }
 
+#navbar {
+	margin: 0px !important;
+}
+
 #image_holder {
 	display: none;
 }
 
-#container {
-	display: flex;
-	flex-flow: column;
-	height: 100%;
-}
-
 #map_container {
-	text-align: center;
-	height: 100%;
+	user-select: none;
+	height: calc(100% - 48px);
+	width: 100%;
 }
 
 #map {
 	background-color: black;
-	border: 2px solid darkblue;
 	width: 100%;
-	height: calc(100% - 4px);
-}
-
-#layout_table {
-	padding-top: 10px;
-	padding-bottom: 10px;
-	height: calc(100% - 48px);
-}
-
-#layout_table > tbody > tr > td {
-	width: 20%;
-	padding: 0px 5px;
-	vertical-align: top
-}
-
-#map_column {
-	user-select: none;
-	width: 50% !important;
+	height: 100%;
 }
 
 #fleet_ui {
@@ -87,9 +68,11 @@ body::-webkit-scrollbar {
 	font-size: 20px;
 }
 
-#fleet_details > h3 {
+#fleet_name {
 	text-align: center;
+	padding-bottom: 10px;
 	margin-bottom: 10px;
+	border-bottom: 1px solid black;
 }
 
 #assemble_fleet_wrapper label {
@@ -136,7 +119,7 @@ body::-webkit-scrollbar {
 	cursor: pointer;
 }
 
-#available_units_table, #fleet_units_table {
+#available_units_table {
 	width: 100%;
 }
 
@@ -148,7 +131,7 @@ body::-webkit-scrollbar {
 	vertical-align: middle !important;
 }
 
-#available_units_table > tbody > tr > td {
+#available_units_table > tbody > tr > td, #fleet_units_table > tbody > tr > td {
 	vertical-align: baseline;
 }
 
@@ -193,4 +176,55 @@ body::-webkit-scrollbar {
 	height: 100%;
 	z-index: 2;
 	background-color: rgba(255, 255, 255, 0);
+}
+
+.side_panel {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	background-color: white;
+	position: absolute;
+	margin-top: 48px;
+	width: 25%;
+	height: calc(100% - 48px);
+	min-width: 200px;
+	top: 0;
+	z-index: 1;
+}
+
+.side_panel > * {
+	width: 100%;
+}
+
+#fleet_ui {
+	right: 0;
+}
+
+#fleet_details {
+	left: 0;
+}
+
+.ui_button {
+	width: 24px;
+	cursor: pointer;
+	padding: 2px 2px;
+	margin-bottom: 10px;
+}
+
+#close_button_wrapper > img {
+	float: right;
+}
+
+#fui_expand_button {
+	position: absolute;
+	margin-top: 48px;
+	right: 0;
+	top: 0;
+}
+
+#fd_expand_button {
+	position: absolute;
+	margin-top: 48px;
+	left: 0;
+	top: 0;
 }
