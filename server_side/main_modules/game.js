@@ -5,10 +5,9 @@ var expedition_results = require('./../game_properties/expedition_results.json')
 var fs = require('fs');
 
 module.exports = class Game {
-    constructor(dbManager, server, connections) {
+    constructor(dbManager, server) {
         this.dbManager = dbManager;
         this.server = server;
-        this.connections = connections;
         this.interval_time = 20;
         this.overall_time_passed = 0;
         this.tick_time = 90;
@@ -51,39 +50,6 @@ module.exports = class Game {
 
                 space_objects_loop:
                 for (var i = this.space_objects.length - 1; i >= 0; i--) {
-                    for (var j = this.fleets.length - 1; j >= 0; j--) {
-                        var vector = new Vector(this.fleets[j], this.space_objects[i]);
-                        //Expect all the space objects to be squares (circles) = same width and height - for now
-                        var object_radius = this.space_objects[i].width/2;
-                        var distance = await vector.length();
-                        var speed;
-                        var space_object = this.space_objects[i];
-                        if (space_object.centerrot_id !== undefined) {
-                            if (space_object.centerrot_id !== space_object.space_object_id) {
-                                var rads = await utils.angleToRad(space_object.rot - 0.001 * this.time_passed);
-                                var centerrot_object = this.space_objects.find(space_obj => space_obj.space_object_id == space_object.centerrot_id);
-                                var [center_x, center_y] = [centerrot_object.x, centerrot_object.y];
-                                var [original_x, original_y] = [space_object.original_x, space_object.original_y];
-                                var x = center_x + (original_x - center_x) * Math.cos(rads) - (original_y - center_y) * Math.sin(rads);
-                                var y = center_y + (original_x - center_x) * Math.sin(rads) + (original_y - center_y) * Math.cos(rads);
-                                previous_space_object_position = new Vector(x, y);
-                                space_object_velocity = await new Vector(previous_space_object_position, space_object).divide(this.time_passed);
-                                speed = await(await this.fleets[j].velocity.subtract(space_object_velocity)).length();
-                            } else {
-                                speed = await this.fleets[j].velocity.length();
-                            }
-                        } else {
-                            speed = await(await this.fleets[j].velocity.subtract(space_object.velocity)).length();
-                        }
-                        if (distance < object_radius && this.fleets[j].safe_space_object_id != this.space_objects[i].space_object_id) {
-                            if (this.fleets[j].assigned_object_type == 'space_object' && this.fleets[j].assigned_object_id == this.space_objects[i].space_object_id && this.space_objects[i].image !== 'star') {//&& speed < this.speed_crash_constant) { - can't use this until the movement calculations have been tweaked
-                                this.fleets[j].safe_space_object_id = this.fleets[j].assigned_object_id;
-                            } else {
-                                this.deleted_fleets.push(j);
-                                this.fleets.splice(j, 1);
-                            }
-                        }
-                    }
                     if (Math.abs(this.space_objects[i].x) > this.boundaries
                     || Math.abs(this.space_objects[i].y) > this.boundaries) {
                         this.deleted_space_objects.push(i);
@@ -226,7 +192,6 @@ module.exports = class Game {
                                     } else {
                                         this.fleets[i].assigned_object_id = undefined;
                                         this.fleets[i].assigned_object_type = undefined;
-                                        this.fleets[i].safe_space_object_id = undefined;
                                         this.fleets[i].move_point = undefined;
                                     }
                                     break;
@@ -234,7 +199,7 @@ module.exports = class Game {
                                     var fleet = this.fleets.find(fleet => fleet.fleet_id == this.fleets[i].assigned_object_id);
                                     if (fleet !== undefined) {
                                         var distance = await new Vector(this.fleets[i], fleet).length();
-                                        if (distance < 100) {
+                                        if (distance < 100 && this.fleets[i].fleet_id != fleet.fleet_id) {
                                             if (fleet.abandoned !== undefined) {
                                                 this.fleets[i].move_point = undefined;
                                                 this.fleets[i].velocity = fleet.velocity;
@@ -289,11 +254,11 @@ module.exports = class Game {
                                                 if (distance != 0) {
                                                     this.fleets[i].x = fleet.x;
                                                     this.fleets[i].y = fleet.y;
-                                                    //engage the fleet somehow
-                                                    this.fleets[i].fighting_cooldown = 1000;
-                                                    this.fleets[i].engaged_fleet_id = fleet.fleet_id;
-                                                    fleet.engaged_fleet_id = this.fleets[i].fleet_id;
                                                 }
+                                                //engage the fleet somehow
+                                                this.fleets[i].fighting_cooldown = 1000;
+                                                this.fleets[i].engaged_fleet_id = fleet.fleet_id;
+                                                fleet.engaged_fleet_id = this.fleets[i].fleet_id;
                                             }
                                         } else {
                                             this.fleets[i].move_point = {x: fleet.x, y: fleet.y};
@@ -307,29 +272,29 @@ module.exports = class Game {
                             }
                         }
                         if (this.fleets[i].move_point !== undefined) {
-                            if (this.fleets[i].safe_space_object_id !== undefined) {
-                                var space_object = this.space_objects.find(space_object => space_object.space_object_id == this.fleets[i].safe_space_object_id);
-                                var object_radius = space_object.width/2;
-                                var distance = await new Vector(this.fleets[i], space_object).length();
-                                if (distance > object_radius) {
-                                    this.fleets[i].safe_space_object_id = undefined;
+                            if (Math.abs(this.fleets[i].x - this.fleets[i].move_point.x) < 1 && Math.abs(this.fleets[i].y - this.fleets[i].move_point.y) < 1 && await this.fleets[i].velocity.length() < 0.6) {
+                                this.fleets[i].x = this.fleets[i].move_point.x;
+                                this.fleets[i].y = this.fleets[i].move_point.y;
+                                this.fleets[i].velocity.x = 0;
+                                this.fleets[i].velocity.y = 0;
+                                delete this.fleets[i].move_point;
+                            } else {
+                                var vector = new Vector(this.fleets[i], this.fleets[i].move_point);
+                                var distance = await vector.length();
+                                var speed = await this.fleets[i].velocity.length() * this.time_passed;
+                                if (this.fleets[i].acceleration != 0) {
+                                    var acceleration_input = speed/(this.fleets[i].acceleration * this.time_passed);
+                                    var adjusted_vector = acceleration_input != 0 ? await vector.divide(acceleration_input) : vector;
+                                    var time_to_slowdown = distance/speed;
+                                    var calculated_vector;
+                                    if ((await adjusted_vector.length() > speed) || (time_to_slowdown < acceleration_input)) {
+                                        calculated_vector = await (new Vector(this.fleets[i].velocity, adjusted_vector)).normalize();
+                                    } else {
+                                        var normalized_velocity = await this.fleets[i].velocity.isNull() ? this.fleets[i].velocity : await this.fleets[i].velocity.normalize();
+                                        calculated_vector = await (new Vector(normalized_velocity, await vector.normalize())).normalize();
+                                    }
+                                    this.fleets[i].velocity = await this.fleets[i].velocity.add(await calculated_vector.multiply(this.fleets[i].acceleration * this.time_passed));
                                 }
-                            }
-                            var vector = new Vector(this.fleets[i], this.fleets[i].move_point);
-                            var distance = await vector.length();
-                            var speed = await this.fleets[i].velocity.length() * this.time_passed;
-                            if (this.fleets[i].acceleration != 0) {
-                                var acceleration_input = speed/(this.fleets[i].acceleration * this.time_passed);
-                                var adjusted_vector = acceleration_input != 0 ? await vector.divide(acceleration_input) : vector;
-                                var time_to_slowdown = distance/speed;
-                                var calculated_vector;
-                                if ((await adjusted_vector.length() > speed) || (time_to_slowdown < acceleration_input)) {
-                                    calculated_vector = await (new Vector(this.fleets[i].velocity, adjusted_vector)).normalize();
-                                } else {
-                                    var normalized_velocity = await this.fleets[i].velocity.isNull() ? this.fleets[i].velocity : await this.fleets[i].velocity.normalize();
-                                    calculated_vector = await (new Vector(normalized_velocity, await vector.normalize())).normalize();
-                                }
-                                this.fleets[i].velocity = await this.fleets[i].velocity.add(await calculated_vector.multiply(this.fleets[i].acceleration * this.time_passed));
                             }
                             /*
                             var calculated_vector;
@@ -461,7 +426,10 @@ module.exports = class Game {
                             fleets.push(this.fleets[j]);
                         } else {
                             //don't like giving clients the actual fleets id, since if the fleet can get out of sight and then the player finds it again, they can check the id to see if it's the same fleet
-                            fleets.push({fleet_id:this.fleets[j].fleet_id, x: this.fleets[j].x, y: this.fleets[j].y, abandoned: this.fleets[j].abandoned});
+                            fleets.push({fleet_id: this.fleets[j].fleet_id, x: this.fleets[j].x, y: this.fleets[j].y, units: this.fleets[j].units, abandoned: this.fleets[j].abandoned, resources: this.fleets[j].resources});
+                            if (fleets[fleets.length - 1].abandoned) {
+                                fleets[fleets.length - 1].resources = this.fleets[j].resources;
+                            }
                         }
                     }
                     this.players[i].socket.emit('game_update', [fleets, this.deleted_fleets, this.space_objects, this.deleted_space_objects, this.time_passed]);
@@ -563,12 +531,13 @@ module.exports = class Game {
                 }
                 if (units.length != 0) {
                     var capacity = 0;
-                    //does not check if the units are at all valid neither if the unit counts are valid
                     var unit_details = await this.dbManager.get_unit_details(units);
                     for (var i = 0; i < unit_details.length; i++) {
                         if (units[i].count > 0) {
                             capacity += unit_details[i].capacity * units[i].count;
                         }
+                        units[i].name = unit_details[i].name;
+                        delete units[i].player_id;
                     }
                     var fleet;
                     if (expedition_timer !== undefined) {
@@ -594,9 +563,8 @@ module.exports = class Game {
         }
     }
 
-    async cancel_fleet_abandoning(socket_id) {
-        var player = this.players.find( player => player.socket.id == socket_id );
-        var fleet = this.fleets.find(fleet => fleet.owner == player.username);
+    async cancel_fleet_abandoning(username) {
+        var fleet = this.fleets.find(fleet => fleet.owner == username);
         if (fleet !== undefined) {
             if (fleet.abandon_timer !== undefined) {
                 fleet.abandon_timer = undefined;
@@ -604,8 +572,7 @@ module.exports = class Game {
         }
     }
 
-    async set_movepoint(socket_id, x, y) {
-        var username = this.players.find( player => player.socket.id == socket_id ).username;
+    async set_movepoint(username, x, y) {
         var player_fleet = this.fleets.find( fleet => fleet.owner == username );
         if (player_fleet !== undefined && player_fleet.abandon_timer === undefined && player_fleet.engaged_fleet_id === undefined && player_fleet.expedition_timer === undefined) {
             player_fleet.move_point = {x:x, y:y};
@@ -614,7 +581,7 @@ module.exports = class Game {
         }
     }
 
-    async get_map_datapack(layout, socket_id) {
+    async get_map_datapack(layout, username) {
         if (this.updating) {
             await new Promise((resolve, reject) => {setTimeout(resolve, 0)});
             return this.get_map_datapack();
@@ -626,7 +593,7 @@ module.exports = class Game {
                     return;
                 } else if (layout === 'system') {
                     for (var i = 0; i < this.players.length; i++) {
-                        if (this.players[i].socket.id == socket_id) {
+                        if (this.players[i].username == username) {
                             /*
                             var player_planet = this.space_objects.find(space_object => space_object.space_object_id == this.players[i].space_object_id);
                             var space_objects = [];
@@ -653,7 +620,10 @@ module.exports = class Game {
                                     fleets.push(this.fleets[j]);
                                 } else {
                                     //don't like giving clients the actual fleets id, since if the fleet can get out of sight and then the player finds it again, they can check the id to see if it's the same fleet
-                                    fleets.push({fleet_id: this.fleets[j].fleet_id, x: this.fleets[j].x, y: this.fleets[j].y, abandoned: this.fleets[j].abandoned});
+                                    fleets.push({fleet_id: this.fleets[j].fleet_id, x: this.fleets[j].x, y: this.fleets[j].y, units: this.fleets[j].units, abandoned: this.fleets[j].abandoned});
+                                    if (fleets[fleets.length - 1].abandoned) {
+                                        fleets[fleets.length - 1].resources = this.fleets[j].resources;
+                                    }
                                 }
                             }
                             var new_reports_count =  await this.dbManager.get_new_reports_count(this.players[i].username);
@@ -676,9 +646,9 @@ module.exports = class Game {
         this.players.push({socket: socket, username: username, space_object_id: basic_player_map_info.space_object_id, view_range: 100});
     }
 
-    async removePlayer(socket) {
+    async removePlayer(username) {
         for (var i = 0; i < this.players.length; i++) {
-            if (this.players[i].socket.id == socket.id) {
+            if (this.players[i].username == username) {
                 this.players.splice(i, 1);
                 return;
             }
@@ -696,7 +666,7 @@ module.exports = class Game {
         this.space_objects.push({space_object_id:  this.space_object_id++, original_x: x, original_y: y, x: x, y: y, width: size, height: size, image: "asteroid", velocity: new Vector(0, 0), rot: 0, resources: resources});
     }
 
-    async generate_system(socket) {
+    async generate_system() {
         var center_x = Math.floor(Math.random() * this.boundaries - 50000 * Math.sign(Math.random() - 0.49));
         var center_y = Math.floor(Math.random() * this.boundaries - 50000 * Math.sign(Math.random() - 0.49));
         var center_size = Math.random() * 9000;
@@ -710,10 +680,10 @@ module.exports = class Game {
             var rot = Math.floor(Math.random() * 360);
             this.space_objects.push({space_object_id: this.space_object_id++, original_x: x, original_y: y, x: x, y: y, width: size, height: size, image: "planet2", velocity: new Vector(0, 0), rot: rot, centerrot_id: center_object_id});
         }
-        socket.emit('system_generated', center_x, center_y);
+        this.server.emit('system_generated', center_x, center_y);
     }
 
-    async process_request(socket, username, request_id, passed_args) {
+    async process_request(username, request_id, passed_args) {
         if (typeof request_id === 'string') {
             if (!this.updating) {
                 switch(request_id) {
@@ -748,13 +718,13 @@ module.exports = class Game {
                         }
                         break;
                     case 'generate_system':
-                        this.generate_system(socket);
+                        this.generate_system();
                         break;
                     case 'generate_asteroid':
                         this.generate_asteroid();
                         break;
                     case 'cancel_fleet_abandoning':
-                        this.cancel_fleet_abandoning(socket.id);
+                        this.cancel_fleet_abandoning(username);
                         break;
                 }
             } else {
@@ -765,8 +735,7 @@ module.exports = class Game {
         }
     }
 
-    async assign_fleet(socket_id, p_object_type, object_id) {
-        var username = this.players.find( player => player.socket.id == socket_id ).username;
+    async assign_fleet(username, p_object_type, object_id) {
         var player_fleet = this.fleets.find( fleet => fleet.owner == username );
         if (player_fleet !== undefined && player_fleet.abandon_timer === undefined && player_fleet.engaged_fleet_id === undefined && player_fleet.expedition_timer === undefined) {
             var valid_object_types = ['space_object', 'fleet'];
@@ -861,6 +830,7 @@ module.exports = class Game {
                 this.deleted_fleets.push(opposing_fleet_index);
                 this.fleets.splice(opposing_fleet_index, 1);
             }
+            delete opposing_fleet.units;
         }
         if (hull <= 0) {            
             fleet.owner = undefined;
@@ -873,18 +843,18 @@ module.exports = class Game {
                 this.deleted_fleets.push(fleet_index);
                 this.fleets.splice(fleet_index, 1);
             }
+            delete fleet.units;
         }
     }
 
-    async send_expedition(socket_id, units, expedition_length_id) {
+    async send_expedition(username, units, expedition_length_id) {
         if (expedition_length_id !== undefined) {
-            var player = this.players.find(player => player.socket.id == socket_id);
-            var player_fleet = this.fleets.find( fleet => fleet.owner == player.username );
+            var player_fleet = this.fleets.find( fleet => fleet.owner == username );
             if (player_fleet === undefined) {
                 var expedition_timer;
                 switch (expedition_length_id) {
                     case 1:
-                        expedition_timer = 100;
+                        expedition_timer = 3000;
                         break;
                     case 2:
                         expedition_timer = 17100000;
@@ -896,7 +866,7 @@ module.exports = class Game {
                         expedition_timer = 50400000;
                         break;
                 }
-                this.assemble_fleet(player.username, units, expedition_timer, expedition_length_id);
+                this.assemble_fleet(username, units, expedition_timer, expedition_length_id);
             }
         }
     }
@@ -982,17 +952,13 @@ module.exports = class Game {
     }
 
     async generate_report(username, title, content, timestamp) {
-        var socket;
-        for (var socket_id in this.connections) {
-            if (this.connections[socket_id] == username) {
-                socket = this.server.sockets.connected[socket_id];
-                break;
-            }
+        var player_socket;
+        //going through socket connections instead of players because a user can be on other pages than map, which means they won't be in the players array, but they still will be connected through a socket and should be informed of new reports
+        this.server.sockets.sockets.forEach(socket => { if (socket.username == username) {player_socket = socket}});
+        await this.dbManager.save_report(username, title, content, timestamp);
+        if (player_socket !== undefined) {
+            player_socket.emit('new_report');
         }
-        if (socket !== undefined) {
-            socket.emit('new_report');
-        }
-        this.dbManager.save_report(username, title, content, timestamp);
     }
 
     async stop() {

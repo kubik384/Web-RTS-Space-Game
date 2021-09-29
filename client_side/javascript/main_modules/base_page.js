@@ -6,6 +6,7 @@ class Base_Page {
             var new_reports_count_div = document.getElementById('new_report_count');
             new_reports_count_div.textContent = parsed_datapack.new_reports_count;
             new_reports_count_div.setAttribute('style', 'display: block');
+            document.title += ' (' + parsed_datapack.new_reports_count + ')';
         }
     }
 
@@ -16,6 +17,10 @@ class Base_Page {
         if (new_reports_count == 1) {
             var new_reports_count_div = document.getElementById('new_report_count');
             new_reports_count_div.setAttribute('style', 'display: block');
+            document.title += ' (' + new_reports_count + ')';
+        } else {
+            var title = document.title;
+            document.title = title.substr(0, title.length - 2) + new_reports_count + ')';
         }
     }
 }

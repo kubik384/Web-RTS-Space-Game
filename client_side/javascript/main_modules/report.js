@@ -58,7 +58,7 @@ class Game extends Base_Page {
     }
 
     async request_datapack() {
-        this.socket.emit('report_datapack_request', document.cookie.split('token=')[1]);
+        this.socket.emit('report_datapack_request');
     }
 
     request_report_details(report_id) {

@@ -20,98 +20,24 @@ body::-webkit-scrollbar {
 	scrollbar-width: none;  /* Firefox */
 }
 
+#navbar {
+	margin: 0px !important;
+}
+
 #image_holder {
 	display: none;
 }
 
-#container {
-	display: flex;
-	flex-flow: column;
-	height: 100%;
-}
-
-#navbar {
-	height: 48px;
-	background-color: #333;
-}
-
-#navbar a {
-	float: left;
-	color: #f2f2f2;
-	text-align: center;
-	padding: 14px 16px;
-	text-decoration: none;
-	font-size: 17px;
-}
-
-#navbar a:hover, #dropdown_select:hover #dropdown_btn, #dropdown_menu a:hover {
-	background: #ddd;
-	color: black;
-}
-
 #map_container {
-	text-align: center;
-	height: 100%;
+	user-select: none;
+	height: calc(100% - 48px);
+	width: 100%;
 }
 
 #map {
 	background-color: black;
-	border: 2px solid darkblue;
 	width: 100%;
-	height: calc(100% - 4px);
-}
-
-#dropdown_select {
-	float: left;
-	overflow: hidden;
-}
-
-#dropdown_select #dropdown_btn {
-	font-size: 17px;  
-	border: none;
-	color: white;
-	padding: 14px 16px;
-	background-color: inherit;
-	font-family: inherit;
-	margin: 0;
-}
-
-#dropdown_menu {
-	display: none;
-	position: absolute;
-	background-color: #f9f9f9;
-	min-width: 160px;
-	box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-	z-index: 1;
-}
-
-#dropdown_menu a {
-	float: none;
-	color: black;
-	padding: 12px 16px;
-	text-decoration: none;
-	display: block;
-	text-align: left;
-}
-
-#dropdown_select:hover #dropdown_menu {
-	display: block;
-}
-
-#layout_table {
-	padding-top: 10px;
-	padding-bottom: 10px;
-	height: calc(100% - 48px);
-}
-
-#layout_table > tbody > tr > td {
-	width: 20%;
-	padding: 0px 5px;
-}
-
-#map_column {
-	user-select: none;
-	width: 50% !important;
+	height: 100%;
 }
 
 #fleet_ui {
@@ -138,12 +64,15 @@ body::-webkit-scrollbar {
 	user-select: none;
 }
 
-#fleet_ui, #fleet_ui button, input {
+#fleet_ui, #fleet_ui button, input, #fleet_details {
 	font-size: 20px;
 }
 
-#assemble_fleet_wrapper table {
-	width: 100%;
+#fleet_name {
+	text-align: center;
+	padding-bottom: 10px;
+	margin-bottom: 10px;
+	border-bottom: 1px solid black;
 }
 
 #assemble_fleet_wrapper label {
@@ -190,6 +119,22 @@ body::-webkit-scrollbar {
 	cursor: pointer;
 }
 
+#available_units_table {
+	width: 100%;
+}
+
+#available_units_table img, #fleet_units_table img {
+	width: 28px;
+}
+
+.img_cell {
+	vertical-align: middle !important;
+}
+
+#available_units_table > tbody > tr > td, #fleet_units_table > tbody > tr > td {
+	vertical-align: baseline;
+}
+
 #dialog_div {
 	font-size: 22px;
 	text-align: center;
@@ -231,4 +176,55 @@ body::-webkit-scrollbar {
 	height: 100%;
 	z-index: 2;
 	background-color: rgba(255, 255, 255, 0);
+}
+
+.side_panel {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	background-color: white;
+	position: absolute;
+	margin-top: 48px;
+	width: 25%;
+	height: calc(100% - 48px);
+	min-width: 200px;
+	top: 0;
+	z-index: 1;
+}
+
+.side_panel > * {
+	width: 100%;
+}
+
+#fleet_ui {
+	right: 0;
+}
+
+#fleet_details {
+	left: 0;
+}
+
+.ui_button {
+	width: 24px;
+	cursor: pointer;
+	padding: 2px 2px;
+	margin-bottom: 10px;
+}
+
+#close_button_wrapper > img {
+	float: right;
+}
+
+#fui_expand_button {
+	position: absolute;
+	margin-top: 48px;
+	right: 0;
+	top: 0;
+}
+
+#fd_expand_button {
+	position: absolute;
+	margin-top: 48px;
+	left: 0;
+	top: 0;
 }

@@ -346,7 +346,7 @@ class Game extends Base_Page {
     }
 
     async request_data() {
-        this.socket.emit('planet_datapack_request', document.cookie.split('token=')[1]);
+        this.socket.emit('planet_datapack_request');
     }
 
     async update_resource(resource, amount) {
