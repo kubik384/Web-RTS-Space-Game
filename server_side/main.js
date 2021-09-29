@@ -10,8 +10,8 @@ var cookieParser = require('cookie-parser');
 var bcrypt = require('bcrypt');
 var io = require('socket.io')(server, {pingInterval: 1500});
 
-const DbManager = require('./server_side/main_modules/dbManager.js');
-const Game = require('./server_side/main_modules/Game.js');
+const DbManager = require('./main_modules/dbManager.js');
+const Game = require('./main_modules/Game.js');
 
 const saltRounds = 10;
 const gameURL = '/game';
@@ -25,7 +25,7 @@ var tokens = [];
 var token_timeouts = {};
 var dbManager = new DbManager();
 var game = new Game(dbManager, io);
-const root = __dirname;
+const root = path.join(__dirname, '..\\');
 
 app.set('port', 8080);
 app.use('/client_side', express.static(root + '/client_side'));// Routing
