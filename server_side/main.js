@@ -12,6 +12,7 @@ var io = require('socket.io')(server, {pingInterval: 1500});
 
 const DbManager = require('./main_modules/dbManager.js');
 const Game = require('./main_modules/Game.js');
+const PORT = 8080;
 
 const saltRounds = 10;
 const gameURL = '/game';
@@ -27,7 +28,7 @@ var dbManager = new DbManager();
 var game = new Game(dbManager, io);
 const root = path.join(__dirname, '..\\');
 
-app.set('port', 8080);
+app.set('port', process.env.PORT || PORT);
 app.use('/client_side', express.static(root + '/client_side'));// Routing
 
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -163,8 +164,8 @@ app.use(function(req, res){
 });
 
 // Starts the server
-server.listen(8080, function() {
-	console.log('Starting server on port 8080');
+server.listen(process.env.PORT || PORT, function() {
+	console.log('Starting server on port ' + PORT);
 	game.setup_game();
 });
 
