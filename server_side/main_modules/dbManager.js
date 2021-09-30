@@ -13,11 +13,11 @@ module.exports = class DbManager {
     constructor() {
         //Credentials for connecting to the db 
         this.con = mysql.createConnection({
-            host: "localhost",
-            user: "root",
+            host: "	hv1qumv215dhm0nr",
+            user: "e24s6uzfv22r5xhm",
             password: null,
             port: 3306,
-            database: "improvisationalDB"
+            database: "zhfo8br4txzxfhgn"
         });
         this.con.connect( err => { if (err) throw err; });
     }
