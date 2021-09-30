@@ -26,17 +26,17 @@ var tokens = [];
 var token_timeouts = {};
 var dbManager = new DbManager();
 var game = new Game(dbManager, io);
-const root = path.join(__dirname, '..\\');
+const root = path.resolve('client_side');
 
 app.set('port', process.env.PORT || PORT);
-app.use('/client_side', express.static(root + '/client_side'));// Routing
+app.use('/client_side', express.static(root));// Routing
 
 app.use(bodyParser.urlencoded({ extended: false }));
 
 app.use(cookieParser());
 
 app.get('/', function(req, res) {
-	res.sendFile(path.join(root + '/client_side', 'pages/index.html'));
+	res.sendFile(path.join(root, 'pages/index.html'));
 });
 
 app.post('/register', function(req, res) {
@@ -97,7 +97,7 @@ app.post('/login', function(req, res) {
 app.get(planetURL, function(req,res) {
 	if (req.cookies !== undefined && req.cookies.token !== undefined) {
 		if (is_valid_token(req.cookies.token)) {
-			res.sendFile(path.join(root + '/client_side', 'pages/planet.html'));
+			res.sendFile(path.join(root, 'pages/planet.html'));
 		} else {
 			res.clearCookie('token');
 			res.redirect(303, '/');
@@ -110,7 +110,7 @@ app.get(planetURL, function(req,res) {
 app.get(mapURL, function(req,res) {
 	if (req.cookies !== undefined && req.cookies.token !== undefined) {
 		if (is_valid_token(req.cookies.token)) {
-			res.sendFile(path.join(root + '/client_side', 'pages/map.html'));
+			res.sendFile(path.join(root, 'pages/map.html'));
 		} else {
 			res.clearCookie('token');
 			res.redirect(303, '/');
@@ -123,7 +123,7 @@ app.get(mapURL, function(req,res) {
 app.get(messageURL, function(req,res) {
 	if (req.cookies !== undefined && req.cookies.token !== undefined) {
 		if (is_valid_token(req.cookies.token)) {
-			res.sendFile(path.join(root + '/client_side', 'pages/message.html'));
+			res.sendFile(path.join(root, 'pages/message.html'));
 		} else {
 			res.clearCookie('token');
 			res.redirect(303, '/');
@@ -136,7 +136,7 @@ app.get(messageURL, function(req,res) {
 app.get(researchURL, function(req,res) {
 	if (req.cookies !== undefined && req.cookies.token !== undefined) {
 		if (is_valid_token(req.cookies.token)) {
-			res.sendFile(path.join(root + '/client_side', 'pages/research.html'));
+			res.sendFile(path.join(root, 'pages/research.html'));
 		} else {
 			res.clearCookie('token');
 			res.redirect(303, '/');
@@ -149,7 +149,7 @@ app.get(researchURL, function(req,res) {
 app.get(reportURL, function(req,res) {
 	if (req.cookies !== undefined && req.cookies.token !== undefined) {
 		if (is_valid_token(req.cookies.token)) {
-			res.sendFile(path.join(root + '/client_side', 'pages/report.html'));
+			res.sendFile(path.join(root, 'pages/report.html'));
 		} else {
 			res.clearCookie('token');
 			res.redirect(303, '/');
