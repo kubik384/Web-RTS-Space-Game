@@ -11,7 +11,7 @@ var bcrypt = require('bcrypt');
 var io = require('socket.io')(server, {pingInterval: 1500});
 
 const DbManager = require('./main_modules/dbManager.js');
-const Game = require('./main_modules/Game.js');
+const Game = require('./main_modules/game.js');
 const PORT = 8080;
 
 const saltRounds = 10;
