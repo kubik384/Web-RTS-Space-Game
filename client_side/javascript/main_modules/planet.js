@@ -29,7 +29,7 @@ class Game extends Base_Page {
             resource_building_ui_html += `
             <tr>
                 <td>
-                    <img src="/client_side/images/resources/${resource}.png" height="20px"></img>
+                    <img src="/client_side/images/resources/${resource.toLowerCase()}.png" height="20px"></img>
                 </td>
                 <td id='${resource}'>
                 </td>
@@ -47,7 +47,7 @@ class Game extends Base_Page {
             resource_building_ui_html += `
             <tr>
                 <td>
-                    <img src="/client_side/images/buildings/${this.buildings[i].name}.png" height="20px"></img>
+                    <img src="/client_side/images/buildings/${this.buildings[i].name.toLowerCase()}.png" height="20px"></img>
                 </td>
                 <td id='${this.buildings[i].name}' class='building_cell'>
                     <span></span><img src="/client_side/images/ui/red_cross.png" class="cancel" data-building='${this.buildings[i].name}' style='display:none;'></img>
@@ -93,14 +93,14 @@ class Game extends Base_Page {
             create_units_html += `
             <tr>
                 <td>
-                    <img src="/client_side/images/units/${this.units[u_index].name}.png" height="20px"></img>
+                    <img src="/client_side/images/units/${this.units[u_index].name.toLowerCase()}.png" height="20px"></img>
                 </td>
                 <td>
                     <span>${this.units[u_index].name}</span>
                 </td>
                 <td>`
                     for (var resource in this.units[u_index].cost) {
-                        create_units_html += `${this.units[u_index].cost[resource]} <img src="/client_side/images/resources/${resource}.png" height="20px"></img>`;
+                        create_units_html += `${this.units[u_index].cost[resource]} <img src="/client_side/images/resources/${resource.toLowerCase()}.png" height="20px"></img>`;
                     }
                     create_units_html += `
                 </td>
@@ -124,7 +124,7 @@ class Game extends Base_Page {
             units_table_html += `
             <tr>
                 <td>
-                    <img src="/client_side/images/units/${this.units[i].name}.png"></img>
+                    <img src="/client_side/images/units/${this.units[i].name.toLowerCase()}.png"></img>
                 </td>
                 <td id="unit_count_${this.units[i].unit_id}" class="unit_cell">
                     <span>${this.units[i].count}</span>
@@ -157,7 +157,7 @@ class Game extends Base_Page {
             units_que_table_html += `
             <tr id="unit_que_row_${this.units[uq_index].unit_id}" style="display: ${this.unit_ques[i].count == 0 ? 'none' : 'table-row'}">
                 <td>
-                    <img src="/client_side/images/units/${this.units[uq_index].name}.png" height="15px"></img>
+                    <img src="/client_side/images/units/${this.units[uq_index].name.toLowerCase()}.png" height="15px"></img>
                     <span>${this.units[uq_index].name}</span>
                 </td>
                 <td>
