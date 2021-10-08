@@ -8,17 +8,25 @@ var resourceTable = all_resource_types.split(', ');
 var buildings = require('./../game_properties/buildings.json');
 var units = require('./../game_properties/units.json');
 var technologies = require('./../game_properties/technologies.json');
+var mysql_details = process.env.PORT !== undefined ? 
+mysql_details = {
+    host: "j5zntocs2dn6c3fj.chr7pe7iynqr.eu-west-1.rds.amazonaws.com",
+    user: "hv1qumv215dhm0nr",
+    password: "e24s6uzfv22r5xhm",
+    port: 3306,
+    database: "zhfo8br4txzxfhgn"
+} : {
+    host: "127.0.0.1",
+    user: "root",
+    password: "",
+    port: 3306,
+    database: "improvisationaldb"
+};
 
 module.exports = class DbManager {
     constructor() {
         //Credentials for connecting to the db 
-        this.con = mysql.createConnection({
-            host: "j5zntocs2dn6c3fj.chr7pe7iynqr.eu-west-1.rds.amazonaws.com",
-            user: "hv1qumv215dhm0nr",
-            password: "e24s6uzfv22r5xhm",
-            port: 3306,
-            database: "zhfo8br4txzxfhgn"
-        });
+        this.con = mysql.createConnection(mysql_details);
         this.con.connect( err => { if (err) throw err; });
     }
 
@@ -615,5 +623,11 @@ module.exports = class DbManager {
                 return this.execute_query(query, [JSON.stringify(research_details), username]);
             }
         }
+    }
+
+    async get_player_count() {
+        var query = `SELECT COUNT(player_id) AS player_count
+        FROM players`;
+        return ((await this.execute_query(query))[0].player_count);
     }
 }

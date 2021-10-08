@@ -5,6 +5,7 @@
 	color: black;
 	background-color: red;
 	transform: translateX(-50%);
+	z-index: 2;
 }
 
 #navbar {

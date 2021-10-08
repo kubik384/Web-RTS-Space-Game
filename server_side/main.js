@@ -45,19 +45,29 @@ app.post('/register', function(req, res) {
 	if (password != '' && username != '') {
 		var query = "SELECT password FROM players WHERE username = ?";
 		dbManager.execute_query(query, [username]).then(results => {
-			if (results.length == 1) {
-				res.sendStatus(401);
-			} else {
-				bcrypt.hash(password, saltRounds, function(err, hash) {
-					if (err) {
-						throw err;
+			dbManager.get_player_count().then(player_count => {
+				if (player_count < 50) {
+					if (results.length == 1) {
+						res.status(401).send("Entered username already exists, please select a different username");
+					} else {
+						bcrypt.hash(password, saltRounds, function(err, hash) {
+							if (err) {
+								throw err;
+							}
+							game.get_player_so().then(so_id => {
+								query = "INSERT INTO players (username, password, system_id, space_object_id, res_last_update) VALUES ( ? , ? , ? , ? , UNIX_TIMESTAMP())";
+								dbManager.execute_query(query, [username, hash, 1, so_id]).then(() => {
+									res.sendStatus(200);
+								}).catch(err => { throw err });
+							}).catch(err => { throw err });
+						});
 					}
-					query = "INSERT INTO players (username, password, system_id, space_object_id, res_last_update) VALUES ( ? , ? , ? , ? , UNIX_TIMESTAMP())";
-					dbManager.execute_query(query, [username, hash, 1, 2]).then(() => {
-						res.sendStatus(200);
-					}).catch(err => { throw err });
-				});
-			}
+				} else {
+					res.status(401).send("The maximum number of players has been reached");
+				}
+			}).catch(err => {
+				throw err;
+			});
 		}).catch(err => {
 			throw err;
 		});
@@ -224,7 +234,9 @@ io.on('connection', socket => {
 		var request_id = args[0];
 		var passed_args = args.slice(1);
 		if (request_id === 'restart') {
-			restart_server(socket, passed_args[0]);
+			if (socket.username == 'Newstory') {
+				restart_server(socket, passed_args[0]);
+			}
 		} else {
 			game.process_request(socket.username, request_id, passed_args);
 		}
@@ -282,10 +294,10 @@ function restart_server(socket, layout) {
 	if (socket !== undefined) {
 		token = socket.token;
 	}
-	delete require.cache[require.resolve('./server_side/main_modules/Game.js')];
-	delete require.cache[require.resolve('./server_side/main_modules/dbManager.js')];
-	const DbManager = require('./server_side/main_modules/dbManager.js');
-	const Game = require('./server_side/main_modules/Game.js');
+	delete require.cache[require.resolve('./main_modules/game.js')];
+	delete require.cache[require.resolve('./main_modules/dbManager.js')];
+	const DbManager = require('./main_modules/dbManager.js');
+	const Game = require('./main_modules/game.js');
 	dbManager = new DbManager();
 	game.stop();
 	game = new Game(dbManager, io);

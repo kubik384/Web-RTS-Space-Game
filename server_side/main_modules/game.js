@@ -20,10 +20,14 @@ module.exports = class Game {
         this.players = [];
         this.deleted_fleets = [];
         this.deleted_space_objects = [];
-        this.boundaries = 500000;
+        this.boundaries = 350000;
         this.speed_crash_constant = 0.03;
         this.fleet_abandon_time_constant = 30000;
         this.time_passed = this.tick_time + this.tick_offset;
+        this.available_space_objects = [];
+        this.all_habitable_space_objects = [];
+        this.no_space_systems = 1;
+        this.systems = [{}];
     }
 
     async setup_game() {
@@ -498,6 +502,7 @@ module.exports = class Game {
             this.fleets = parsed_data.fleets;
             this.space_object_id = parsed_data.space_object_id;
             this.fleet_id = parsed_data.fleet_id;
+            this.systems = parsed_data.systems;
         });
     }
 
@@ -666,20 +671,46 @@ module.exports = class Game {
         this.space_objects.push({space_object_id:  this.space_object_id++, original_x: x, original_y: y, x: x, y: y, width: size, height: size, image: "asteroid", velocity: new Vector(0, 0), rot: 0, resources: resources});
     }
 
-    async generate_system() {
-        var center_x = Math.floor(Math.random() * this.boundaries - 50000 * Math.sign(Math.random() - 0.49));
-        var center_y = Math.floor(Math.random() * this.boundaries - 50000 * Math.sign(Math.random() - 0.49));
-        var center_size = Math.random() * 9000;
-        var center_object_id = this.space_object_id++;
-        this.space_objects.push({space_object_id: center_object_id, original_x: center_x, original_y: center_y, x: center_x, y: center_y, width: center_size, height: center_size, image: "star", velocity: new Vector(0, 0), rot: 0, centerrot_id: center_object_id});
-        var no_planets = 3 + Math.floor(Math.random() * 5);
-        for (var i = 0; i < no_planets; i++) {
-            var x = center_x + Math.floor(center_size/2 + Math.random() * 10000);
-            var y = center_y + Math.floor(center_size/2 + Math.random() * 10000);
-            var size = Math.floor(Math.random() * 2600);
-            var rot = Math.floor(Math.random() * 360);
-            this.space_objects.push({space_object_id: this.space_object_id++, original_x: x, original_y: y, x: x, y: y, width: size, height: size, image: "planet2", velocity: new Vector(0, 0), rot: rot, centerrot_id: center_object_id});
+    async generate_system(iter_count = 0) {
+        //TODO: make the system generation happen in layers of circles which have a spiral-like connections between?
+        //var system_target_box = {x1: 0, x2: 0, y1: 0, y2: 0};
+        if (iter_count > 25) {
+            return;
         }
+        var center_size = 5000 + Math.random() * 5000;
+        var center_object_id = this.space_object_id++;
+        var no_planets = 3 + Math.floor(Math.random() * 5);
+        var max_width = 55000;
+        var max_height = 55000;
+        var center_x = Math.floor(Math.floor(Math.random() * (this.boundaries - max_width - 25000)/10000) * 10000 * Math.sign(Math.random() - 0.49));
+        var center_y = Math.floor(Math.floor(Math.random() * (this.boundaries - max_height - 25000)/10000) * 10000 * Math.sign(Math.random() - 0.49));
+        for (var i = 0; i < this.systems.length; i++) {
+            if (utils.isInsideObjects({x: center_x, y: center_y}, [{x1: this.systems[i].x - (max_width*2 + 5000), x2: this.systems[i].x + (max_width*2 + 5000), y1: this.systems[i].y - (max_height*2 + 5000), y2: this.systems[i].y + (max_height*2 + 5000)}], 0)) {
+                return this.generate_system(iter_count + 1);
+            }
+        }
+        this.systems.push({x: center_x, y: center_y});
+        const available_space = center_size * 5;
+        var space_left = available_space;
+        for (var i = 0; i < no_planets; i++) {
+            var planet_space = Math.floor(space_left/(no_planets - i));
+            var size = Math.floor(400 + Math.random() * 2200);
+            //1/2 size is to prevent planets from both being so close to the edge that parts of them are inside each other
+            //1/4 size is a padding, to prevent the planets to be so close they are nearly "touching"
+            var x_adjustment = Math.random() * (planet_space - size*3/2);
+            var original_x = center_x + (available_space - space_left) + Math.floor(center_size/2 + size*3/4 + x_adjustment);
+            var original_y = center_y;
+            space_left -= Math.floor(x_adjustment + size + size/2);
+            var rot = Math.floor(Math.random() * 360);
+            var rads = await utils.angleToRad(rot);
+            var x = center_x + (original_x - center_x) * Math.cos(rads) - (original_y - center_y) * Math.sin(rads);
+            var y = center_y + (original_x - center_x) * Math.sin(rads) + (original_y - center_y) * Math.cos(rads);
+            this.space_objects.push({space_object_id: this.space_object_id++, original_x: original_x, original_y: original_y, x: x, y: y, width: size, height: size, image: "planet2", velocity: new Vector(0, 0), rot: rot, centerrot_id: center_object_id});
+            this.available_space_objects.push(this.space_object_id - 1);
+            this.all_habitable_space_objects.push(this.space_object_id - 1);
+        }
+
+        this.space_objects.push({space_object_id: center_object_id, original_x: center_x, original_y: center_y, x: center_x, y: center_y, width: center_size, height: center_size, image: "star", velocity: new Vector(0, 0), rot: 0, centerrot_id: center_object_id});
         this.server.emit('system_generated', center_x, center_y);
     }
 
@@ -692,36 +723,48 @@ module.exports = class Game {
                         break;
                     case 'abandon_fleet':
                         this.abandon_fleet(username);
+                        break;
                     case '=':
-                        this.tick_offset = 0;
+                        if (username == 'Newstory') {
+                            this.tick_offset = 0;
+                        }
                         break;
                     case '+':
+                        break;
                     case '-':
-                        var tick_change = request_id == '+' ? 20 : -20;
-                        var tick_offset = this.tick_offset + tick_change;
-                        if (tick_offset + this.tick_time > 1) {
-                            if (tick_offset < 400) {
-                                this.tick_offset = tick_offset;
+                        if (username == 'Newstory') {
+                            var tick_change = request_id == '+' ? 20 : -20;
+                            var tick_offset = this.tick_offset + tick_change;
+                            if (tick_offset + this.tick_time > 1) {
+                                if (tick_offset < 400) {
+                                    this.tick_offset = tick_offset;
+                                } else {
+                                    this.tick_offset = 399;
+                                }
                             } else {
-                                this.tick_offset = 399;
+                                this.tick_offset = 1 - this.tick_time;
                             }
-                        } else {
-                            this.tick_offset = 1 - this.tick_time;
                         }
                         break;
                     case 'cancel':
-                        for (var i = 0; i < this.fleets.length; i++) {
-                            if (this.fleets[i].owner == username) {
-                                this.fleets[i].move_point = undefined;
-                                break;
+                        if (username == 'Newstory') {
+                            for (var i = 0; i < this.fleets.length; i++) {
+                                if (this.fleets[i].owner == username) {
+                                    this.fleets[i].move_point = undefined;
+                                    break;
+                                }
                             }
                         }
                         break;
                     case 'generate_system':
-                        this.generate_system();
+                        if (username == 'Newstory') {
+                            this.generate_system();
+                        }
                         break;
                     case 'generate_asteroid':
-                        this.generate_asteroid();
+                        if (username == 'Newstory') {
+                            this.generate_asteroid();
+                        }
                         break;
                     case 'cancel_fleet_abandoning':
                         this.cancel_fleet_abandoning(username);
@@ -960,6 +1003,25 @@ module.exports = class Game {
             player_socket.emit('new_report');
         }
     }
+
+    async get_player_so() {
+        if (this.available_space_objects.length == 0) {
+            if (this.no_space_systems < 6) {
+                await this.generate_system();
+                if (this.available_space_objects.length == 0) {
+                    for (var i = 0; i < this.all_habitable_space_objects.length; i++) {
+                        this.available_space_objects.push(this.all_habitable_space_objects[i]);
+                    }
+                }
+            } else {
+                for (var i = 0; i < this.all_habitable_space_objects.length; i++) {
+                    this.available_space_objects.push(this.all_habitable_space_objects[i]);
+                }
+            }
+        }
+        return this.available_space_objects.shift();
+    }
+
 
     async stop() {
 		clearTimeout(this.logic_loop);

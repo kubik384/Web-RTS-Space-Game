@@ -82,7 +82,7 @@
 						alert("You've been successfully registered");
 					} else if (this.readyState == 4 && this.status == 401) {
 						//display error message username already exists - make check to not allow user to send password diff from repeatPassword
-						alert("Entered username already exists, please select a different username");
+						alert(this.responseText);
 					} else if (this.readyState == 4 && this.status == 500) {
 						//display error message - server error, please try again later
 						alert("A server error has been encountered, please try again later");

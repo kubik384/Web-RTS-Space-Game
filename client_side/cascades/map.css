@@ -228,3 +228,15 @@ body::-webkit-scrollbar {
 	left: 0;
 	top: 0;
 }
+
+#debugging_ui > * {
+	width: 100%;
+}
+
+#expand_debug {
+	position: absolute;
+	bottom: 0;
+	right: 0;
+	width: 20px;
+	height: 20px;
+}

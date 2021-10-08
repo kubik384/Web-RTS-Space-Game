@@ -30,6 +30,7 @@ class Game extends Base_Page {
         this.fleet_name_spacing = 8;
         this.fleet_size = 4;
         this.assigning_objects = {last_selected_index: -1, objects: []};
+        this.debug_clicked = 0;
         
         const query_string = window.location.search;
         const url_parameters = new URLSearchParams(query_string);
@@ -87,6 +88,7 @@ class Game extends Base_Page {
                 }
                 if (disable_button) {
                     document.getElementById('assemble_fleet').disabled = true;
+                    document.getElementById('send_expedition').disabled = true;
                 }
             }
             var space_objects = datapack.space_objects;
@@ -428,6 +430,12 @@ class Game extends Base_Page {
                 document.getElementById('fleet_ui').style.display = "none";
                 document.getElementById('fui_expand_button').removeAttribute('style');
             });
+
+            document.getElementById('expand_debug').addEventListener('click', function() {
+                if (++this.debug_clicked > 1) {
+                    document.getElementById('debugging_ui').removeAttribute('style');
+                }
+            }.bind(this));
             
             window.requestAnimationFrame(this.draw.bind(this));
             this.logic_loop = setTimeout(this.update.bind(this), this.tick_time);
@@ -594,6 +602,7 @@ class Game extends Base_Page {
             var center_system = update.center_system;
             this.map_ctx.drawImage(center_system.HTMLimage, center_system.x + this.xOffset - center_system.width/2, center_system.y + this.yOffset - center_system.width/2, center_system.width, center_system.height);
         }
+        //this.draw_grid(this.map_ctx, -this.boundaries * this.zoom, -this.boundaries * this.zoom, this.xOffset, this.yOffset, 10000 * this.zoom, 10000 * this.zoom, this.boundaries * 2 * this.zoom, this.boundaries * 2 * this.zoom);
         window.requestAnimationFrame(this.draw.bind(this));
     }
 
@@ -925,6 +934,22 @@ class Game extends Base_Page {
     calc_object_name_font_size(object) {
         var font_size = object.width/10 * this.zoom;
         return (font_size < 16 ? 16 : font_size);
+    }
+
+    draw_grid(ctx, x, y, xOffset, yOffset, cell_width, cell_height, width, height) {
+        ctx.save();
+        ctx.translate(xOffset, yOffset);
+        var rows = Math.floor(width/cell_width);
+        var columns = Math.floor(height/cell_height);
+        for (var i = 0; i < rows; i++) {
+            for (var j = 0; j < columns; j++) {
+                ctx.beginPath();
+                ctx.strokeStyle = "red";
+                ctx.lineWidth = 1;
+                ctx.strokeRect(x + cell_width * i, y + cell_height * j, cell_width, cell_height);
+            }
+        }
+        ctx.restore();
     }
 }
 

@@ -80,7 +80,7 @@ span.reg {
 }
 
 #backArrow {
-    float: left;
+    float: right;
     background-color: black;
     padding: 10px 0 10px 0;
 }
