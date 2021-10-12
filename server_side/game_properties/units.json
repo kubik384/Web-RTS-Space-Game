@@ -3,7 +3,7 @@
         "unit_id": 1,
         "name": "Fighter",
         "cost": {
-            "timber": 1
+            "metal": 1
         },
         "build_time": 10,
         "capacity": 4,
@@ -17,7 +17,7 @@
         "unit_id": 2,
         "name": "Cruiser",
         "cost": {
-            "timber": 3
+            "metal": 3
         },
         "build_time": 120,
         "capacity": 6,

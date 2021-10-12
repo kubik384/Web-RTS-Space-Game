@@ -100,7 +100,7 @@ module.exports = class Game {
                             var unit_details = await this.dbManager.get_unit_details(this.fleets[i].units);
                             for (var j = 0; j < this.fleets[i].units.length; j++) {
                                 var unit_detail = unit_details.find(unit_detail => unit_detail.unit_id == this.fleets[i].units[j].unit_id);
-                                resources += unit_detail.cost.timber * this.fleets[i].units[j].count;
+                                resources += unit_detail.cost.metal * this.fleets[i].units[j].count;
                             }
                             this.fleets[i].resources += Math.floor(resources * 0.35);
                             if (this.fleets[i].resources <= 0) {
@@ -154,7 +154,7 @@ module.exports = class Game {
                                                     var player_space_object_id = (await this.dbManager.get_basic_player_map_info(username))[0].space_object_id;
                                                     if (space_object.space_object_id == player_space_object_id) {
                                                         if (this.fleets[i].resources !== undefined && this.fleets[i].resources > 0) {
-                                                            this.dbManager.update_resource(username, 'timber', this.fleets[i].resources);
+                                                            this.dbManager.add_resource(username, 'metal', this.fleets[i].resources);
                                                             this.fleets[i].resources = 0;
                                                         }
                                                     } else {
@@ -809,7 +809,7 @@ module.exports = class Game {
             var unit_detail = unit_details.find(unit_detail => unit_detail.unit_id == fleet.units[i].unit_id);
             hull += fleet.units[i].count * unit_detail.hull;
             shield += fleet.units[i].count * unit_detail.shield;
-            resources += fleet.units[i].count * unit_detail.cost.timber;
+            resources += fleet.units[i].count * unit_detail.cost.metal;
             for (var j = 0; j < unit_detail.weapons.length; j++) {
                 damage += fleet.units[i].count * unit_detail.weapons[j].damage * unit_detail.weapons[j].count;
             }
@@ -823,7 +823,7 @@ module.exports = class Game {
             var unit_detail = unit_details.find(unit_detail => unit_detail.unit_id == opposing_fleet.units[i].unit_id);
             opponents_hull += opposing_fleet.units[i].count * unit_detail.hull;
             opponents_shield += opposing_fleet.units[i].count * unit_detail.shield;
-            opponents_resources += opposing_fleet.units[i].count * unit_detail.cost.timber;
+            opponents_resources += opposing_fleet.units[i].count * unit_detail.cost.metal;
             for (var j = 0; j < unit_detail.weapons.length; j++) {
                 opponents_damage += opposing_fleet.units[i].count * unit_detail.weapons[j].damage * unit_detail.weapons[j].count;
             }

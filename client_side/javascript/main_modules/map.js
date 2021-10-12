@@ -349,10 +349,10 @@ class Game extends Base_Page {
                                     var resource = row.insertCell(-1);
                                     var amount = row.insertCell(-1);
                                     var resource_img = document.createElement('img');
-                                    resource_img.setAttribute('src','/client_side/images/resources/timber.png');
+                                    resource_img.setAttribute('src','/client_side/images/resources/metals.png');
                                     img.classList.add('img_cell');
                                     img.append(resource_img);
-                                    resource.textContent = 'Timber';
+                                    resource.textContent = 'Metal';
                                     amount.textContent = fleets[i].resources;
                                 } else {
                                     type_cell.textContent = 'Unit';
@@ -602,7 +602,7 @@ class Game extends Base_Page {
             var center_system = update.center_system;
             this.map_ctx.drawImage(center_system.HTMLimage, center_system.x + this.xOffset - center_system.width/2, center_system.y + this.yOffset - center_system.width/2, center_system.width, center_system.height);
         }
-        //this.draw_grid(this.map_ctx, -this.boundaries * this.zoom, -this.boundaries * this.zoom, this.xOffset, this.yOffset, 10000 * this.zoom, 10000 * this.zoom, this.boundaries * 2 * this.zoom, this.boundaries * 2 * this.zoom);
+        //this.draw_grid(this.map_ctx, -this.boundaries, -this.boundaries, this.xOffset, this.yOffset, 10000, 10000, this.boundaries * 2, this.boundaries * 2, this.zoom);
         window.requestAnimationFrame(this.draw.bind(this));
     }
 
@@ -934,22 +934,6 @@ class Game extends Base_Page {
     calc_object_name_font_size(object) {
         var font_size = object.width/10 * this.zoom;
         return (font_size < 16 ? 16 : font_size);
-    }
-
-    draw_grid(ctx, x, y, xOffset, yOffset, cell_width, cell_height, width, height) {
-        ctx.save();
-        ctx.translate(xOffset, yOffset);
-        var rows = Math.floor(width/cell_width);
-        var columns = Math.floor(height/cell_height);
-        for (var i = 0; i < rows; i++) {
-            for (var j = 0; j < columns; j++) {
-                ctx.beginPath();
-                ctx.strokeStyle = "red";
-                ctx.lineWidth = 1;
-                ctx.strokeRect(x + cell_width * i, y + cell_height * j, cell_width, cell_height);
-            }
-        }
-        ctx.restore();
     }
 }
 

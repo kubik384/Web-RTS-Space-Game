@@ -6,28 +6,31 @@
             {
                 "level": 0,
                 "upgrade_cost": {
-                    "timber": 1
+                    "metal": 1
                 },
-                "upgrade_time": 10
+                "upgrade_time": 10,
+                "buildings": [2]
             },
             {
                 "level": 1,
                 "upgrade_cost": {
-                    "timber": 1
+                    "metal": 1
                 },
-                "upgrade_time": 10
+                "upgrade_time": 10,
+                "buildings": [3,4]
             },
             {
                 "level": 2,
                 "upgrade_cost": {
-                    "timber": 1
+                    "metal": 1
                 },
-                "upgrade_time": 10
+                "upgrade_time": 10,
+                "buildings": []
             },
             {
                 "level": 3,
                 "upgrade_cost": {
-                    "timber": 1
+                    "metal": 1
                 },
                 "upgrade_time": -1
             }
@@ -35,39 +38,39 @@
     },
     {
         "building_id": 2,
-        "name": "Resource Generator",
+        "name": "Mines",
         "level_details": [
             {
                 "level": 0,
                 "upgrade_cost": {
-                    "timber": 1
+                    "metal": 1
                 },
                 "upgrade_time": 10,
-                "production": {"timber": 0.00015}
+                "production": {"metal": 0.00015}
             },
             {
                 "level": 1,
                 "upgrade_cost": {
-                    "timber": 1
+                    "metal": 1
                 },
                 "upgrade_time": 10,
-                "production": {"timber": 0.0003}
+                "production": {"metal": 0.0003}
             },
             {
                 "level": 2,
                 "upgrade_cost": {
-                    "timber": 1
+                    "metal": 1
                 },
                 "upgrade_time": 10,
-                "production": {"timber": 0.00045}
+                "production": {"metal": 0.00045}
             },
             {
                 "level": 3,
                 "upgrade_cost": {
-                    "timber": 1
+                    "metal": 1
                 },
                 "upgrade_time": -1,
-                "production": {"timber": 0.00060}
+                "production": {"metal": 0.00060}
             }
         ]
     }, 
@@ -78,7 +81,7 @@
             {
                 "level": 0,
                 "upgrade_cost": {
-                    "timber": 1
+                    "metal": 1
                 },
                 "upgrade_time": 10,
                 "defense_bonus": 10
@@ -86,7 +89,7 @@
             {
                 "level": 1,
                 "upgrade_cost": {
-                    "timber": 1
+                    "metal": 1
                 },
                 "upgrade_time": 10,
                 "defense_bonus": 25
@@ -94,7 +97,7 @@
             {
                 "level": 2,
                 "upgrade_cost": {
-                    "timber": 1
+                    "metal": 1
                 },
                 "upgrade_time": 10,
                 "defense_bonus": 30
@@ -102,7 +105,7 @@
             {
                 "level": 3,
                 "upgrade_cost": {
-                    "timber": 1
+                    "metal": 1
                 },
                 "upgrade_time": -1,
                 "defense_bonus": 32
@@ -116,7 +119,7 @@
             {
                 "level": 0,
                 "upgrade_cost": {
-                    "timber": 2
+                    "metal": 2
                 },
                 "upgrade_time": 10,
                 "units": []
@@ -124,7 +127,7 @@
             {
                 "level": 1,
                 "upgrade_cost": {
-                    "timber": 2
+                    "metal": 2
                 },
                 "upgrade_time": 10,
                 "units": [1]
@@ -132,10 +135,48 @@
             {
                 "level": 2,
                 "upgrade_cost": {
-                    "timber": 2
+                    "metal": 2
                 },
                 "upgrade_time": -1,
                 "units": [1,2]
+            }
+        ]
+    },
+    {
+        "building_id": 5,
+        "name": "Resource Storage",
+        "level_details": [
+            {
+                "level": 0,
+                "upgrade_cost": {
+                    "metal": 1
+                },
+                "upgrade_time": 10,
+                "storage": {"metal": 100}
+            },
+            {
+                "level": 1,
+                "upgrade_cost": {
+                    "metal": 1
+                },
+                "upgrade_time": 10,
+                "storage": {"metal": 200}
+            },
+            {
+                "level": 2,
+                "upgrade_cost": {
+                    "metal": 1
+                },
+                "upgrade_time": 10,
+                "storage": {"metal": 500}
+            },
+            {
+                "level": 3,
+                "upgrade_cost": {
+                    "metal": 1
+                },
+                "upgrade_time": -1,
+                "storage": {"metal": 1000}
             }
         ]
     }

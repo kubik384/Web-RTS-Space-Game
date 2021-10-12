@@ -3,11 +3,12 @@
 var mysql = require('mysql');
 var Utils = require('./../misc_modules/utils.js');
 var utils = new Utils();
-var all_resource_types = 'pop, food, timber, metals, coal, oil, kerosene, hydrogen, uranium';
+var all_resource_types = 'pop, food, timber, metal, coal, oil, kerosene, hydrogen, uranium';
 var resourceTable = all_resource_types.split(', ');
 var buildings = require('./../game_properties/buildings.json');
 var units = require('./../game_properties/units.json');
 var technologies = require('./../game_properties/technologies.json');
+const e = require('cors');
 var mysql_details = process.env.PORT !== undefined ? 
 mysql_details = {
     host: "j5zntocs2dn6c3fj.chr7pe7iynqr.eu-west-1.rds.amazonaws.com",
@@ -37,33 +38,48 @@ module.exports = class DbManager {
 
     /**
      * 
-     * @param {String} username 
-     * @param {String|Array} p_resources Accepts in following formats: 'resource, resource, ..' OR [resource, resource, ..]
-     * @param {Number} amount
+     * @param {String} username
      */
-    async update_resource(username, p_resources, amount = 0) {
-        var resource_generator = buildings.find(b => b.building_id == 2);
-        await this.update_building_level(username, resource_generator.building_id);
-        var query = `SELECT p.player_id, p.res_last_update AS last_update, pb.level
-        FROM player_buildings pb
-        INNER JOIN players p ON p.player_id = pb.player_id
-        WHERE p.username = ? AND pb.building_id = ?`;
-        var results = await this.execute_query(query, [username, resource_generator.building_id]);
-        var res_production = resource_generator.level_details.find(ld => ld.level == results[0].level).production;
-        var resources = p_resources == 'all' ? resourceTable : p_resources;
+    async update_resource(username) {
+        var timestamp = await utils.get_timestamp();
+        var player_mines = await this.get_player_building_details(username, 2, false);
+        var mines = buildings.find(b => b.building_id == 2);
+        this.update_building_level(username, 2);
+
+        //TODO: Do something with this query
+        var query = `SELECT player_id, res_last_update AS last_update
+        FROM players
+        WHERE username = ?`;
+        var player_details = (await this.execute_query(query, [username]))[0];
+
         var set_to = '';
+        var mines_level_detail = mines.level_details.find(ld => ld.level == player_mines.level);
+        var res_production = mines_level_detail.production;
+        var resources = resourceTable;
+        var generated_resources = [];
+        if (player_mines.update_start !== null) {
+            var time_left = player_mines.update_start + mines_level_detail.upgrade_time - timestamp;
+            if (time_left <= 0) {
+                var time_passed = timestamp - player_details.last_update + time_left;
+                for (var i = 0; i < resources.length; i++) {
+                    generated_resources.push((res_production[resources[i]] === undefined ? 0 : res_production[resources[i]]) * (time_passed));
+                }
+                res_production = mines.level_details.find(ld => ld.level == (player_mines.downgrade == 0 ? player_mines.level + 1 : player_mines.level - 1)).production;
+                player_details.last_update += time_passed;
+            }
+        }
+        for (var i = 0; i < resources.length; i++) {
+            set_to += resources[i] + ' = ' + resources[i] + ' + ' + ((generated_resources.length > 1 ? generated_resources[i] : 0) + (res_production[resources[i]] === undefined ? 0 : res_production[resources[i]]) * (timestamp - player_details.last_update)) + ' , ';
+        }
         
         if (!Array.isArray(resources)) {
             resources = resources.split(', ');
         }
         
-        for (var i = 0; i < resources.length; i++) {
-            set_to += resources[i] + ' = ' + resources[i] + ' + ' + ((res_production[resources[i]] === undefined ? 0 : res_production[resources[i]]) * (await utils.get_timestamp() - results[0].last_update) + amount) + ' , ';
-        }
-        set_to += 'res_last_update = UNIX_TIMESTAMP()';
+        set_to += 'res_last_update = ?';
 
-        var query = "UPDATE players SET " + set_to + " WHERE player_id = ?";
-        return this.execute_query(query, [results[0].player_id]);
+        query = "UPDATE players SET " + set_to + " WHERE player_id = ?";
+        return this.execute_query(query, [timestamp, player_details.player_id]);
     }
 
     /**
@@ -75,7 +91,7 @@ module.exports = class DbManager {
     async get_resource(username, p_resource, update = false) {
         var resources = p_resource == 'all' ? all_resource_types : p_resource;
         if (update) {
-            await this.update_resource(username, p_resource);
+            await this.update_resource(username);
         }
 
         var query = 'SELECT ' + resources + ' FROM players WHERE username = ?';
@@ -83,29 +99,37 @@ module.exports = class DbManager {
     }
 
     async upgrade_building(username, p_building) {
-        await this.update_resource(username, 'all');
-        await this.update_building_level(username, p_building);
+        await this.update_resource(username);
         var b_index = buildings.findIndex(building => building.name == p_building);
-        var query = `SELECT p.*, pb.update_start, pb.level
+        var building_id = buildings[b_index].building_id;
+        await this.update_building_level(username, building_id);
+        var query = `SELECT *
+        FROM players
+        WHERE username = ?`;
+        var player_details = (await this.execute_query(query, [username]))[0];
+
+        query = `SELECT pb.update_start, pb.level
         FROM player_buildings pb
         INNER JOIN players p ON p.player_id = pb.player_id
-        WHERE p.username = ? AND pb.building_id = ?`;
-        var results = await this.execute_query(query, [username, buildings[b_index].building_id]);
-        if (results.length < 1) {
-            return;
+        WHERE p.player_id = ? AND pb.building_id = ?`;
+        var building_details = await this.execute_query(query, [player_details.player_id, building_id]);
+        if (building_details.length < 1) {
+            building_details = {level: 0, update_start: null};
+        } else {
+            building_details = building_details[0];
         }
         var l_index;
-        if (buildings[b_index].level_details[results[0].level] == results[0].level) {
-            l_index = results[0].level;
+        if (buildings[b_index].level_details[building_details.level] == building_details.level) {
+            l_index = building_details.level;
         } else {
-            l_index = buildings[b_index].level_details.findIndex(level_detail => level_detail.level == results[0].level)
+            l_index = buildings[b_index].level_details.findIndex(level_detail => level_detail.level == building_details.level)
         }
 
         query = `UPDATE player_buildings pb 
             INNER JOIN players p ON p.player_id = pb.player_id
             SET `;
         for (const resource in buildings[b_index].level_details[l_index].upgrade_cost) {
-            if (results[0][resource] < buildings[b_index].level_details[l_index].upgrade_cost[resource]) {
+            if (player_details[resource] < buildings[b_index].level_details[l_index].upgrade_cost[resource]) {
                 throw new Error('Not enough resources to upgrade building');
             }
             if (buildings[b_index].level_details[l_index + 1] === undefined) {
@@ -115,31 +139,38 @@ module.exports = class DbManager {
             pb.update_start = UNIX_TIMESTAMP()
             WHERE p.player_id = ? AND pb.building_id = ? AND pb.update_start IS NULL`;
         }
-        if (results[0].update_start === null) {
-            await this.execute_query(query, [results[0].player_id, buildings[b_index].building_id]);
+        if (building_details.update_start === null) {
+            if (building_details.level == 0) {
+                await this.execute_query('INSERT INTO player_buildings VALUES(?,?,0,NULL,0)', [player_details.player_id, building_id])
+            }
+            await this.execute_query(query, [player_details.player_id, building_id]);
         }
     }
 
     async cancel_building_update(username, p_building) {
-        await this.update_building_level(username, p_building);
         var b_index = buildings.findIndex(building => building.name == p_building);
+        var building_id = buildings[b_index].building_id;
+        await this.update_building_level(username, building_id);
         var query = `SELECT p.player_id, pb.level, pb.update_start, pb.downgrade
         FROM player_buildings pb
         INNER JOIN players p ON p.player_id = pb.player_id
         WHERE p.username = ? AND pb.building_id = ?`;
-        var results = await this.execute_query(query, [username, buildings[b_index].building_id]);
+        var results = await this.execute_query(query, [username, building_id]);
         if (results.length < 1 || results[0].update_start === null) {
             return;
         }
-        if (results[0].downgrade) {
+        if (results[0].downgrade == 1) {
             query = `UPDATE player_buildings pb 
             INNER JOIN players p ON p.player_id = pb.player_id
             SET 
                 pb.update_start = NULL,
                 pb.downgrade = 0
                 WHERE p.player_id = ? AND pb.building_id = ? AND pb.level > 0 AND pb.update_start IS NOT NULL AND pb.downgrade = 1`;
-            await this.execute_query(query, [results[0].player_id, buildings[b_index].building_id, results[0].level]);
+            await this.execute_query(query, [results[0].player_id, building_id, results[0].level]);
         } else {
+            if (results[0].level == 0) {
+                return this.execute_query('DELETE FROM player_buildings WHERE player_id = ? AND building_id = ?', [results[0].player_id, building_id]);
+            }
             var l_index;
             if (buildings[b_index].level_details[results[0].level] == results[0].level) {
                 l_index = results[0].level;
@@ -155,63 +186,68 @@ module.exports = class DbManager {
             }
             query += `pb.update_start = NULL
             WHERE p.player_id = ? AND pb.building_id = ? AND pb.level = ? AND pb.update_start IS NOT NULL`;
-            await this.execute_query(query, [results[0].player_id, buildings[b_index].building_id, results[0].level]);
+            await this.execute_query(query, [results[0].player_id, building_id, results[0].level]);
         }
     }
 
     async downgrade_building(username, p_building) {
-        await this.update_building_level(username, p_building);
         var b_index = buildings.findIndex(building => building.name == p_building);
+        var building_id = buildings[b_index].building_id;
+        await this.update_building_level(username, building_id);
         var query = `UPDATE player_buildings pb 
         INNER JOIN players p ON p.player_id = pb.player_id
         SET 
             pb.update_start = UNIX_TIMESTAMP(),
             pb.downgrade = 1
-        WHERE p.username = ? AND pb.building_id = ? AND pb.level > 0 AND pb.update_start IS NULL`;
-        await this.execute_query(query, [username, buildings[b_index].building_id]);
+        WHERE p.username = ? AND pb.building_id = ? AND pb.update_start IS NULL`;
+        await this.execute_query(query, [username, building_id]);
     }
 
     /**
      * Returns result(s) in following format [{player_id, building_id, level, update_start(in UNIX timestamp), upgrade_time}, ..]
      * @param {String} username Username of the player
-     * @param {String} p_building Building name 'all' can be used to get all buildings from the player. Otherwise only 1 building can be passed
+     * @param {String|Number} p_building Building name 'all' can be used to get all buildings from the player. Otherwise only 1 building id can be passed
+     * @param {Boolean} update When set to false, the building does not get checked if it's getting upgraded and won't get it's level updated in db if it's done upgrading
      */
-    async get_player_building_details(username, p_building, passingId = false) {
-        await this.update_building_level(username, p_building);
+    async get_player_building_details(username, p_building, update = true) {
+        if (update) {
+            await this.update_building_level(username, p_building);
+        }
         var building_id;
-        var query = `SELECT pb.player_id, pb.building_id, pb.level, pb.downgrade,
+        var query = `SELECT pb.building_id, pb.level, pb.downgrade,
         pb.update_start AS update_start
         FROM player_buildings pb
         INNER JOIN players p ON p.player_id = pb.player_id
         WHERE p.username = ?`;
         if (p_building != 'all') {
-            if (passingId) {
-                building_id = p_building;
-            } else {
-                building_id = buildings.find(building => building.name == p_building).building_id;
-            }
+            building_id = p_building;
             query += ' AND pb.building_id = ?';
         }
 
         var results = await this.execute_query(query, [username, building_id]);
         if (p_building != 'all') {
-            return results[0];
+            var player_building_details = results[0];
+            if (results.length < 1) {
+                player_building_details = {building_id: p_building, level: 0, downgrade: 0, update_start: null};
+            }
+            return player_building_details;
+        }
+        for (var i = 0; i < buildings.length; i++) {
+            var building = results.find(result => result.building_id == buildings[i].building_id);
+            if (building === undefined) {
+                results.push({building_id: buildings[i].building_id, level: 0, downgrade: 0, update_start: null});
+            }
         }
         return results;
     }
 
-    async update_building_level(username, p_building, passingId = false) {
+    async update_building_level(username, p_building) {
         var query = `SELECT p.player_id, pb.update_start AS update_start, pb.level, pb.building_id, pb.downgrade
             FROM player_buildings pb
             INNER JOIN players p ON p.player_id = pb.player_id
             WHERE p.username = ? AND pb.update_start IS NOT NULL`;
         if (p_building != 'all') {
-            if (passingId) {
-                query += ' AND pb.building_id = ' + p_building;
-            } else {
-                var b_index = buildings.findIndex(building => building.name == p_building);
-                query += ' AND pb.building_id = ' + (b_index + 1);
-            }
+            query += ' AND pb.building_id = ' + p_building;
         }
         var results = await this.execute_query(query, [username]);
         if (results.length < 1) {
@@ -240,8 +276,12 @@ module.exports = class DbManager {
                 l_index = buildings[b_index].level_details.findIndex(level_detail => level_detail.level == (results[i].level - results[i].downgrade));
             }
             if ((await utils.get_timestamp() - results[i].update_start - buildings[b_index].level_details[l_index].upgrade_time) >= 0) {
-                query += results[i].building_id + ',';
-                execute_query = true;
+                if (results[i].downgrade == 1 && results[i].level == 1) {
+                    await this.execute_query('DELETE FROM player_buildings WHERE player_id = ? AND building_id = ?', [results[0].player_id, buildings[b_index].building_id]);
+                } else {
+                    query += results[i].building_id + ',';
+                    execute_query = true;
+                }
             }
         }
         
@@ -411,8 +451,8 @@ module.exports = class DbManager {
         }.bind(this));
     }
 
-    async get_starter_datapack(username) {
-        await this.update_resource(username, 'all');
+    async get_planet_datapack(username) {
+        await this.update_resource(username);
         await this.update_building_level(username, 'all');
         await this.update_player_unit_que(username, 'all');
         var resources = await this.get_resource(username, 'all');
@@ -435,7 +475,7 @@ module.exports = class DbManager {
     async build_units(username, p_units) {
         await this.update_building_level(username, 4, true);
         var player_resources = await this.get_resource(username, 'all', true);
-        var p_units_building = await this.get_player_building_details(username, 4, true);
+        var p_units_building = await this.get_player_building_details(username, 4);
         var units_building_level_details = buildings.find(building => building.building_id == p_units_building.building_id).level_details
         var allowed_units = units_building_level_details.find(level_detail => level_detail.level == p_units_building.level).units;
         var updated_player_resources = Object.assign({}, player_resources);
@@ -629,5 +669,10 @@ module.exports = class DbManager {
         var query = `SELECT COUNT(player_id) AS player_count
         FROM players`;
         return ((await this.execute_query(query))[0].player_count);
+    }
+
+    async add_resource(username, resource, amount) {
+        var query = `UPDATE players SET ${resourace} = ${resource} + ${amount} WHERE username = ${username}`;
+        return this.execute_query(query);
     }
 }

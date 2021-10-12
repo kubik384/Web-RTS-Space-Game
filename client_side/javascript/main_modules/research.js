@@ -24,7 +24,6 @@ class Game extends Base_Page {
         this.xOffset = 0;
         this.yOffset = 0;
         this.dragging = false;
-        this.image = document.getElementById('rocket_preview');
     }
 
     async request_data() {
@@ -32,6 +31,7 @@ class Game extends Base_Page {
     }
 
     async setup_game(p_datapack) {
+        this.image = document.getElementById('rocket_preview');
         var datapack = JSON.parse(p_datapack);
         console.log(datapack);
         super.setup_page(datapack);
@@ -272,7 +272,7 @@ class Game extends Base_Page {
         panel.style.removeProperty("display");
         document.getElementById('research_image').setAttribute("src", "/client_side/images/research/" + tech.name + ".png");
         document.getElementById('research_description').textContent = tech.description;
-        document.getElementById('cost').textContent = tech.research_time + ' ' + tech.cost.timber;
+        document.getElementById('cost').textContent = tech.research_time + ' ' + tech.cost.metal;
         var res_btn_wrapper = document.getElementById('res_btn_wrapper');
         res_btn_wrapper.setAttribute('data-id', tech.technology_id);
         if (this.researching_tech === undefined) {

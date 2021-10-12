@@ -16,12 +16,87 @@ class Game extends Base_Page {
         this.units;
         this.unit_ques;
         this.fetched_buildings = {};
+
+        /*
+        this.planet_map_canvas;
+        this.map_width;
+        this.map_height;
+        this.ctx;
+        this.logic_loop;
+        this.tick_time = 100;
+        this.zoom = 0.25;
+        this.dist_travelled = {x: 0, y:0};
+        */
     }
 
     async setup_game(p_datapack) {
         var datapack = JSON.parse(p_datapack);
         console.log(datapack);
         super.setup_page(datapack);
+        /*
+        this.planet_map_canvas = document.getElementById("planet_map");
+        this.ctx = this.planet_map_canvas.getContext("2d");
+        this.planet_map_rect = this.planet_map_canvas.getBoundingClientRect();
+        window.onresize = this.window_resize_handler();
+        //expecting the border to have the same width on all the sides of the canvas
+        //this.planet_map_canvas_border = +getComputedStyle(this.planet_map_canvas).getPropertyValue('border-top-width').slice(0, -2);
+
+        document.getElementById('planet_map').addEventListener('wheel', e => {
+            e.preventDefault();
+            var x = e.clientX - this.planet_map_rect.left;//- this.planet_map_canvas_border;
+            var y = e.clientY - this.planet_map_rect.top;//- this.planet_map_canvas_border;
+            if (e.deltaY < 0) {
+                if (this.zoom < 12) {
+                    const deltaZoom = 1.25;
+                    var oldZoom = this.zoom;
+                    this.zoom *= deltaZoom;
+                    var zoomRatio = (this.zoom - oldZoom)/oldZoom;
+                    this.xOffset += (this.xOffset - x) * zoomRatio;
+                    this.yOffset += (this.yOffset - y) * zoomRatio;
+                }
+            } else {
+                if (this.zoom > 0.05) {
+                    const deltaZoom = 0.8;
+                    var oldZoom = this.zoom;
+                    this.zoom *= deltaZoom;
+                    var zoomRatio = (oldZoom - this.zoom)/oldZoom;
+                    this.xOffset -= (this.xOffset - x) * zoomRatio;
+                    this.yOffset -= (this.yOffset - y) * zoomRatio;
+                }
+            }
+        });
+
+        this.planet_map_canvas.addEventListener('mousedown', e => {
+            //left click
+            if (e.button == 0) {
+                this.dragging = true;
+            }
+        });
+
+        window.addEventListener('mouseup', e => {
+            //left click
+            if (e.button == 0) {
+                this.dragging = false;
+                this.dist_travelled.x = 0;
+                this.dist_travelled.y = 0;
+            }
+        });
+
+        document.addEventListener('mousemove', e => {
+            if (this.dragging) {
+                this.xOffset += e.movementX;
+                this.yOffset += e.movementY;
+                this.dist_travelled.x += Math.abs(e.movementX);
+                this.dist_travelled.y += Math.abs(e.movementY);
+            }
+        });
+
+        window.addEventListener("visibilitychange", () => {
+            this.dragging = false;
+            this.dist_travelled.x = 0;
+            this.dist_travelled.y = 0;
+        });
+        */
 
         this.resources = datapack.resources;
         var resource_building_ui_html = '<table id="resource_table"><tbody>';
@@ -38,7 +113,7 @@ class Game extends Base_Page {
         
         var button_menu_html = '';
         this.buildings = datapack.building_details;
-        for (var i = 0; i < datapack.buildings.length; i++) {
+        for (var i = datapack.buildings.length - 1; i >= 0; i--) {
             var building = datapack.buildings.find(b => b.building_id == this.buildings[i].building_id);
             this.buildings[i].update_start = building.update_start;
             this.buildings[i].downgrade = building.downgrade;
@@ -66,58 +141,60 @@ class Game extends Base_Page {
 
         this.units = datapack.units;
         var units_building = this.buildings.find(b => b.building_id == 4);
-        var b_index = units_building.level_details.findIndex(level_detail => level_detail.level == units_building.level);
-        var allowed_unit_ids = units_building.level_details[b_index].units;
-        var create_units_html = `
-        <form id="create_units_form">
-            <table id="create_units_table" style="display: ${allowed_unit_ids.length > 0 ? 'table' : 'none'}">
-                <thead>
-                    <tr>
-                        <th>Unit</th>
-                        <th>Name</th>
-                        <th>Cost</th>
-                        <th>Time</th>
-                        <th>Build</th>
-                    </tr>
-                </thead>
-                <tbody>`;
-        for (var i = 0; i < allowed_unit_ids.length; i++) {
-            var u_index;
-            if (this.units[allowed_unit_ids[i] - 1].unit_id == allowed_unit_ids[i]) {
-                u_index = allowed_unit_ids[i] - 1;
+        if (units_building !== undefined) {
+            var b_index = units_building.level_details.findIndex(level_detail => level_detail.level == units_building.level);
+            var allowed_unit_ids = units_building.level_details[b_index].units;
+            var create_units_html = `
+            <form id="create_units_form">
+                <table id="create_units_table" style="display: ${allowed_unit_ids.length > 0 ? 'table' : 'none'}">
+                    <thead>
+                        <tr>
+                            <th>Unit</th>
+                            <th>Name</th>
+                            <th>Cost</th>
+                            <th>Time</th>
+                            <th>Build</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+            for (var i = 0; i < allowed_unit_ids.length; i++) {
+                var u_index;
+                if (this.units[allowed_unit_ids[i] - 1].unit_id == allowed_unit_ids[i]) {
+                    u_index = allowed_unit_ids[i] - 1;
+                    
+                } else {
+                    u_index = this.units.find(unit => unit.unit_id == allowed_unit_ids[i]).unit_id;
+                }
                 
-            } else {
-                u_index = this.units.find(unit => unit.unit_id == allowed_unit_ids[i]).unit_id;
+                create_units_html += `
+                <tr>
+                    <td>
+                        <img src="/client_side/images/units/${this.units[u_index].name.toLowerCase()}.png" height="20px"></img>
+                    </td>
+                    <td>
+                        <span>${this.units[u_index].name}</span>
+                    </td>
+                    <td>`
+                        for (var resource in this.units[u_index].cost) {
+                            create_units_html += `${this.units[u_index].cost[resource]} <img src="/client_side/images/resources/${resource.toLowerCase()}.png" height="20px"></img>`;
+                        }
+                        create_units_html += `
+                    </td>
+                    <td>
+                        <span>${this.units[u_index].build_time}</span>
+                    </td>
+                    <td>
+                        <input type="number" class="unit_create_count" id="unit_${this.units[u_index].unit_id}">
+                    </td>
+                </tr>`;
             }
-            
-            create_units_html += `
-            <tr>
-                <td>
-                    <img src="/client_side/images/units/${this.units[u_index].name.toLowerCase()}.png" height="20px"></img>
-                </td>
-                <td>
-                    <span>${this.units[u_index].name}</span>
-                </td>
-                <td>`
-                    for (var resource in this.units[u_index].cost) {
-                        create_units_html += `${this.units[u_index].cost[resource]} <img src="/client_side/images/resources/${resource.toLowerCase()}.png" height="20px"></img>`;
-                    }
-                    create_units_html += `
-                </td>
-                <td>
-                    <span>${this.units[u_index].build_time}</span>
-                </td>
-                <td>
-                    <input type="number" class="unit_create_count" id="unit_${this.units[u_index].unit_id}">
-                </td>
-            </tr>`;
+            create_units_html += '<tr><td colspan="10" id="submit_unit_create_cell"><input type="submit" value="Build"></input></td></tr></tbody></table></form>';
+            document.getElementById('create_units_wrapper').innerHTML = create_units_html;
+            document.getElementById('create_units_form').addEventListener('submit', event => { 
+                event.preventDefault();
+                this.build_units(event.currentTarget) ;
+            });
         }
-        create_units_html += '<tr><td colspan="10" id="submit_unit_create_cell"><input type="submit" value="Build"></input></td></tr></tbody></table></form>';
-        document.getElementById('create_units_wrapper').innerHTML = create_units_html;
-        document.getElementById('create_units_form').addEventListener('submit', event => { 
-            event.preventDefault();
-            this.build_units(event.currentTarget) ;
-        });
 
         var units_table_html = '<table id="units_table"><tbody>';
         for (var i = 0; i < this.units.length; i++) {
@@ -186,8 +263,8 @@ class Game extends Base_Page {
             buttons[i].addEventListener('click', event => { this.cancel_building_update(event.currentTarget.dataset.building) });
         }
 
-        var resource_generator = this.buildings.find(building => building.building_id == 2);
-        this.resource_prods = resource_generator.level_details.find(ld => ld.level == resource_generator.level).production;
+        var mines = this.buildings.find(building => building.building_id == 2);
+        this.resource_prods = mines.level_details.find(ld => ld.level == mines.level).production;
 
         this.update_resource_ui();
         for (var i = 0; i < this.buildings.length; i++) {
@@ -196,6 +273,7 @@ class Game extends Base_Page {
 
         this.lastUpdateTime = await utils.get_timestamp();
         this.updateLoop = setInterval(this.update_game.bind(this), 1000);
+        //window.requestAnimationFrame(this.draw.bind(this));
     }
     
     update_game() {
@@ -222,6 +300,17 @@ class Game extends Base_Page {
             this.lastUpdateTime = currTime;
         }.bind(this));
     }
+
+    /*
+    draw() {
+        this.ctx.clearRect(0, 0, this.planet_map_width, this.planet_map_height);
+        this.ctx.save();
+        this.ctx.translate(this.xOffset, this.yOffset);
+        this.draw_grid(this.ctx, 0, 0, 0, 0, 100, 100, 2000, 2000, this.zoom, 60, false);
+        this.ctx.restore();
+        window.requestAnimationFrame(this.draw.bind(this));
+    }
+    */
 
     async upgrade_building(p_building) {
         var b_index = this.buildings.findIndex(building => building.name == p_building);
@@ -530,6 +619,22 @@ class Game extends Base_Page {
             }
         }
     }
+
+    /*
+    window_resize_handler() {
+        //var dpi = window.devicePixelRatio;
+        console.log(this.planet_map_canvas);
+        var planet_map_height = +getComputedStyle(this.planet_map_canvas).getPropertyValue("height").slice(0, -2);
+        var planet_map_width = +getComputedStyle(this.planet_map_canvas).getPropertyValue("width").slice(0, -2);
+        this.planet_map_height = planet_map_height; //* dpi;
+        this.planet_map_width = planet_map_width; //* dpi;
+        this.xOffset = 50;
+        this.yOffset = planet_map_height/2;
+        this.planet_map_canvas.setAttribute('height', this.planet_map_height);
+        this.planet_map_canvas.setAttribute('width', this.planet_map_width);
+        return this.window_resize_handler.bind(this);
+    }
+    */
 }
 
 export { Game };

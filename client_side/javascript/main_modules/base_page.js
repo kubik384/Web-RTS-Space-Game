@@ -23,6 +23,41 @@ class Base_Page {
             document.title = title.substr(0, title.length - 2) + new_reports_count + ')';
         }
     }
+
+    draw_grid(ctx, x, y, xOffset, yOffset, cell_width, cell_height, width, height, zoom, angle = 0, translate = true) {
+        if (translate || angle != 0) {
+            ctx.save();
+        }
+        if (angle != 0) {
+            ctx.rotate(angle);
+        }
+        if (translate) {
+            ctx.translate(xOffset, yOffset);
+        }
+        var rows = Math.floor(width/cell_width);
+        var columns = Math.floor(height/cell_height);
+        ctx.strokeStyle = "red";
+        ctx.lineWidth = 1;
+        cell_width *= zoom;
+        cell_height *= zoom;
+        width *= zoom;
+        height *= zoom;
+        for (var i = 0; i <= columns; i++) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(x + cell_width * i, y);
+            this.ctx.lineTo(x + cell_width * i, y + height);
+            this.ctx.stroke();
+        }
+        for (var i = 0; i <= rows; i++) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(x, y + cell_height * i);
+            this.ctx.lineTo(x + width, y + cell_height * i);
+            this.ctx.stroke();
+        }
+        if (translate || angle != 0) {
+            ctx.restore();
+        }
+    }
 }
 
 export { Base_Page };

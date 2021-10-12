@@ -192,7 +192,7 @@ io.use((socket, next) => {
 // Add the WebSocket handlers
 io.on('connection', socket => {
 	socket.on('planet_datapack_request', () => {
-		dbManager.get_starter_datapack(socket.username).then(datapack => { socket.emit('starter_datapack', JSON.stringify(datapack)); });
+		dbManager.get_planet_datapack(socket.username).then(datapack => { socket.emit('starter_datapack', JSON.stringify(datapack)); });
 	});
 
 	socket.on('upgrade_building', building => {

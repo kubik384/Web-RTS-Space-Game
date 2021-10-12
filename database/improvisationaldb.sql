@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Oct 01, 2021 at 09:21 AM
+-- Generation Time: Oct 11, 2021 at 10:39 AM
 -- Server version: 10.4.17-MariaDB
 -- PHP Version: 8.0.0
 
@@ -37,7 +37,7 @@ CREATE TABLE `players` (
   `pop` int(12) NOT NULL DEFAULT 100,
   `food` double(16,4) NOT NULL DEFAULT 100.0000,
   `timber` double(16,4) NOT NULL DEFAULT 100.0000,
-  `metals` double(16,4) NOT NULL DEFAULT 100.0000,
+  `metal` double(16,4) NOT NULL DEFAULT 100.0000,
   `coal` double(16,4) NOT NULL DEFAULT 100.0000,
   `oil` double(16,4) NOT NULL DEFAULT 100.0000,
   `kerosene` double(16,4) NOT NULL DEFAULT 100.0000,
@@ -50,7 +50,7 @@ CREATE TABLE `players` (
 -- Dumping data for table `players`
 --
 
-INSERT INTO `players` (`player_id`, `username`, `password`, `system_id`, `space_object_id`, `res_last_update`, `pop`, `food`, `timber`, `metals`, `coal`, `oil`, `kerosene`, `hydrogen`, `uranium`, `research`) VALUES
+INSERT INTO `players` (`player_id`, `username`, `password`, `system_id`, `space_object_id`, `res_last_update`, `pop`, `food`, `timber`, `metal`, `coal`, `oil`, `kerosene`, `hydrogen`, `uranium`, `research`) VALUES
 (23, 'Newstory', '$2b$10$jqoTtwOPhOALYsS7VtZ90eOLuj0/HFlyLzlfWLsaSLaQDHZpcw3uG', 1, 2, 1633068079, 100, 100.0000, 5005.7636, 100.0000, 100.0000, 100.0000, 100.0000, 0.0000, 0.0000, '{\"researched_techs\":[\"1\",\"2\",\"3\"]}');
 
 --
@@ -60,8 +60,6 @@ DELIMITER $$
 CREATE TRIGGER `Create buildings and space_objects after player insert` AFTER INSERT ON `players` FOR EACH ROW BEGIN
     INSERT INTO `player_buildings` (`player_id`, `building_id`, `level`, `update_start`, `downgrade`) VALUES (new.player_id, '1', '1', NULL, 0);
     INSERT INTO `player_buildings` (`player_id`, `building_id`, `level`, `update_start`, `downgrade`) VALUES (new.player_id, '2', '1', NULL, 0);
-    INSERT INTO `player_buildings` (`player_id`, `building_id`, `level`, `update_start`, `downgrade`) VALUES (new.player_id, '3', '0', NULL, 0);
-    INSERT INTO `player_buildings` (`player_id`, `building_id`, `level`, `update_start`, `downgrade`) VALUES (new.player_id, '4', '0', NULL, 0);
     INSERT INTO `player_units` (`player_id`, `unit_id`, `count`) VALUES (new.player_id, '1','0');
     INSERT INTO `player_units` (`player_id`, `unit_id`, `count`) VALUES (new.player_id, '2','0');
     INSERT INTO `player_unit_ques` (`player_id`, `unit_id`, `count`) VALUES (new.player_id, '1','0');
