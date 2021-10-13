@@ -64,7 +64,8 @@ module.exports = class DbManager {
         var resources = resourceTable;
         var generated_resources = [];
         if (player_mines.update_start !== null) {
-            var time_left = (p_time_left !== undefined ? p_time_left : (player_mines.update_start + mines_level_detail.upgrade_time - timestamp));
+            var upgrade_time = mines.level_details.find(ld => ld.level == (player_mines.level - player_mines.downgrade)).upgrade_time;
+            var time_left = (p_time_left !== undefined ? p_time_left : (player_mines.update_start + upgrade_time - timestamp));
             if (time_left <= 0) {
                 var time_passed = timestamp - player_details.last_update + time_left;
                 for (var i = 0; i < resources.length; i++) {
