@@ -39,14 +39,21 @@ module.exports = class DbManager {
     /**
      * 
      * @param {String} username
+     * @param {Number} time_left The number of seconds that have passed since the mines upgrade has been finished. If defined, update building level doesn't get called, since it's assumed update building level function called
+     * @param {Number} bld_level Level of the building (for now, is always assumed to be mines, since that's the only resource generating blding for now)
+     * @param {Number} downgrade
      */
-    async update_resource(username) {
+    async update_resource(username, p_time_left, bld_level, downgrade) {
         var timestamp = await utils.get_timestamp();
-        var player_mines = await this.get_player_building_details(username, 2, false);
+        var player_mines;
         var mines = buildings.find(b => b.building_id == 2);
-        this.update_building_level(username, 2);
+        if (p_time_left === undefined) {
+            player_mines = await this.get_player_building_details(username, 2, false);
+            this.update_building_level(username, 2);
+        } else {
+            player_mines = {update_start: 0, level: bld_level, downgrade: downgrade};
+        }
 
-        //TODO: Do something with this query
         var query = `SELECT player_id, res_last_update AS last_update
         FROM players
         WHERE username = ?`;
@@ -58,7 +65,7 @@ module.exports = class DbManager {
         var resources = resourceTable;
         var generated_resources = [];
         if (player_mines.update_start !== null) {
-            var time_left = player_mines.update_start + mines_level_detail.upgrade_time - timestamp;
+            var time_left = (p_time_left !== undefined ? p_time_left : (player_mines.update_start + mines_level_detail.upgrade_time - timestamp));
             if (time_left <= 0) {
                 var time_passed = timestamp - player_details.last_update + time_left;
                 for (var i = 0; i < resources.length; i++) {
@@ -275,7 +282,11 @@ module.exports = class DbManager {
             } else {
                 l_index = buildings[b_index].level_details.findIndex(level_detail => level_detail.level == (results[i].level - results[i].downgrade));
             }
-            if ((await utils.get_timestamp() - results[i].update_start - buildings[b_index].level_details[l_index].upgrade_time) >= 0) {
+            var time_left = results[i].update_start + buildings[b_index].level_details[l_index].upgrade_time - await utils.get_timestamp();
+            if (time_left <= 0) {
+                if (buildings[b_index].building_id === 2) {
+                    await this.update_resource(username, time_left, results[i].level, results[i].downgrade);
+                }
                 if (results[i].downgrade == 1 && results[i].level == 1) {
                     await this.execute_query('DELETE FROM player_buildings WHERE player_id = ? AND building_id = ?', [results[0].player_id, buildings[b_index].building_id]);
                 } else {
