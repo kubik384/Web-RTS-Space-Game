@@ -8,7 +8,6 @@ var resourceTable = all_resource_types.split(', ');
 var buildings = require('./../game_properties/buildings.json');
 var units = require('./../game_properties/units.json');
 var technologies = require('./../game_properties/technologies.json');
-const e = require('cors');
 var mysql_details = process.env.PORT !== undefined ? 
 mysql_details = {
     host: "j5zntocs2dn6c3fj.chr7pe7iynqr.eu-west-1.rds.amazonaws.com",
@@ -39,7 +38,7 @@ module.exports = class DbManager {
     /**
      * 
      * @param {String} username
-     * @param {Number} time_left The number of seconds that have passed since the mines upgrade has been finished. If defined, update building level doesn't get called, since it's assumed update building level function called
+     * @param {Number} p_time_left The number of seconds that have passed since the mines upgrade has been finished. If defined, update building level doesn't get called, since it's assumed update building level function called
      * @param {Number} bld_level Level of the building (for now, is always assumed to be mines, since that's the only resource generating blding for now)
      * @param {Number} downgrade
      */
@@ -49,7 +48,7 @@ module.exports = class DbManager {
         var mines = buildings.find(b => b.building_id == 2);
         if (p_time_left === undefined) {
             player_mines = await this.get_player_building_details(username, 2, false);
-            this.update_building_level(username, 2);
+            await this.update_building_level(username, 2, false);
         } else {
             player_mines = {update_start: 0, level: bld_level, downgrade: downgrade};
         }
@@ -76,6 +75,8 @@ module.exports = class DbManager {
             }
         }
         for (var i = 0; i < resources.length; i++) {
+            if (res_production[resources[i]] !== undefined) {
+            }
             set_to += resources[i] + ' = ' + resources[i] + ' + ' + ((generated_resources.length > 1 ? generated_resources[i] : 0) + (res_production[resources[i]] === undefined ? 0 : res_production[resources[i]]) * (timestamp - player_details.last_update)) + ' , ';
         }
         
@@ -86,7 +87,7 @@ module.exports = class DbManager {
         set_to += 'res_last_update = ?';
 
         query = "UPDATE players SET " + set_to + " WHERE player_id = ?";
-        return this.execute_query(query, [timestamp, player_details.player_id]);
+        await this.execute_query(query, [timestamp, player_details.player_id]);
     }
 
     /**
@@ -248,7 +249,12 @@ module.exports = class DbManager {
         return results;
     }
 
-    async update_building_level(username, p_building) {
+    /**
+     * @param {String} username
+     * @param {String|Number} p_building
+     * @param {Boolean} update_resources If a building upgrade timer is up and the building affects resource production, update_resource function gets called
+     */
+    async update_building_level(username, p_building, update_resources = true) {
         var query = `SELECT p.player_id, pb.update_start AS update_start, pb.level, pb.building_id, pb.downgrade
             FROM player_buildings pb
             INNER JOIN players p ON p.player_id = pb.player_id
@@ -284,7 +290,7 @@ module.exports = class DbManager {
             }
             var time_left = results[i].update_start + buildings[b_index].level_details[l_index].upgrade_time - await utils.get_timestamp();
             if (time_left <= 0) {
-                if (buildings[b_index].building_id === 2) {
+                if (buildings[b_index].building_id === 2 && update_resources) {
                     await this.update_resource(username, time_left, results[i].level, results[i].downgrade);
                 }
                 if (results[i].downgrade == 1 && results[i].level == 1) {
