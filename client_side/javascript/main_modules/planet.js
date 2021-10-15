@@ -101,6 +101,10 @@ class Game extends Base_Page {
         this.resources = datapack.resources;
         var resource_building_ui_html = '<table id="resource_table"><tbody>';
         for(var resource in datapack.resources) {
+            var split_resource = resource.split('reserved_');
+            if (split_resource.length > 1) {
+                resource = split_resource[1];
+            }
             resource_building_ui_html += `
             <tr>
                 <td>
@@ -113,7 +117,7 @@ class Game extends Base_Page {
         
         var button_menu_html = '';
         this.buildings = datapack.building_details;
-        for (var i = datapack.buildings.length - 1; i >= 0; i--) {
+        for (var i = 0; i < datapack.buildings.length; i++) {
             var building = datapack.buildings.find(b => b.building_id == this.buildings[i].building_id);
             this.buildings[i].update_start = building.update_start;
             this.buildings[i].downgrade = building.downgrade;
@@ -140,7 +144,7 @@ class Game extends Base_Page {
         document.getElementById('button_menu').innerHTML = button_menu_html;
 
         this.units = datapack.units;
-        var units_building = this.buildings.find(b => b.building_id == 4);
+        var units_building = this.buildings.find(b => b.building_id == 3);
         if (units_building !== undefined) {
             var b_index = units_building.level_details.findIndex(level_detail => level_detail.level == units_building.level);
             var allowed_unit_ids = units_building.level_details[b_index].units;
@@ -319,16 +323,28 @@ class Game extends Base_Page {
             var changed_resources = {};
             var sufficient_resources = true;
             for (var resource_type in this.buildings[b_index].level_details[l_index].upgrade_cost) {
-                if (this.resources[resource_type] - this.buildings[b_index].level_details[l_index].upgrade_cost[resource_type] >= 0) {
-                    changed_resources[resource_type] = this.resources[resource_type] - this.buildings[b_index].level_details[l_index].upgrade_cost[resource_type];
+                if (resource_type == 'pop') {
+                    var pop_building = this.buildings.find(building => building.building_id == 5);
+                    var available_pop = pop_building.level_details.find(ld => ld.level == pop_building.level - pop_building.downgrade).production.pop;
+                    var res_type = 'reserved_' + resource_type;
+                    if (this.resources[res_type] + this.buildings[b_index].level_details[l_index].upgrade_cost[resource_type] > available_pop) {
+                        sufficient_resources = false;
+                        break;
+                    }
                 } else {
-                    sufficient_resources = false;
-                    break;
+                    if (this.resources[resource_type] - this.buildings[b_index].level_details[l_index].upgrade_cost[resource_type] >= 0) {
+                        changed_resources[resource_type] = this.resources[resource_type] - this.buildings[b_index].level_details[l_index].upgrade_cost[resource_type];
+                    } else {
+                        sufficient_resources = false;
+                        break;
+                    }
                 }
             }
             if (sufficient_resources && this.buildings[b_index].level_details[l_index].upgrade_time >= 0) {
                 this.socket.emit('upgrade_building', p_building);
-                this.resources = changed_resources;
+                for (var changed_resource in changed_resources) {
+                    this.resources[changed_resource] = changed_resources[changed_resource];
+                }
                 this.update_resource_ui();
                 this.buildings[b_index].update_start = await utils.get_timestamp();
                 this.update_building_ui(b_index);
@@ -338,6 +354,7 @@ class Game extends Base_Page {
 
     async update_building(building_id) {
         var b_index;
+        var update_resource_ui = false;
         if (this.buildings[building_id - 1].building_id == building_id) {
             b_index = building_id - 1;
         } else {
@@ -367,9 +384,12 @@ class Game extends Base_Page {
             }
             if (this.buildings[b_index].building_id == 2) {
                 this.resource_prods = this.buildings[b_index].level_details.find(ld => ld.level == this.buildings[b_index].level).production;
-                this.update_resource_ui();
+                update_resource_ui = true;
             }
-            if (this.buildings[b_index].building_id == 4) {
+            if (this.buildings[b_index].building_id == 5) {
+                update_resource_ui = true;
+            }
+            if (this.buildings[b_index].building_id == 3) {
                 await this.update_units_table(upgrading);
             }
             this.buildings[b_index].update_start = null;
@@ -379,6 +399,9 @@ class Game extends Base_Page {
             var l_index = this.buildings[b_index].level_details.findIndex(ld => ld.level == this.buildings[b_index].level);
             this.fetch_building_details(building_id, this.buildings[b_index].level_details[l_index].level + (this.buildings[b_index].downgrade ? -2 : 2));
         }
+        if (update_resource_ui) {
+            this.update_resource_ui();
+        }
     }
 
     async save_fetched_building(building) {
@@ -387,33 +410,54 @@ class Game extends Base_Page {
 
     async cancel_building_update(p_building) {
         var b_index = this.buildings.findIndex(building => building.name == p_building);
-        if (this.buildings[b_index].update_start !== null) {
-            this.buildings[b_index].update_start = null;
-            if (this.buildings[b_index].downgrade) {
-                this.buildings[b_index].downgrade = 0;
+        var building = this.buildings[b_index];
+        if (building.update_start !== null) {
+            building.update_start = null;
+            if (building.downgrade) {
+                building.downgrade = 0;
             } else {
-                var l_index = this.buildings[b_index].level_details.findIndex(ld => ld.level == this.buildings[b_index].level);
+                var l_index = building.level_details.findIndex(ld => ld.level == building.level);
                 var changed_resources = {};
-                for (var resource_type in this.buildings[b_index].level_details[l_index].upgrade_cost) {
-                        changed_resources[resource_type] = this.resources[resource_type] + this.buildings[b_index].level_details[l_index].upgrade_cost[resource_type];
+                for (var resource_type in building.level_details[l_index].upgrade_cost) {
+                    if (resource_type != 'pop') {
+                        changed_resources[resource_type] = this.resources[resource_type] + building.level_details[l_index].upgrade_cost[resource_type];
+                    }
                 }
-                this.resources = changed_resources;
+                for (var changed_resource in changed_resources) {
+                    this.resources[changed_resource] = changed_resources[changed_resource];
+                }
             }
             this.socket.emit('cancel_building_update', p_building);
             this.update_resource_ui();
             this.update_building_ui(b_index);
-            delete this.fetched_buildings[this.buildings[b_index].building_id];
+            delete this.fetched_buildings[building.building_id];
         }
     }
 
     async downgrade_building(p_building) {
         var b_index = this.buildings.findIndex(building => building.name == p_building);
-        var l_index = this.buildings[b_index].level_details.findIndex(ld => ld.level == this.buildings[b_index].level);
-        if (this.buildings[b_index].update_start === null && this.buildings[b_index].level_details[l_index].level != 0) {
+        var building = this.buildings[b_index];
+        var l_index = building.level_details.findIndex(ld => ld.level == building.level);
+        var update_res_ui = false;
+        var downgrade_building = true;
+        if (building.update_start === null && building.level_details[l_index].level != 0) {
+            if (building.building_id == 5) {
+                var ld_index = building.level_details.findIndex(lvl_details => lvl_details.level == (building.level - 1));
+                if (this.resources['reserved_pop'] <= building.level_details[ld_index].production['pop']) {
+                    update_res_ui = true;
+                } else {
+                    downgrade_building = false;
+                }
+            }
+            if (downgrade_building) {
                 this.socket.emit('downgrade_building', p_building);
-                this.buildings[b_index].update_start = await utils.get_timestamp();
-                this.buildings[b_index].downgrade = 1;
+                building.update_start = await utils.get_timestamp();
+                building.downgrade = 1;
                 this.update_building_ui(b_index);
+                if (update_res_ui) {
+                    this.update_resource_ui();
+                }
+            }
         }
     }
 
@@ -447,7 +491,14 @@ class Game extends Base_Page {
 
     async update_resource_ui() {
         for (var resource_type in this.resources) {
-            document.getElementById(resource_type).textContent = Math.floor(this.resources[resource_type]) + ' (' + Math.round(this.resource_prods[resource_type]*3600 * 100)/100 + '/h)';
+            var split_resource = resource_type.split('reserved_');
+            if (split_resource.length > 1) {
+                var pop_building = this.buildings.find(building => building.building_id == 5);
+                var available_pop = pop_building.level_details.find(ld => ld.level == pop_building.level - pop_building.downgrade).production.pop;
+                document.getElementById(split_resource[1]).textContent = Math.floor(this.resources[resource_type]) + '/' + available_pop;
+            } else {
+                document.getElementById(resource_type).textContent = Math.floor(this.resources[resource_type]) + ' (' + Math.round(this.resource_prods[resource_type]*3600 * 100)/100 + '/h)';
+            }
         }
     }
 
@@ -539,7 +590,7 @@ class Game extends Base_Page {
     }
 
     async update_units_table(upgrading) {
-        var units_building = this.buildings.find(b => b.building_id == 4);
+        var units_building = this.buildings.find(b => b.building_id == 3);
         var allowed_unit_ids = units_building.level_details.find(level_detail => level_detail.level == units_building.level).units;
         var previously_allowed_unit_ids = units_building.level_details.find(level_detail => level_detail.level == units_building.level + (upgrading ? -1 : 1)).units;
         var changed_unit_ids = allowed_unit_ids.filter(allowed_unit_id => previously_allowed_unit_ids.indexOf(allowed_unit_id) === -1);

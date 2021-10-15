@@ -6,31 +6,32 @@
             {
                 "level": 0,
                 "upgrade_cost": {
-                    "metal": 1
+                    "metal": 1,
+                    "pop": 1
                 },
-                "upgrade_time": 10,
-                "buildings": [2]
+                "upgrade_time": 10
             },
             {
                 "level": 1,
                 "upgrade_cost": {
-                    "metal": 1
+                    "metal": 1,
+                    "pop": 1
                 },
-                "upgrade_time": 10,
-                "buildings": [3,4]
+                "upgrade_time": 10
             },
             {
                 "level": 2,
                 "upgrade_cost": {
-                    "metal": 1
+                    "metal": 1,
+                    "pop": 1
                 },
-                "upgrade_time": 10,
-                "buildings": []
+                "upgrade_time": 10
             },
             {
                 "level": 3,
                 "upgrade_cost": {
-                    "metal": 1
+                    "metal": 1,
+                    "pop": 1
                 },
                 "upgrade_time": -1
             }
@@ -43,31 +44,38 @@
             {
                 "level": 0,
                 "upgrade_cost": {
-                    "metal": 1
+                    "metal": 1,
+                    "pop": 1
                 },
                 "upgrade_time": 10,
-                "production": {"metal": 0.00015}
+                "production": {"metal": 0.00015},
+                "req_buildings": [{"building_id":1,"level":1}]
             },
             {
                 "level": 1,
                 "upgrade_cost": {
-                    "metal": 1
+                    "metal": 1,
+                    "pop": 1
                 },
                 "upgrade_time": 10,
-                "production": {"metal": 0.0003}
+                "production": {"metal": 0.0003},
+                "req_buildings": [{"building_id":1,"level":1}]
             },
             {
                 "level": 2,
                 "upgrade_cost": {
-                    "metal": 1
+                    "metal": 1,
+                    "pop": 1
                 },
                 "upgrade_time": 10,
-                "production": {"metal": 0.00045}
+                "production": {"metal": 0.00045},
+                "req_buildings": [{"building_id":1,"level":1}]
             },
             {
                 "level": 3,
                 "upgrade_cost": {
-                    "metal": 1
+                    "metal": 1,
+                    "pop": 1
                 },
                 "upgrade_time": -1,
                 "production": {"metal": 0.00060}
@@ -76,66 +84,33 @@
     }, 
     {
         "building_id": 3,
-        "name": "Space Station",
-        "level_details": [
-            {
-                "level": 0,
-                "upgrade_cost": {
-                    "metal": 1
-                },
-                "upgrade_time": 10,
-                "defense_bonus": 10
-            },
-            {
-                "level": 1,
-                "upgrade_cost": {
-                    "metal": 1
-                },
-                "upgrade_time": 10,
-                "defense_bonus": 25
-            },
-            {
-                "level": 2,
-                "upgrade_cost": {
-                    "metal": 1
-                },
-                "upgrade_time": 10,
-                "defense_bonus": 30
-            },
-            {
-                "level": 3,
-                "upgrade_cost": {
-                    "metal": 1
-                },
-                "upgrade_time": -1,
-                "defense_bonus": 32
-            }
-        ]
-    }, 
-    {
-        "building_id": 4,
         "name": "Space Dock",
         "level_details": [
             {
                 "level": 0,
                 "upgrade_cost": {
-                    "metal": 2
+                    "metal": 2,
+                    "pop": 1
                 },
                 "upgrade_time": 10,
-                "units": []
+                "units": [],
+                "req_buildings": [{"building_id":1,"level":2}]
             },
             {
                 "level": 1,
                 "upgrade_cost": {
-                    "metal": 2
+                    "metal": 2,
+                    "pop": 1
                 },
                 "upgrade_time": 10,
-                "units": [1]
+                "units": [1],
+                "req_buildings": [{"building_id":1,"level":2}]
             },
             {
                 "level": 2,
                 "upgrade_cost": {
-                    "metal": 2
+                    "metal": 2,
+                    "pop": 1
                 },
                 "upgrade_time": -1,
                 "units": [1,2]
@@ -143,7 +118,7 @@
         ]
     },
     {
-        "building_id": 5,
+        "building_id": 4,
         "name": "Resource Storage",
         "level_details": [
             {
@@ -152,7 +127,8 @@
                     "metal": 1
                 },
                 "upgrade_time": 10,
-                "storage": {"metal": 100}
+                "storage": {"metal": 100},
+                "req_buildings": [{"building_id":1,"level":1}]
             },
             {
                 "level": 1,
@@ -160,7 +136,8 @@
                     "metal": 1
                 },
                 "upgrade_time": 10,
-                "storage": {"metal": 200}
+                "storage": {"metal": 200},
+                "req_buildings": [{"building_id":1,"level":1}]
             },
             {
                 "level": 2,
@@ -168,7 +145,8 @@
                     "metal": 1
                 },
                 "upgrade_time": 10,
-                "storage": {"metal": 500}
+                "storage": {"metal": 500},
+                "req_buildings": [{"building_id":1,"level":1}]
             },
             {
                 "level": 3,
@@ -177,6 +155,88 @@
                 },
                 "upgrade_time": -1,
                 "storage": {"metal": 1000}
+            }
+        ]
+    },
+    {
+        "building_id": 5,
+        "name": "Apartments",
+        "level_details": [
+            {
+                "level": 0,
+                "upgrade_cost": {
+                    "metal": 1
+                },
+                "upgrade_time": 10,
+                "production": {"pop": 0},
+                "req_buildings": [{"building_id":1,"level":1},{"building_id":6,"level":1}]
+            },
+            {
+                "level": 1,
+                "upgrade_cost": {
+                    "metal": 1
+                },
+                "upgrade_time": 10,
+                "production": {"pop": 200},
+                "req_buildings": [{"building_id":1,"level":1},{"building_id":6,"level":2}]
+            },
+            {
+                "level": 2,
+                "upgrade_cost": {
+                    "metal": 1
+                },
+                "upgrade_time": 10,
+                "production": {"pop": 500},
+                "req_buildings": [{"building_id":1,"level":1},{"building_id":6,"level":3}]
+            },
+            {
+                "level": 3,
+                "upgrade_cost": {
+                    "metal": 1
+                },
+                "upgrade_time": -1,
+                "production": {"pop": 1000}
+            }
+        ]
+    },
+    {
+        "building_id": 6,
+        "name": "Farms",
+        "level_details": [
+            {
+                "level": 0,
+                "upgrade_cost": {
+                    "metal": 1,
+                    "pop": 1
+                },
+                "upgrade_time": 10,
+                "req_buildings": [{"building_id":1,"level":1}]
+            },
+            {
+                "level": 1,
+                "upgrade_cost": {
+                    "metal": 1,
+                    "pop": 1
+                },
+                "upgrade_time": 10,
+                "req_buildings": [{"building_id":1,"level":1}]
+            },
+            {
+                "level": 2,
+                "upgrade_cost": {
+                    "metal": 1,
+                    "pop": 1
+                },
+                "upgrade_time": 10,
+                "req_buildings": [{"building_id":1,"level":1}]
+            },
+            {
+                "level": 3,
+                "upgrade_cost": {
+                    "metal": 1,
+                    "pop": 1
+                },
+                "upgrade_time": -1
             }
         ]
     }
