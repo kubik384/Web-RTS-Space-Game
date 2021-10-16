@@ -45,10 +45,10 @@
                 "level": 0,
                 "upgrade_cost": {
                     "metal": 1,
-                    "pop": 1
+                    "pop": 100
                 },
                 "upgrade_time": 10,
-                "production": {"metal": 0.00015},
+                "production": {"metal": 0.00015, "kerosene": 0, "hydrogen": 0, "uranium": 0},
                 "req_buildings": [{"building_id":1,"level":1}]
             },
             {
@@ -58,7 +58,7 @@
                     "pop": 1
                 },
                 "upgrade_time": 10,
-                "production": {"metal": 0.0003},
+                "production": {"metal": 0.0003, "kerosene": 0, "hydrogen": 0, "uranium": 0},
                 "req_buildings": [{"building_id":1,"level":1}]
             },
             {
@@ -68,7 +68,7 @@
                     "pop": 1
                 },
                 "upgrade_time": 10,
-                "production": {"metal": 0.00045},
+                "production": {"metal": 0.00045, "kerosene": 0, "hydrogen": 0, "uranium": 0},
                 "req_buildings": [{"building_id":1,"level":1}]
             },
             {
@@ -78,7 +78,7 @@
                     "pop": 1
                 },
                 "upgrade_time": -1,
-                "production": {"metal": 0.00060}
+                "production": {"metal": 0.00060, "kerosene": 0, "hydrogen": 0, "uranium": 0}
             }
         ]
     }, 
@@ -127,7 +127,7 @@
                     "metal": 1
                 },
                 "upgrade_time": 10,
-                "storage": {"metal": 100},
+                "storage": {"metal": 100, "kerosene": 100, "hydrogen": 0, "uranium": 0},
                 "req_buildings": [{"building_id":1,"level":1}]
             },
             {
@@ -136,7 +136,7 @@
                     "metal": 1
                 },
                 "upgrade_time": 10,
-                "storage": {"metal": 200},
+                "storage": {"metal": 200, "kerosene": 100, "hydrogen": 0, "uranium": 0},
                 "req_buildings": [{"building_id":1,"level":1}]
             },
             {
@@ -145,7 +145,7 @@
                     "metal": 1
                 },
                 "upgrade_time": 10,
-                "storage": {"metal": 500},
+                "storage": {"metal": 500, "kerosene": 200, "hydrogen": 0, "uranium": 0},
                 "req_buildings": [{"building_id":1,"level":1}]
             },
             {
@@ -154,7 +154,7 @@
                     "metal": 1
                 },
                 "upgrade_time": -1,
-                "storage": {"metal": 1000}
+                "storage": {"metal": 1000, "kerosene": 300, "hydrogen": 0, "uranium": 0}
             }
         ]
     },
@@ -168,7 +168,7 @@
                     "metal": 1
                 },
                 "upgrade_time": 10,
-                "production": {"pop": 0},
+                "production": {"pop": 100},
                 "req_buildings": [{"building_id":1,"level":1},{"building_id":6,"level":1}]
             },
             {

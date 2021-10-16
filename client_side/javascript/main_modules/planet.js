@@ -116,7 +116,7 @@ class Game extends Base_Page {
         }
         
         var button_menu_html = '';
-        this.buildings = datapack.building_details;
+        this.buildings = datapack.building_details.sort((a,b) => a.building_id - b.building_id);
         for (var i = 0; i < datapack.buildings.length; i++) {
             var building = datapack.buildings.find(b => b.building_id == this.buildings[i].building_id);
             this.buildings[i].update_start = building.update_start;
@@ -283,10 +283,15 @@ class Game extends Base_Page {
     update_game() {
         utils.get_timestamp().then(async function(currTime) {
             var timePassed = currTime - this.lastUpdateTime;
+            var storage_building = this.buildings.find(building => building.building_id == 4);
+            var storage = storage_building.level_details.find(ld => ld.level == storage_building.level).storage;
             for (var resource_type in this.resource_prods) {
                 this.resources[resource_type] += this.resource_prods[resource_type] * timePassed;
-                this.update_resource_ui();
+                if (this.resources[resource_type] > storage[resource_type]) {
+                    this.resources[resource_type] = storage[resource_type];
+                }
             }
+            this.update_resource_ui();
             
             for (var i = 0; i < this.buildings.length; i++) {
                 if (this.buildings[i].update_start !== null) {
@@ -319,34 +324,44 @@ class Game extends Base_Page {
     async upgrade_building(p_building) {
         var b_index = this.buildings.findIndex(building => building.name == p_building);
         var l_index = this.buildings[b_index].level_details.findIndex(ld => ld.level == this.buildings[b_index].level);
-        if (this.buildings[b_index].update_start === null && this.buildings[b_index].level_details[l_index].upgrade_time >= 0) {
+        var building = this.buildings[b_index];
+        var lvl_details = building.level_details[l_index];
+        if (building.update_start === null && lvl_details.upgrade_time >= 0) {
             var changed_resources = {};
-            var sufficient_resources = true;
-            for (var resource_type in this.buildings[b_index].level_details[l_index].upgrade_cost) {
+            var upgrade_building = true;
+            for (var resource_type in lvl_details.upgrade_cost) {
                 if (resource_type == 'pop') {
                     var pop_building = this.buildings.find(building => building.building_id == 5);
                     var available_pop = pop_building.level_details.find(ld => ld.level == pop_building.level - pop_building.downgrade).production.pop;
                     var res_type = 'reserved_' + resource_type;
-                    if (this.resources[res_type] + this.buildings[b_index].level_details[l_index].upgrade_cost[resource_type] > available_pop) {
-                        sufficient_resources = false;
+                    if (this.resources[res_type] + lvl_details.upgrade_cost[resource_type] > available_pop) {
+                        upgrade_building = false;
                         break;
+                    } else {
+                        changed_resources[res_type] = this.resources[res_type] + lvl_details.upgrade_cost[resource_type];
                     }
                 } else {
-                    if (this.resources[resource_type] - this.buildings[b_index].level_details[l_index].upgrade_cost[resource_type] >= 0) {
-                        changed_resources[resource_type] = this.resources[resource_type] - this.buildings[b_index].level_details[l_index].upgrade_cost[resource_type];
+                    if (this.resources[resource_type] - lvl_details.upgrade_cost[resource_type] >= 0) {
+                        changed_resources[resource_type] = this.resources[resource_type] - lvl_details.upgrade_cost[resource_type];
                     } else {
-                        sufficient_resources = false;
+                        upgrade_building = false;
                         break;
                     }
                 }
             }
-            if (sufficient_resources && this.buildings[b_index].level_details[l_index].upgrade_time >= 0) {
+            for (var i = 0; i < lvl_details.req_buildings.length; i++) {
+                var req_bld = this.buildings.find(building => building.building_id == lvl_details.req_buildings[i].building_id);
+                if (req_bld.level < lvl_details.req_buildings[i].level) {
+                    upgrade_building = false;
+                }
+            }
+            if (upgrade_building && lvl_details.upgrade_time >= 0) {
                 this.socket.emit('upgrade_building', p_building);
                 for (var changed_resource in changed_resources) {
                     this.resources[changed_resource] = changed_resources[changed_resource];
                 }
                 this.update_resource_ui();
-                this.buildings[b_index].update_start = await utils.get_timestamp();
+                building.update_start = await utils.get_timestamp();
                 this.update_building_ui(b_index);
             }
         }
@@ -361,7 +376,7 @@ class Game extends Base_Page {
             b_index = this.buildings.findIndex(building => building.building_id == building_id);
         }
         if (this.fetched_buildings[building_id] !== undefined && this.fetched_buildings[building_id].name !== undefined) {
-            var upgrading = !this.buildings[b_index].downgrade;
+            var upgrading = this.buildings[b_index].downgrade !== 1;
             if (upgrading) {
                 var l_index = this.buildings[b_index].level_details.findIndex(ld => ld.level == this.buildings[b_index].level - 1);
                 if (l_index != -1) {
@@ -381,12 +396,25 @@ class Game extends Base_Page {
                 }
                 this.buildings[b_index].downgrade = 0;
                 this.buildings[b_index].level--;
+                var lvl_details = this.buildings[b_index].level_details.find(ld => ld.level == this.buildings[b_index].level);
+                if (lvl_details.upgrade_cost['pop'] !== undefined) {
+                    this.resources['reserved_pop'] -= lvl_details.upgrade_cost['pop'];
+                    update_resource_ui = true;
+                }
+                if (this.buildings[b_index].building_id == 4) {
+                    for (var resource_type in lvl_details.storage) {
+                        var storage = lvl_details.storage[resource_type];
+                        if (this.resources[resource_type] > storage) {
+                            this.resources[resource_type] = storage;
+                        }
+                    }
+                }
             }
             if (this.buildings[b_index].building_id == 2) {
                 this.resource_prods = this.buildings[b_index].level_details.find(ld => ld.level == this.buildings[b_index].level).production;
                 update_resource_ui = true;
             }
-            if (this.buildings[b_index].building_id == 5) {
+            if (this.buildings[b_index].building_id == 5 || this.buildings[b_index].building_id == 4) {
                 update_resource_ui = true;
             }
             if (this.buildings[b_index].building_id == 3) {
@@ -419,7 +447,10 @@ class Game extends Base_Page {
                 var l_index = building.level_details.findIndex(ld => ld.level == building.level);
                 var changed_resources = {};
                 for (var resource_type in building.level_details[l_index].upgrade_cost) {
-                    if (resource_type != 'pop') {
+                    if (resource_type == 'pop') {
+                        var res_type = 'reserved_' + resource_type;
+                        changed_resources[res_type] = this.resources[res_type] - this.buildings[b_index].level_details[l_index].upgrade_cost[resource_type];
+                    } else {
                         changed_resources[resource_type] = this.resources[resource_type] + building.level_details[l_index].upgrade_cost[resource_type];
                     }
                 }
@@ -497,7 +528,9 @@ class Game extends Base_Page {
                 var available_pop = pop_building.level_details.find(ld => ld.level == pop_building.level - pop_building.downgrade).production.pop;
                 document.getElementById(split_resource[1]).textContent = Math.floor(this.resources[resource_type]) + '/' + available_pop;
             } else {
-                document.getElementById(resource_type).textContent = Math.floor(this.resources[resource_type]) + ' (' + Math.round(this.resource_prods[resource_type]*3600 * 100)/100 + '/h)';
+                var storage_building = this.buildings.find(building => building.building_id == 4);
+                var storage = storage_building.level_details.find(ld => ld.level == storage_building.level).storage[resource_type];
+                document.getElementById(resource_type).textContent = Math.floor(this.resources[resource_type]) + '/' + storage + ' (' + Math.round(this.resource_prods[resource_type]*3600 * 100)/100 + '/h)';
             }
         }
     }

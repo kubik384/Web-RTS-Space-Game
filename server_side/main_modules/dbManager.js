@@ -42,7 +42,7 @@ module.exports = class DbManager {
      * @param {Number} bld_level Level of the building (for now, is always assumed to be mines, since that's the only resource generating blding for now)
      * @param {Number} downgrade
      */
-    async update_resource(username, p_time_left, bld_level, downgrade) {
+    async update_resource(username, p_time_left, bld_level, downgrade, update_storage = true) {
         var timestamp = await utils.get_timestamp();
         var player_mines;
         var mines = buildings.find(b => b.building_id == 2);
@@ -53,9 +53,12 @@ module.exports = class DbManager {
             player_mines = {update_start: 0, level: bld_level, downgrade: downgrade};
         }
 
-        var query = `SELECT player_id, res_last_update AS last_update
-        FROM players
-        WHERE username = ?`;
+        var query = 'SELECT player_id, res_last_update AS last_update, ';
+        for (var i = 0; i < resourceTable.length; i++) {
+            query += resourceTable[i] + ' , ';
+        }
+        query = query.substr(0, query.length - 2);
+        query += 'FROM players WHERE username = ?';
         var player_details = (await this.execute_query(query, [username]))[0];
 
         var set_to = '';
@@ -75,10 +78,16 @@ module.exports = class DbManager {
                 player_details.last_update += time_passed;
             }
         }
+
+        var player_storage = await this.get_player_building_details(username, 4, update_storage);
+        var storage_details = (await this.get_building_details([player_storage]))[0];
+        var storage = storage_details.level_details.find(lvl_detail => lvl_detail.level == player_storage.level).storage;
         for (var i = 0; i < resources.length; i++) {
-            if (res_production[resources[i]] !== undefined) {
+            var calc_player_res = player_details[resources[i]] + ((generated_resources.length > 1 ? generated_resources[i] : 0) + (res_production[resources[i]] === undefined ? 0 : res_production[resources[i]]) * (timestamp - player_details.last_update));
+            if (calc_player_res > storage[resources[i]]) {
+                calc_player_res = storage[resources[i]];
             }
-            set_to += resources[i] + ' = ' + resources[i] + ' + ' + ((generated_resources.length > 1 ? generated_resources[i] : 0) + (res_production[resources[i]] === undefined ? 0 : res_production[resources[i]]) * (timestamp - player_details.last_update)) + ' , ';
+            set_to += resources[i] + ' = ' + calc_player_res + ' , ';
         }
         
         if (!Array.isArray(resources)) {
@@ -116,7 +125,7 @@ module.exports = class DbManager {
         FROM players
         WHERE username = ?`;
         var player_details = (await this.execute_query(query, [username]))[0];
-        query = `SELECT pb.building_id, pb.update_start, pb.level
+        query = `SELECT pb.building_id, pb.update_start, pb.level, pb.downgrade
         FROM player_buildings pb
         INNER JOIN players p ON p.player_id = pb.player_id
         WHERE p.player_id = ?`;
@@ -145,11 +154,14 @@ module.exports = class DbManager {
             if (resource == 'pop') {
                 var pop_bld = buildings.find(building => building.building_id == 5);
                 var p_pop_bld = p_buildings.find(p_building => p_building.building_id == pop_bld.building_id);
-                var available_pop = pop_bld.level_details.find(lvl_detail => lvl_detail.level == (p_pop_bld.level - p_pop_bld.downgrade)).production.pop;
+                if (p_pop_bld === undefined) {
+                    p_pop_bld = {level: 0, downgrade: 0};
+                }
+                var available_pop = pop_bld.level_details.find(lvl_detail => lvl_detail.level == (p_pop_bld.level - p_pop_bld.downgrade)).production[resource];
                 if (player_details['reserved_' + resource] + bld_lvl_details.upgrade_cost[resource] > available_pop) {
                     throw new Error('Not enough resources to upgrade building');
                 }
-                query += `p.reserved_${resource} = p.reserved_${resource} + ${bld_lvl_details.upgrade_cost[resource]},`;
+                query += `p.reserved_${resource} = p.reserved_${resource} + ${bld_lvl_details.upgrade_cost[resource]}, `;
             } else {
                 if (player_details[resource] < buildings[b_index].level_details[l_index].upgrade_cost[resource]) {
                     throw new Error('Not enough resources to upgrade building');
@@ -157,7 +169,13 @@ module.exports = class DbManager {
                 query += `p.${resource} = p.${resource} - ${bld_lvl_details.upgrade_cost[resource]}, `;
             }
         }
-        query = query.substr(0, query.length - 1);
+
+        for (var i = 0; i < bld_lvl_details.req_buildings.length; i++) {
+            var p_bld = p_buildings.find(p_building => p_building.building_id == bld_lvl_details.req_buildings[i].building_id);
+            if (p_bld === undefined || p_bld.level < bld_lvl_details.req_buildings[i].level) {
+                throw new Error('Required building is not high enough level');
+            }
+        }
         query += `pb.update_start = UNIX_TIMESTAMP()
         WHERE p.player_id = ? AND pb.building_id = ? AND pb.update_start IS NULL`
         if (buildings[b_index].level_details[l_index + 1] === undefined) {
@@ -180,6 +198,7 @@ module.exports = class DbManager {
         INNER JOIN players p ON p.player_id = pb.player_id
         WHERE p.username = ? AND pb.building_id = ?`;
         var results = await this.execute_query(query, [username, building_id]);
+        
         if (results.length < 1 || results[0].update_start === null) {
             return;
         }
@@ -192,9 +211,6 @@ module.exports = class DbManager {
                 WHERE p.player_id = ? AND pb.building_id = ? AND pb.level > 0 AND pb.update_start IS NOT NULL AND pb.downgrade = 1`;
             await this.execute_query(query, [results[0].player_id, building_id, results[0].level]);
         } else {
-            if (results[0].level == 0) {
-                return this.execute_query('DELETE FROM player_buildings WHERE player_id = ? AND building_id = ?', [results[0].player_id, building_id]);
-            }
             var l_index;
             if (buildings[b_index].level_details[results[0].level] == results[0].level) {
                 l_index = results[0].level;
@@ -208,12 +224,6 @@ module.exports = class DbManager {
 
             for (const resource in bld_lvl_details.upgrade_cost) {
                 if (resource == 'pop') {
-                    var pop_bld = buildings.find(building => building.building_id == 5);
-                    var p_pop_bld = p_buildings.find(p_building => p_building.building_id == pop_bld.building_id);
-                    var available_pop = pop_bld.level_details.find(lvl_detail => lvl_detail.level == p_pop_bld.level).production.pop;
-                    if (player_details['reserved_' + resource] + bld_lvl_details.upgrade_cost[resource] > available_pop) {
-                        throw new Error('Not enough resources to upgrade building');
-                    }
                     query += `p.reserved_${resource} = p.reserved_${resource} - ${bld_lvl_details.upgrade_cost[resource]},`;
                 } else {
                     query += `p.${resource} = p.${resource} + ${bld_lvl_details.upgrade_cost[resource]}, `;
@@ -222,6 +232,9 @@ module.exports = class DbManager {
             query += `pb.update_start = NULL
             WHERE p.player_id = ? AND pb.building_id = ? AND pb.level = ? AND pb.update_start IS NOT NULL`;
             await this.execute_query(query, [results[0].player_id, building_id, results[0].level]);
+            if (results[0].level == 0) {
+                return this.execute_query('DELETE FROM player_buildings WHERE player_id = ? AND building_id = ?', [results[0].player_id, building_id]);
+            }
         }
     }
 
@@ -276,8 +289,6 @@ module.exports = class DbManager {
         if (p_building != 'all') {
             building_id = p_building;
             query += ' AND pb.building_id = ?';
-        } else {
-            query += ' ORDER BY pb.building_id ASC';
         }
 
         var results = await this.execute_query(query, [username, building_id]);
@@ -343,14 +354,16 @@ module.exports = class DbManager {
                     await this.update_resource(username, time_left, results[i].level, results[i].downgrade);
                 }
                 if (results[i].downgrade == 1) {
-                    if (buildings[b_index].level_details[results[i].level] == (results[i].level)) {
+                    if (buildings[b_index].level_details[results[i].level - results[i].downgrade] == (results[i].level - results[i].downgrade)) {
                         l_index = results[i].level;
                     } else {
-                        l_index = buildings[b_index].level_details.findIndex(level_detail => level_detail.level == (results[i].level));
+                        l_index = buildings[b_index].level_details.findIndex(level_detail => level_detail.level == (results[i].level - results[i].downgrade));
                     }
-    
+                    if (buildings[b_index].building_id === 4) {
+                        await this.update_resource(username, undefined, undefined, undefined, false);
+                    }
                     if (buildings[b_index].level_details[l_index].upgrade_cost['pop'] !== undefined) {
-                        var pop_query = `UPDATE players SET reserved_pop = reserved_pop - ${bld_lvl_details.upgrade_cost['pop']} WHERE player_id = ?`;
+                        var pop_query = `UPDATE players SET reserved_pop = reserved_pop - ${buildings[b_index].level_details[l_index].upgrade_cost['pop']} WHERE player_id = ?`;
                         await this.execute_query(pop_query, [results[0].player_id]);
                     }
                 }
