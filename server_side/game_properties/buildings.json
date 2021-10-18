@@ -45,7 +45,7 @@
                 "level": 0,
                 "upgrade_cost": {
                     "metal": 1,
-                    "pop": 100
+                    "pop": 1
                 },
                 "upgrade_time": 10,
                 "production": {"metal": 0.00015, "kerosene": 0, "hydrogen": 0, "uranium": 0},

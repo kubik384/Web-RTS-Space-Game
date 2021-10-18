@@ -451,7 +451,12 @@ class Game extends Base_Page {
                         var res_type = 'reserved_' + resource_type;
                         changed_resources[res_type] = this.resources[res_type] - this.buildings[b_index].level_details[l_index].upgrade_cost[resource_type];
                     } else {
+                        var storage_building = this.buildings.find(building => building.building_id == 4);
+                        var storage = storage_building.level_details.find(ld => ld.level == storage_building.level).storage;
                         changed_resources[resource_type] = this.resources[resource_type] + building.level_details[l_index].upgrade_cost[resource_type];
+                        if (changed_resources[resource_type] > storage[resource_type]) {
+                            changed_resources[resource_type] = storage[resource_type];
+                        }
                     }
                 }
                 for (var changed_resource in changed_resources) {

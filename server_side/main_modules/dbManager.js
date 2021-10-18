@@ -38,66 +38,95 @@ module.exports = class DbManager {
     /**
      * 
      * @param {String} username
-     * @param {Number} p_time_left The number of seconds that have passed since the mines upgrade has been finished. If defined, update building level doesn't get called, since it's assumed update building level function called
+     * @param {Number} building_id ID of a building that is getting it's level updated. If defined, update building level doesn't get called, since it's assumed update building level function called
      * @param {Number} bld_level Level of the building (for now, is always assumed to be mines, since that's the only resource generating blding for now)
      * @param {Number} downgrade
      */
-    async update_resource(username, p_time_left, bld_level, downgrade, update_storage = true) {
+    async update_resource(username, building_id, bld_level, downgrade) {
         var timestamp = await utils.get_timestamp();
         var player_mines;
         var mines = buildings.find(b => b.building_id == 2);
-        if (p_time_left === undefined) {
-            player_mines = await this.get_player_building_details(username, 2, false);
-            await this.update_building_level(username, 2, false);
+        if (building_id === undefined || building_id != mines.building_id) {
+            player_mines = await this.get_player_building_details(username, mines.building_id, false);
         } else {
-            player_mines = {update_start: 0, level: bld_level, downgrade: downgrade};
+            player_mines = {update_start: null, level: bld_level, downgrade: downgrade};
         }
-
-        var query = 'SELECT player_id, res_last_update AS last_update, ';
-        for (var i = 0; i < resourceTable.length; i++) {
-            query += resourceTable[i] + ' , ';
-        }
-        query = query.substr(0, query.length - 2);
-        query += 'FROM players WHERE username = ?';
-        var player_details = (await this.execute_query(query, [username]))[0];
-
-        var set_to = '';
         var mines_level_detail = mines.level_details.find(ld => ld.level == player_mines.level);
         var res_production = mines_level_detail.production;
-        var resources = resourceTable;
-        var generated_resources = [];
-        if (player_mines.update_start !== null) {
-            var upgrade_time = mines.level_details.find(ld => ld.level == (player_mines.level - player_mines.downgrade)).upgrade_time;
-            var time_left = (p_time_left !== undefined ? p_time_left : (player_mines.update_start + upgrade_time - timestamp));
-            if (time_left <= 0) {
-                var time_passed = timestamp - player_details.last_update + time_left;
-                for (var i = 0; i < resources.length; i++) {
-                    generated_resources.push((res_production[resources[i]] === undefined ? 0 : res_production[resources[i]]) * (time_passed));
+
+        var player_storage;
+        var storage_bld = buildings.find(b => b.building_id == 4);
+        if (building_id === undefined || building_id != storage_bld.building_id) {
+            player_storage = await this.get_player_building_details(username, storage_bld.building_id, false);
+
+        } else {
+            player_storage = {update_start: null, level: bld_level, downgrade: downgrade};
+        }
+        var curr_stg_lvl_detail = storage_bld.level_details.find(lvl_detail => lvl_detail.level == player_storage.level);
+        var dwgr_stg_lvl_detail = storage_bld.level_details.find(lvl_detail => lvl_detail.level == player_storage.level - 1);
+        var storage_upd_ts = player_storage.update_start + (player_storage.downgrade == 1 ? dwgr_stg_lvl_detail.upgrade_time : curr_stg_lvl_detail.upgrade_time);
+        var storage_updated = player_storage.update_start !== null && storage_upd_ts <= timestamp;
+        var storage_upgraded = false;
+        var storage;
+        if (storage_updated) {
+            if (player_storage.downgrade == 1) {
+                storage = dwgr_stg_lvl_detail.storage;
+            } else {
+                storage_upgraded = true;
+                storage = curr_stg_lvl_detail.storage;
+            }
+        } else {
+            storage = curr_stg_lvl_detail.storage;
+        }
+        var update_timestamp = storage_upgraded ? storage_upd_ts : timestamp;
+        for (var i = (storage_upgraded ? 0 : 1); i < 2; i++) {
+            
+            var query = 'SELECT player_id, res_last_update AS last_update, ';
+            for (var j = 0; j < resourceTable.length; j++) {
+                query += resourceTable[j] + ' , ';
+            }
+            query = query.substr(0, query.length - 2);
+            query += 'FROM players WHERE username = ?';
+            var player_details = (await this.execute_query(query, [username]))[0];
+
+            var set_to = '';
+            var resources = resourceTable;
+            var generated_resources = [];
+            if (player_mines.update_start !== null) {
+                var upgrade_time = mines_level_detail.upgrade_time;
+                var time_left = player_mines.update_start + upgrade_time - update_timestamp;
+                if (time_left <= 0) {
+                    var time_passed = update_timestamp - player_details.last_update + time_left;
+                    for (var j = 0; j < resources.length; j++) {
+                        generated_resources.push((res_production[resources[j]] === undefined ? 0 : res_production[resources[j]]) * (time_passed));
+                    }
+                    res_production = mines.level_details.find(ld => ld.level == (player_mines.downgrade == 0 ? player_mines.level + 1 : player_mines.level - 1)).production;
+                    player_details.last_update += time_passed;
                 }
-                res_production = mines.level_details.find(ld => ld.level == (player_mines.downgrade == 0 ? player_mines.level + 1 : player_mines.level - 1)).production;
-                player_details.last_update += time_passed;
+            }
+            for (var j = 0; j < resources.length; j++) {
+                var calc_player_res = player_details[resources[j]] + ((generated_resources.length > 1 ? generated_resources[j] : 0) + (res_production[resources[j]] === undefined ? 0 : res_production[resources[j]]) * (update_timestamp - player_details.last_update));
+                if (storage[resources[j]] !== undefined && calc_player_res > storage[resources[j]]) {
+                    calc_player_res = storage[resources[j]];
+                }
+                set_to += resources[j] + ' = ' + calc_player_res + ' , ';
+            }
+            
+            if (!Array.isArray(resources)) {
+                resources = resources.split(', ');
+            }
+            
+            set_to += 'res_last_update = ?';
+
+            query = "UPDATE players SET " + set_to + " WHERE player_id = ?";
+            await this.execute_query(query, [update_timestamp, player_details.player_id]);
+            if (storage_upgraded) {
+                player_details.last_update = update_timestamp;
+                update_timestamp = timestamp;
+                var upgr_stg_lvl_detail = storage_bld.level_details.find(lvl_detail => lvl_detail.level == player_storage.level + 1)
+                storage = upgr_stg_lvl_detail.storage;
             }
         }
-
-        var player_storage = await this.get_player_building_details(username, 4, update_storage);
-        var storage_details = (await this.get_building_details([player_storage]))[0];
-        var storage = storage_details.level_details.find(lvl_detail => lvl_detail.level == player_storage.level).storage;
-        for (var i = 0; i < resources.length; i++) {
-            var calc_player_res = player_details[resources[i]] + ((generated_resources.length > 1 ? generated_resources[i] : 0) + (res_production[resources[i]] === undefined ? 0 : res_production[resources[i]]) * (timestamp - player_details.last_update));
-            if (calc_player_res > storage[resources[i]]) {
-                calc_player_res = storage[resources[i]];
-            }
-            set_to += resources[i] + ' = ' + calc_player_res + ' , ';
-        }
-        
-        if (!Array.isArray(resources)) {
-            resources = resources.split(', ');
-        }
-        
-        set_to += 'res_last_update = ?';
-
-        query = "UPDATE players SET " + set_to + " WHERE player_id = ?";
-        await this.execute_query(query, [timestamp, player_details.player_id]);
     }
 
     /**
@@ -221,7 +250,6 @@ module.exports = class DbManager {
             query = `UPDATE player_buildings pb 
             INNER JOIN players p ON p.player_id = pb.player_id
             SET `;
-
             for (const resource in bld_lvl_details.upgrade_cost) {
                 if (resource == 'pop') {
                     query += `p.reserved_${resource} = p.reserved_${resource} - ${bld_lvl_details.upgrade_cost[resource]},`;
@@ -232,6 +260,8 @@ module.exports = class DbManager {
             query += `pb.update_start = NULL
             WHERE p.player_id = ? AND pb.building_id = ? AND pb.level = ? AND pb.update_start IS NOT NULL`;
             await this.execute_query(query, [results[0].player_id, building_id, results[0].level]);
+            //since resources have been added after cancelling building upgrade, update_resource ensures the added resources do not go over storage cap (they cut them off if they do)
+            await this.update_resource(username);
             if (results[0].level == 0) {
                 return this.execute_query('DELETE FROM player_buildings WHERE player_id = ? AND building_id = ?', [results[0].player_id, building_id]);
             }
@@ -350,17 +380,14 @@ module.exports = class DbManager {
 
             var time_left = results[i].update_start + buildings[b_index].level_details[l_index].upgrade_time - await utils.get_timestamp();
             if (time_left <= 0) {
-                if (buildings[b_index].building_id === 2 && update_resources) {
-                    await this.update_resource(username, time_left, results[i].level, results[i].downgrade);
+                if ((buildings[b_index].building_id === 2 || buildings[b_index].building_id === 4) && update_resources) {
+                    await this.update_resource(username, results[i].building_id, results[i].level, results[i].downgrade);
                 }
                 if (results[i].downgrade == 1) {
                     if (buildings[b_index].level_details[results[i].level - results[i].downgrade] == (results[i].level - results[i].downgrade)) {
                         l_index = results[i].level;
                     } else {
                         l_index = buildings[b_index].level_details.findIndex(level_detail => level_detail.level == (results[i].level - results[i].downgrade));
-                    }
-                    if (buildings[b_index].building_id === 4) {
-                        await this.update_resource(username, undefined, undefined, undefined, false);
                     }
                     if (buildings[b_index].level_details[l_index].upgrade_cost['pop'] !== undefined) {
                         var pop_query = `UPDATE players SET reserved_pop = reserved_pop - ${buildings[b_index].level_details[l_index].upgrade_cost['pop']} WHERE player_id = ?`;
