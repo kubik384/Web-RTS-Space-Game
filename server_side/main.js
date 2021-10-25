@@ -27,9 +27,11 @@ var token_timeouts = {};
 var dbManager = new DbManager();
 var game = new Game(dbManager, io);
 const root = path.resolve('client_side');
+const game_properties = path.resolve('server_side/game_properties');
 
 app.set('port', process.env.PORT || PORT);
 app.use('/client_side', express.static(root));// Routing
+app.use('/client_side', express.static(game_properties));
 
 app.use(bodyParser.urlencoded({ extended: false }));
 
@@ -56,8 +58,17 @@ app.post('/register', function(req, res) {
 							}
 							game.get_player_so().then(so_id => {
 								query = "INSERT INTO players (username, password, system_id, space_object_id, res_last_update) VALUES ( ? , ? , ? , ? , UNIX_TIMESTAMP())";
+								var query_2 = `SELECT player_id FROM players WHERE username = ${username}`;
+								var query_3 = `INSERT INTO player_buildings VALUES 
+								(?, '1', '1', NULL, 0), 
+								(?, '2', '1', NULL, 0)`;
 								dbManager.execute_query(query, [username, hash, 1, so_id]).then(() => {
-									res.sendStatus(200);
+									dbManager.execute_query(query_2).then(results => {
+										var player_id = results[0].player_id;
+										dbManager.execute_query(query_3, [player_id,player_id]).then(() => {
+											res.sendStatus(200);
+										});
+									});
 								}).catch(err => { throw err });
 							}).catch(err => { throw err });
 						});

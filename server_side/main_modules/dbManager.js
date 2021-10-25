@@ -7,7 +7,9 @@ var all_resource_types = 'reserved_pop, metal, kerosene, hydrogen, uranium';
 var resourceTable = all_resource_types.split(', ');
 var buildings = require('./../game_properties/buildings.json');
 var units = require('./../game_properties/units.json');
+var unit_weapons = require('./../game_properties/unit_weapons.json');
 var technologies = require('./../game_properties/technologies.json');
+const e = require('cors');
 var mysql_details = process.env.PORT !== undefined ? 
 mysql_details = {
     host: "j5zntocs2dn6c3fj.chr7pe7iynqr.eu-west-1.rds.amazonaws.com",
@@ -40,7 +42,7 @@ module.exports = class DbManager {
      * @param {String} username
      * @param {Number} building_id ID of a building that is getting it's level updated. If defined, update building level doesn't get called, since it's assumed update building level function called
      * @param {Number} bld_level Level of the building (for now, is always assumed to be mines, since that's the only resource generating blding for now)
-     * @param {Number} downgrade
+     * @param {Number} downgrade 0 = building is upgrading, 1 = building is downgrading
      */
     async update_resource(username, building_id, bld_level, downgrade) {
         var timestamp = await utils.get_timestamp();
@@ -339,8 +341,8 @@ module.exports = class DbManager {
     }
 
     /**
-     * @param {String} username
-     * @param {String|Number} p_building
+     * @param {String} username player username
+     * @param {String|Number} p_building Either 'all' or a single building id
      * @param {Boolean} update_resources If a building upgrade timer is up and the building affects resource production, update_resource function gets called
      */
     async update_building_level(username, p_building, update_resources = true) {
@@ -440,8 +442,8 @@ module.exports = class DbManager {
     }
 
     /**
-     * Returns results in following format [{unit_id, name, cost, build_time}, ..]
-     * @param {Array} p_units in format [{unit_id}]
+     * Returns results in following format [{unit_id, name, cost, build_time}, ..]. Keeps the same unit order as in the received p_units array
+     * @param {Array} p_units in format [{unit_id}] or 'all' to get unit details of all units
      */
     async get_unit_details(p_units) {
         if (p_units == 'all') {
@@ -462,9 +464,30 @@ module.exports = class DbManager {
     }
 
     /**
+     * Returns results in following format [{weapon_id, name, damage, range, velocity, cooldown}, ..]. Keeps the same weapon order as in the received p_weapons array
+     * @param {Array} p_weapons in format [{weapon_id}] or 'all' to get weapon details of all weapons
+     */
+    async get_unit_weapon_details(p_weapons) {
+        if (p_weapons == 'all') {
+            return unit_weapons;
+        }
+        var weapon_details = [];
+        var w_index = -1;
+        for (var i = 0; i < p_weapons.length; i++) {
+            if (p_weapons[i].weapon_id == unit_weapons[p_weapons[i].weapon_id - 1].weapon_id) {
+                w_index = p_weapons[i].weapon_id - 1;
+            } else {
+                w_index = unit_weapons.findIndex(unit_weapon => unit_weapon.weapon_id == p_weapons[i].weapon_id);
+            }
+            weapon_details.push(unit_weapons[w_index]);
+        }
+        return(weapon_details);
+    }
+
+    /**
      * Returns results in following format [{player_id, unit_id, count]}, ..]
      * @param {string} username username of the user the data is supposed to be loaded for
-     * @param {string} p_unit Either a singular unit to get the data for or all of the unit data for the selected user
+     * @param {string} p_unit Either a singular unit name to get the data for or all of the unit data for the selected user
      */
     async get_player_units(username, p_unit) {
         var query = `SELECT pu.* 
@@ -479,44 +502,68 @@ module.exports = class DbManager {
     }
 
     async update_player_unit_que(username) {
-        var player_unit_ques = await this.get_player_unit_ques(username, 'all');
+        var player_unit_ques = await this.get_player_unit_ques(username, 'all', true);
+        var timestamp = await utils.get_timestamp();
+        var time_remainder = 0;
         for (var i = 0; i < player_unit_ques.length; i++) {
-            if (player_unit_ques[i].count == 0) {
-                continue;
-            }
-            var timestamp = await utils.get_timestamp();
-            var unit_build_time = units.find(unit => unit.unit_id == player_unit_ques[i].unit_id).build_time;
-            var created_units = Math.min(Math.floor((timestamp - player_unit_ques[i].calculated_timestamp) / unit_build_time), player_unit_ques[i].count);
+            var query;
+            var unit_details = (await this.get_unit_details([player_unit_ques[i]]))[0];
+            var unit_build_time = unit_details.build_time;
+            var created_units = Math.min(Math.floor((timestamp - player_unit_ques[i].calculated_timestamp + time_remainder) / unit_build_time), player_unit_ques[i].count);
             if (created_units < 1) {
-                continue;
-            }
-            var updated_count = player_unit_ques[i].count - created_units;
-            var time_remainder = updated_count < 1 ? 0 : (timestamp - player_unit_ques[i].calculated_timestamp) % unit_build_time;
-            
-            var query = `UPDATE player_unit_ques puq
-            INNER JOIN players p ON p.player_id = puq.player_id
-            SET 
-                puq.count = ?,
-                puq.calculated_timestamp = ?
-            WHERE p.username = ? AND puq.unit_id = ?`;
+                if (time_remainder == 0) {
+                    break;
+                } else {
+                    query = `UPDATE player_unit_ques
+                    SET calculated_timestamp = calculated_timestamp - ${time_remainder}
+                    WHERE unit_que_id = ${player_unit_ques[i].unit_que_id}`;
+                    return this.execute_query(query);
+                }
+            } else {
+                var updated_count = player_unit_ques[i].count - created_units;
+                time_remainder = (timestamp - player_unit_ques[i].calculated_timestamp + time_remainder) % unit_build_time;
+                if (updated_count > 0) {
+                    query = `UPDATE player_unit_ques
+                    SET count = ${updated_count},
+                        calculated_timestamp = ${timestamp - time_remainder}
+                    WHERE unit_que_id = ${player_unit_ques[i].unit_que_id}`;
+                } else {
+                    query = `DELETE FROM player_unit_ques puq
+                    WHERE unit_que_id = ${player_unit_ques[i]}`;
+                }
+                await this.execute_query(query);
 
-            await this.execute_query(query, [updated_count, timestamp - time_remainder, username, player_unit_ques[i].unit_id]);
-            query = `UPDATE player_units pu
-            INNER JOIN players p ON p.player_id = pu.player_id
-            SET pu.count = pu.count + ?
-            WHERE p.username = ? AND pu.unit_id = ?`;
-            return this.execute_query(query, [created_units, username, player_unit_ques[i].unit_id]);
+                query = `SELECT player_id 
+                FROM players
+                WHERE username = ?`;
+                var player_id = (await this.execute_query(query, [username]))[0].player_id;
+                query = `INSERT INTO player_units VALUES (?,?,?) 
+                ON DUPLICATE KEY UPDATE player_units pu
+                INNER JOIN players p ON p.player_id = pu.player_id
+                SET pu.count = pu.count + ?
+                WHERE p.username = ? AND pu.unit_id = ?`;
+                if (updated_count > 0 && time_remainder > 0) {
+                    return this.execute_query(query, [player_id ,player_unit_ques[i].unit_id, created_units, created_units, username, player_unit_ques[i].unit_id]);
+                } else {
+                    await this.execute_query(query, [player_id ,player_unit_ques[i].unit_id, created_units, created_units, username, player_unit_ques[i].unit_id]);
+                }
+            }
         }
     }
 
-    async get_player_unit_ques(username, p_unit) {
-        var query = `SELECT puq.unit_id, puq.count, puq.calculated_timestamp AS calculated_timestamp
+    /**
+     * 
+     * @param {String} username player name
+     * @param {Boolean} sort sorts the rows by unit_que_id
+     * @returns [{unit_que_id, unit_id, count, calculated_timestamp}]
+     */
+    async get_player_unit_ques(username, sort = false) {
+        var query = `SELECT puq.*
         FROM player_unit_ques puq
         INNER JOIN players p ON p.player_id = puq.player_id
         WHERE p.username = ?`;
-        if (p_unit != 'all') {
-            var u_index = units.findIndex(unit => unit.name == p_unit);
-            query += ' AND puq.unit_id = ' + (u_index + 1);
+        if (sort) {
+            query += ' ORDER BY puq.unit_que_id';
         }
         return this.execute_query(query, [username]);
     }
@@ -597,7 +644,11 @@ module.exports = class DbManager {
         var units_building_level_details = buildings.find(building => building.building_id == p_units_building.building_id).level_details
         var allowed_units = units_building_level_details.find(level_detail => level_detail.level == p_units_building.level).units;
         var updated_player_resources = Object.assign({}, player_resources);
-        var query = 'UPDATE players SET ';
+        var query = `SELECT player_id 
+        FROM players
+        WHERE username = ?`;
+        var player_id = (await this.execute_query(query, [username]))[0].player_id;
+        query = 'UPDATE players SET ';
         for (var i = 0; i < p_units.length; i++) {
             var u_index = units.findIndex(unit => unit.unit_id == p_units[i].unit_id);
             for (var resource in units[u_index].cost) {
@@ -626,18 +677,14 @@ module.exports = class DbManager {
                 query += `${resource} = ${resource} - ${units_cost}, `;
             }
         }
-
         await this.update_player_unit_que(username);
         //remove the ", " part
-        query = query.slice(0, query.length - 2) + ' WHERE username = ?';
-        await this.execute_query(query, [username]);
+        query = query.slice(0, query.length - 2) + ' WHERE player_id = ?';
+        await this.execute_query(query, [player_id]);
         var promises = [];
         for (var i = 0; i < p_units.length; i++) {
-            query = `UPDATE player_unit_ques puq
-            INNER JOIN players p ON p.player_id = puq.player_id
-            SET puq.count = puq.count + ?, puq.calculated_timestamp = IF (puq.count = 0, UNIX_TIMESTAMP(), puq.calculated_timestamp)
-            WHERE p.username = ? AND puq.unit_id = ?`;
-            promises.push(this.execute_query(query, [p_units[i].count, username, p_units[i].unit_id]));
+            query = `INSERT INTO player_unit_ques VALUES (?,?,?,UNIX_TIMESTAMP())`;
+            promises.push(this.execute_query(query, [player_id, p_units[i].unit_id, p_units[i].count, p_units[i].count, player_id, p_units[i].unit_id]));
         }
         await Promise.all(promises);
     }

@@ -2,20 +2,196 @@
     {
         "unit_id": 1,
         "name": "Fighter",
+        "description": "A simple light-armored fast-moving ship with a single rotatable low-energy lasers positioned at the bottom of it's construction. Due to it's compact size, Fighter is incapable of travelling longer distances, making them reliant on carrier type ships for space travelling purposes",
         "cost": {
-            "metal": 1
+            "metal": 20
         },
-        "build_time": 10,
-        "capacity": 4,
-        "hull": 40,
+        "build_time": 100,
+        "capacity": 0,
+        "hull": 15,
         "shield": 1,
+        "mobility": 250,
         "weapons": [
-            {"count": 1, "damage": 15}
+            {"weapon_id": 1, "count": 1}
         ]
     },
     {
         "unit_id": 2,
+        "name": "Heavy Fighter",
+        "description": "Heavier armored with size roughly one and a half times that of a Fighter. While the size combined with the decreased mobility makes it an easier target compared to the regular Fighter, the weaponry of the ship makes up for it with it's doubled fire power of two rotatable low-energy lasers positioned at the top and bottom of the ship. Heavy Fighter can also withstand getting hit thanks to the added armor. Just like the Fighter, it is reliant on carrier type ships to enable space travelling",
+        "cost": {
+            "metal": 50
+        },
+        "build_time": 120,
+        "capacity": 0,
+        "hull": 25,
+        "shield": 5,
+        "mobility": 210,
+        "weapons": [
+            {"weapon_id": 1, "count": 2}
+        ]
+    },
+    {
+        "unit_id": 3,
+        "name": "Corvette",
+        "description": "Light-armored ship which is about three times that of a Heavy Fighter. It's main purpose is dealing with Fighter-class ships. For this, the ship is equipped with one medium-energy laser and five low-energy lasers. It mainly relies on it's powerful shield that protects it from low-energy weapons.",
+        "cost": {
+            "metal": 170
+        },
+        "build_time": 120,
+        "capacity": 10,
+        "hull": 30,
+        "shield": 60,
+        "mobility": 160,
+        "weapons": [
+            {"weapon_id": 1, "count": 5},
+            {"weapon_id": 2, "count": 1}
+        ]
+    },
+    {
+        "unit_id": 4,
         "name": "Cruiser",
+        "description": "Medium-armored ship about four thirds the size of a Corvette. The ship is armed with two ligh-energy and four medium-energy lasers. It's capable shields and strong armor makes the ship able to easily deal with Fighters and Corvettes",
+        "cost": {
+            "metal": 230
+        },
+        "build_time": 120,
+        "capacity": 20,
+        "hull": 60,
+        "shield": 75,
+        "mobility": 120,
+        "weapons": [
+            {"weapon_id": 1, "count": 2},
+            {"weapon_id": 2, "count": 4}
+        ]
+    },
+    {
+        "unit_id": 5,
+        "name": "Monitor",
+        "description": "Light-armored ship barely bigger than a Cruiser. The ship is equipped with a single high-energy laser and very powerful propulsion engines which give the ship amazing maneuverability and mobility rivaling that of a Heavy Fighter. While vulnerable due to it's poor armor and relatively weak shields, the ship is capable of keeping distance with most ships. This allows the Monitor to gain enough time to dodge laser shots, while delivering powerful blows of it's own, which are capable of seriously damaging even heavily armored ships",
+        "cost": {
+            "metal": 3
+        },
+        "build_time": 120,
+        "capacity": 5,
+        "hull": 20,
+        "shield": 20,
+        "mobility": 190,
+        "weapons": [
+            {"weapon_id": 1, "count": 2},
+            {"weapon_id": 3, "count": 1}
+        ]
+    },
+    {
+        "unit_id": 6,
+        "name": "Frigate",
+        "description": "Well-armored ship, good weaponry capable of taking down a Monitor",
+        "cost": {
+            "metal": 3
+        },
+        "build_time": 120,
+        "capacity": 6,
+        "hull": 100,
+        "shield": 100,
+        "mobility": 110,
+        "weapons": [
+            {"weapon_id": 2, "count": 4},
+            {"weapon_id": 3, "count": 3}
+        ]
+    },
+    {
+        "unit_id": 7,
+        "name": "Battleship",
+        "description": "Heavily-armored ship, weaponry meant for dealing with Frigates and Monitors",
+        "cost": {
+            "metal": 3
+        },
+        "build_time": 120,
+        "capacity": 6,
+        "hull": 300,
+        "shield": 150,
+        "mobility": 90,
+        "weapons": [
+            {"weapon_id": 3, "count": 3},
+            {"weapon_id": 4, "count": 1},
+            {"weapon_id": 5, "count": 1}
+        ]
+    },
+    {
+        "unit_id": 7,
+        "name": "Battle Cruiser",
+        "description": "Light-armored ship, weaponry meant to outrange and outspeed both Battleship and Frigate, while Monitors are capable of closing distance",
+        "cost": {
+            "metal": 3
+        },
+        "build_time": 120,
+        "capacity": 6,
+        "hull": 150,
+        "shield": 150,
+        "mobility": 140,
+        "weapons": [
+            {"weapon_id": 6, "count": 2}
+        ]
+    },
+    {
+        "unit_id": 8,
+        "name": "Carrier",
+        "description": "Ligh-armored, very poor weaponry for self-defense, enables space travel of Heavy and regular Fighters, slow (speed also depends on how full it is) (140 -> 90)",
+        "cost": {
+            "metal": 3
+        },
+        "build_time": 120,
+        "capacity": 6,
+        "hull": 100,
+        "shield": 10,
+        "mobility": 140,
+        "weapons": [
+            {"weapon_id": 2, "count": 4}
+        ],
+        "ship_capacity": 200
+    },
+    {
+        "unit_id": 9,
+        "name": "Dreadnaught",
+        "description": "Moving fortress able to withstand heavy punishment, weaponry meant for mass destruction",
+        "cost": {
+            "metal": 3
+        },
+        "build_time": 120,
+        "capacity": 6,
+        "hull": 500,
+        "shield": 750,
+        "mobility": 70,
+        "weapons": [
+            {"weapon_id": 2, "count": 24},
+            {"weapon_id": 3, "count": 10},
+            {"weapon_id": 4, "count": 2},
+            {"weapon_id": 5, "count": 2},
+            {"weapon_id": 6, "count": 4},
+            {"weapon_id": 7, "count": 1}
+        ]
+    },
+    {
+        "unit_id": 10,
+        "name": "Destroyer",
+        "description": "Light-armored ship, slow, longest range",
+        "cost": {
+            "metal": 3
+        },
+        "build_time": 120,
+        "capacity": 6,
+        "hull": 300,
+        "shield": 400,
+        "mobility": 110,
+        "weapons": [
+            {"weapon_id": 7, "count": 2},
+            {"weapon_id": 8, "count": 1}
+        ]
+    },
+    {
+        "unit_id": 11,
+        "name": "Demolition Ship",
+        "description": "",
         "cost": {
             "metal": 3
         },
@@ -24,7 +200,148 @@
         "hull": 100,
         "shield": 10,
         "weapons": [
-            {"count": 2, "damage": 15}
+            {"weapon_id": 9, "count": 1}
+        ]
+    },
+    {
+        "unit_id": 12,
+        "name": "Heavy Demolition Ship",
+        "description": "",
+        "cost": {
+            "metal": 3
+        },
+        "build_time": 120,
+        "capacity": 6,
+        "hull": 100,
+        "shield": 10,
+        "weapons": [
+            {"weapon_id": 10, "count": 1}
+        ]
+    },
+    {
+        "unit_id": 13,
+        "name": "Transporter",
+        "description": "",
+        "cost": {
+            "metal": 3
+        },
+        "build_time": 120,
+        "capacity": 6,
+        "hull": 100,
+        "shield": 10,
+        "weapons": [
+        ]
+    },
+    {
+        "unit_id": 14,
+        "name": "Heavy Transporter",
+        "description": "",
+        "cost": {
+            "metal": 3
+        },
+        "build_time": 120,
+        "capacity": 6,
+        "hull": 100,
+        "shield": 10,
+        "weapons": [
+        ]
+    },
+    {
+        "unit_id": 15,
+        "name": "Miner",
+        "description": "",
+        "cost": {
+            "metal": 3
+        },
+        "build_time": 120,
+        "capacity": 6,
+        "hull": 100,
+        "shield": 10,
+        "weapons": [
+        ]
+    },
+    {
+        "unit_id": 16,
+        "name": "Heavy Miner",
+        "description": "",
+        "cost": {
+            "metal": 3
+        },
+        "build_time": 120,
+        "capacity": 6,
+        "hull": 100,
+        "shield": 10,
+        "weapons": [
+        ]
+    },
+    {
+        "unit_id": 17,
+        "name": "Recycler",
+        "description": "",
+        "cost": {
+            "metal": 3
+        },
+        "build_time": 120,
+        "capacity": 6,
+        "hull": 100,
+        "shield": 10,
+        "weapons": [
+        ]
+    },
+    {
+        "unit_id": 18,
+        "name": "Heavy Recycler",
+        "description": "",
+        "cost": {
+            "metal": 3
+        },
+        "build_time": 120,
+        "capacity": 6,
+        "hull": 100,
+        "shield": 10,
+        "weapons": [
+        ]
+    },
+    {
+        "unit_id": 19,
+        "name": "Shipwright",
+        "description": "",
+        "cost": {
+            "metal": 3
+        },
+        "build_time": 120,
+        "capacity": 6,
+        "hull": 100,
+        "shield": 10,
+        "weapons": [
+        ]
+    },
+    {
+        "unit_id": 20,
+        "name": "Armored Shipwright",
+        "description": "",
+        "cost": {
+            "metal": 3
+        },
+        "build_time": 120,
+        "capacity": 6,
+        "hull": 100,
+        "shield": 10,
+        "weapons": [
+        ]
+    },
+    {
+        "unit_id": 21,
+        "name": "Probe",
+        "description": "",
+        "cost": {
+            "metal": 3
+        },
+        "build_time": 120,
+        "capacity": 6,
+        "hull": 100,
+        "shield": 10,
+        "weapons": [
         ]
     }
 ]

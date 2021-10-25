@@ -40,8 +40,12 @@ module.exports = class Vector {
 	    return new Vector(this.x/length, this.y/length);
     }
 
+    async square_length() {
+        return (this.x*this.x + this.y*this.y);
+    }
+
     async length() {
-        return Math.sqrt(this.x*this.x + this.y*this.y);
+        return Math.sqrt(await this.square_length());
     }
 
     async multiply(a, b) {

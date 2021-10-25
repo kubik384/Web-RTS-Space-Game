@@ -30,6 +30,7 @@ class Game extends Base_Page {
         this.fleet_name_spacing = 8;
         this.fleet_size = 4;
         this.assigning_objects = {last_selected_index: -1, objects: []};
+        this.selecting_objects = {last_selected_index: -1, objects: []};
         this.debug_clicked = 0;
         
         const query_string = window.location.search;
@@ -313,35 +314,36 @@ class Game extends Base_Page {
             });
 
             this.map_canvas.addEventListener('mouseup', e => {
+                /*
+                var cursor = {button_code: button_code, x:x, y:y};
+                var object = await this.check_position(cursor);
+                if (object !== undefined) {
+                    this.socket.emit('assign_fleet', object.object_type, object.object_id);
+                } else {
+                    this.socket.emit('set_movepoint', x, y);
+                }
+                */
+
                 if (e.button == 0) {
-                    var cursor = {};
+                    var cursor = {button_code: 0};
                     cursor.x = (e.clientX - this.xOffset - this.map_rect.left/* - this.map_canvas_border*/)/this.zoom;
                     cursor.y = (e.clientY - this.yOffset - this.map_rect.top/* - this.map_canvas_border*/)/this.zoom;
-                    var update = this.updates[0];
-                    var fleets = update.fleets;
-                    for (var i = 0; i < fleets.length; i++) {
-                        var fleet_name = this.get_fleet_name(fleets[i]);
-                        this.map_ctx.font = this.calc_fleet_name_font_size() + "px Arial";
-                        var metrics = this.map_ctx.measureText(fleet_name);
-                        var fleet_name_width = metrics.width/this.zoom;
-                        var fleet_name_height = (metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent)/this.zoom;
-                        var fleet_rect = {};
-                        fleet_rect.x1 = (fleets[i].last_x - fleet_name_width/2);
-                        fleet_rect.x2 = (fleets[i].last_x + fleet_name_width/2);
-                        fleet_rect.y1 = (fleets[i].last_y - fleet_name_height/2 - this.fleet_name_spacing);
-                        fleet_rect.y2 = (fleets[i].last_y + fleet_name_height/2);
-                        if (utils.isInsideObjects(cursor, [fleet_rect], this.calc_padding(5))) {
-                            var distance_travelled = Math.pow(this.dist_travelled.x, 2) + Math.pow(this.dist_travelled.y, 2);
-                            if (distance_travelled < 80) {
+                    this.check_position(cursor, true).then(object => {
+                        if (object !== undefined && object.type == 'fleet') {
+                            var mouse_pow_dist_travelled = Math.pow(this.dist_travelled.x, 2) + Math.pow(this.dist_travelled.y, 2);
+                            if (mouse_pow_dist_travelled < 80) {
+                                var fleets = this.updates[0].fleets;
+                                var f_index = fleets.findIndex(fleet => fleet.fleet_id == object.id);
+                                var fleet = fleets[f_index];
                                 var fleet_name = document.getElementById('fleet_name');
-                                fleet_name.textContent = this.get_fleet_name(fleets[i]);
+                                fleet_name.textContent = this.get_fleet_name(fleet);
                                 var table = document.getElementById('fleet_units_table');
                                 var new_tbody = document.createElement('tbody');
                                 table.getElementsByTagName('tbody')[0].remove();
                                 var new_tbody = document.createElement('tbody');
                                 var type_cell = document.getElementById('fleet_type_cell');
                                 var number_cell = document.getElementById('fleet_number_cell');
-                                if (fleets[i].abandoned !== undefined) {
+                                if (fleet.abandoned !== undefined) {
                                     type_cell.textContent = 'Resource';
                                     number_cell.textContent = 'Amount';
                                     var row = new_tbody.insertRow(-1);
@@ -349,34 +351,33 @@ class Game extends Base_Page {
                                     var resource = row.insertCell(-1);
                                     var amount = row.insertCell(-1);
                                     var resource_img = document.createElement('img');
-                                    resource_img.setAttribute('src','/client_side/images/resources/metals.png');
+                                    resource_img.setAttribute('src','/client_side/images/resources/metal.png');
                                     img.classList.add('img_cell');
                                     img.append(resource_img);
                                     resource.textContent = 'Metal';
-                                    amount.textContent = fleets[i].resources;
+                                    amount.textContent = fleet.resources;
                                 } else {
                                     type_cell.textContent = 'Unit';
                                     number_cell.textContent = 'Count';
-                                    for (var j = 0; j < fleets[i].units.length; j++) {
+                                    for (var j = 0; j < fleet.units.length; j++) {
                                         var row = new_tbody.insertRow(-1);
                                         var img = row.insertCell(-1);
                                         var unit = row.insertCell(-1);
                                         var count = row.insertCell(-1);
                                         var unit_img = document.createElement('img');
-                                        unit_img.setAttribute('src','/client_side/images/units/' + fleets[i].units[j].name.toLowerCase() + '.png');
+                                        unit_img.setAttribute('src','/client_side/images/units/' + fleet.units[j].name.toLowerCase() + '.png');
                                         img.classList.add('img_cell');
                                         img.append(unit_img);
-                                        unit.textContent = fleets[i].units[j].name;
-                                        count.textContent = fleets[i].units[j].count;
+                                        unit.textContent = fleet.units[j].name;
+                                        count.textContent = fleet.units[j].count;
                                     }
                                 }
                                 table.append(new_tbody);
                             }
                             document.getElementById('fleet_details').removeAttribute('style');
                             document.getElementById('fd_expand_button').style.display = "none";
-                            break;
                         }
-                    }
+                    });
                 }
             });
 
@@ -621,91 +622,11 @@ class Game extends Base_Page {
 
     async generate_movepoint(x, y) {
         if (this.controlled_fleet_index !== undefined && this.updates[0].fleets[this.controlled_fleet_index].engaged_fleet_id === undefined && this.updates[0].fleets[this.controlled_fleet_index].abandon_timer === undefined && this.updates[0].fleets[this.controlled_fleet_index].expedition_timer === undefined) {
-            var assigning_objects = [];
-            var cursor = {x:x, y:y};
-            var fleets = this.updates[0].fleets;
-            for (var i = 0; i < fleets.length; i++) {
-                if (this.controlled_fleet_index != i) {
-                    var objects = [];
-                    var fleet_name = this.get_fleet_name(fleets[i]);
-                    this.map_ctx.font = this.calc_fleet_name_font_size() + "px Arial";
-                    var metrics = this.map_ctx.measureText(fleet_name);
-                    var fleet_name_width = metrics.width/this.zoom;
-                    var fleet_name_height = (metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent)/this.zoom;
-                    var text_rect = {};
-                    text_rect.x1 = (fleets[i].last_x - fleet_name_width/2);
-                    text_rect.x2 = (fleets[i].last_x + fleet_name_width/2);
-                    text_rect.y1 = (fleets[i].last_y - (this.fleet_size/2 + this.fleet_name_spacing + fleet_name_height/2));
-                    text_rect.y2 = (fleets[i].last_y - (this.fleet_size/2 + this.fleet_name_spacing - fleet_name_height/2));
-                    objects.push(text_rect);
-                    var fleet_rect = {};
-                    fleet_rect.x1 = (fleets[i].last_x - this.fleet_size/2);
-                    fleet_rect.x2 = (fleets[i].last_x + this.fleet_size/2);
-                    fleet_rect.y1 = (fleets[i].last_y - this.fleet_size/2);
-                    fleet_rect.y2 = (fleets[i].last_y + this.fleet_size/2);
-                    objects.push(fleet_rect);
-                    if (utils.isInsideObjects(cursor, objects, 0)) {
-                        assigning_objects.push({type: 'fleet', id: fleets[i].fleet_id});
-                    }
-                }
-            }
-
-            var space_objects = this.updates[0].space_objects;
-            for (var i = 0; i < space_objects.length; i++) {
-                var objects = [];
-                var object_name = this.get_object_name(space_objects[i]);
-                this.map_ctx.font = this.calc_object_name_font_size(space_objects[i]) + "px Arial";
-                var metrics = this.map_ctx.measureText(object_name);
-                var object_name_height = (metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent)/this.zoom;
-                if (object_name_height > space_objects[i].height/3) {
-                    var object_name_width = metrics.width/this.zoom;
-                    var object_name_spacing = this.calc_so_name_spacing(space_objects[i]);
-                    var text_rect = {};
-                    text_rect.x1 = (space_objects[i].x - object_name_width/2);
-                    text_rect.x2 = (space_objects[i].x + object_name_width/2);
-                    text_rect.y1 = (space_objects[i].y - (space_objects[i].height/2 + object_name_spacing + object_name_height/2));
-                    text_rect.y2 = (space_objects[i].y - (space_objects[i].height/2 + object_name_spacing - object_name_height/2));
-                    objects.push(text_rect);
-                }
-                var object_rect = {};
-                object_rect.x1 = (space_objects[i].x - space_objects[i].width/2);
-                object_rect.x2 = (space_objects[i].x + space_objects[i].width/2);
-                object_rect.y1 = (space_objects[i].y - space_objects[i].height/2);
-                object_rect.y2 = (space_objects[i].y + space_objects[i].height/2);
-                objects.push(object_rect);
-                if (utils.isInsideObjects(cursor, objects, 0)) {
-                    assigning_objects.push({type: 'space_object', id: space_objects[i].space_object_id});
-                }
-            }
-
-            if (assigning_objects.length > 0) {
-                for (var i = this.assigning_objects.objects.length - 1; i >= 0; i--) {
-                    var found = false;
-                    for (var j = assigning_objects.length - 1; j >= 0; j--) {
-                        if (assigning_objects[j].type == this.assigning_objects.objects[i].type && assigning_objects[j].id == this.assigning_objects.objects[i].id) {
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (found) {
-                        assigning_objects.splice(j,1);
-                    } else {
-                        if (this.assigning_objects.last_selected_index >= i) {
-                            this.assigning_objects.last_selected_index--;
-                        }
-                        this.assigning_objects.objects.splice(i,1);
-                    }
-                }
-                this.assigning_objects.objects = this.assigning_objects.objects.concat(assigning_objects);
-                if (++this.assigning_objects.last_selected_index == this.assigning_objects.objects.length) {
-                    this.assigning_objects.last_selected_index--;
-                    this.socket.emit('set_movepoint', x, y);
-                } else {
-                    this.socket.emit('assign_fleet', this.assigning_objects.objects[this.assigning_objects.last_selected_index].type, this.assigning_objects.objects[this.assigning_objects.last_selected_index].id);
-                }
+            var cursor = {button_code: 1, x:x, y:y};
+            var object = await this.check_position(cursor);
+            if (object !== undefined && (object.type != 'fleet' || object.id != this.controlled_fleet_index)) {
+                this.socket.emit('assign_fleet', object.type, object.id);
             } else {
-                this.assigning_objects.objects = [];
-                this.assigning_objects.last_selected_index = -1;
                 this.socket.emit('set_movepoint', x, y);
             }
         }
@@ -934,6 +855,109 @@ class Game extends Base_Page {
     calc_object_name_font_size(object) {
         var font_size = object.width/10 * this.zoom;
         return (font_size < 16 ? 16 : font_size);
+    }
+    
+    /**
+     * Iterates through fleets and space objects and either returns an object that's on the selected position (unless the object has been selected with the same button_code before, in which case it gets ignored until a position check is called on a position without the object) or undefined
+     * @param {Object} cursor {x,y,button_code}
+     * @param {Boolean} repeat If set to true, instead of returning undefined when running out of all the repeatedly selected objects, start returning objects from the start again
+     * @returns {Object} {type: 'fleet'|'space_object', id}
+     */
+    async check_position(cursor, repeat = false) {
+        var objects_on_position = [];
+        var pvy_selected_objects;
+        //0 = left click, 1 = right click
+        if (cursor.button_code == 1) {
+            pvy_selected_objects = this.assigning_objects;
+        } else {
+            pvy_selected_objects = this.selecting_objects;
+        }
+        var fleets = this.updates[0].fleets;
+        for (var i = 0; i < fleets.length; i++) {
+            var objects = [];
+            var fleet_name = this.get_fleet_name(fleets[i]);
+            this.map_ctx.font = this.calc_fleet_name_font_size() + "px Arial";
+            var metrics = this.map_ctx.measureText(fleet_name);
+            var fleet_name_width = metrics.width/this.zoom;
+            var fleet_name_height = (metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent)/this.zoom;
+            var text_rect = {};
+            text_rect.x1 = (fleets[i].last_x - fleet_name_width/2);
+            text_rect.x2 = (fleets[i].last_x + fleet_name_width/2);
+            text_rect.y1 = (fleets[i].last_y - (this.fleet_size/2 + this.fleet_name_spacing + fleet_name_height/2));
+            text_rect.y2 = (fleets[i].last_y - (this.fleet_size/2 + this.fleet_name_spacing - fleet_name_height/2));
+            objects.push(text_rect);
+            var fleet_rect = {};
+            fleet_rect.x1 = (fleets[i].last_x - this.fleet_size/2);
+            fleet_rect.x2 = (fleets[i].last_x + this.fleet_size/2);
+            fleet_rect.y1 = (fleets[i].last_y - this.fleet_size/2);
+            fleet_rect.y2 = (fleets[i].last_y + this.fleet_size/2);
+            objects.push(fleet_rect);
+            if (utils.isInsideObjects(cursor, objects, 5)) {
+                objects_on_position.push({type: 'fleet', id: fleets[i].fleet_id});
+            }
+        }
+
+        var space_objects = this.updates[0].space_objects;
+        for (var i = 0; i < space_objects.length; i++) {
+            var objects = [];
+            var object_name = this.get_object_name(space_objects[i]);
+            this.map_ctx.font = this.calc_object_name_font_size(space_objects[i]) + "px Arial";
+            var metrics = this.map_ctx.measureText(object_name);
+            var object_name_height = (metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent)/this.zoom;
+            if (object_name_height > space_objects[i].height/3) {
+                var object_name_width = metrics.width/this.zoom;
+                var object_name_spacing = this.calc_so_name_spacing(space_objects[i]);
+                var text_rect = {};
+                text_rect.x1 = (space_objects[i].x - object_name_width/2);
+                text_rect.x2 = (space_objects[i].x + object_name_width/2);
+                text_rect.y1 = (space_objects[i].y - (space_objects[i].height/2 + object_name_spacing + object_name_height/2));
+                text_rect.y2 = (space_objects[i].y - (space_objects[i].height/2 + object_name_spacing - object_name_height/2));
+                objects.push(text_rect);
+            }
+            var object_rect = {};
+            object_rect.x1 = (space_objects[i].x - space_objects[i].width/2);
+            object_rect.x2 = (space_objects[i].x + space_objects[i].width/2);
+            object_rect.y1 = (space_objects[i].y - space_objects[i].height/2);
+            object_rect.y2 = (space_objects[i].y + space_objects[i].height/2);
+            objects.push(object_rect);
+            if (utils.isInsideObjects(cursor, objects, 0)) {
+                objects_on_position.push({type: 'space_object', id: space_objects[i].space_object_id});
+            }
+        }
+
+        if (objects_on_position.length > 0) {
+            for (var i = pvy_selected_objects.objects.length - 1; i >= 0; i--) {
+                var found = false;
+                for (var j = objects_on_position.length - 1; j >= 0; j--) {
+                    if (objects_on_position[j].type == pvy_selected_objects.objects[i].type && objects_on_position[j].id == pvy_selected_objects.objects[i].id) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) {
+                    objects_on_position.splice(j,1);
+                } else {
+                    if (pvy_selected_objects.last_selected_index >= i) {
+                        pvy_selected_objects.last_selected_index--;
+                    }
+                    pvy_selected_objects.objects.splice(i,1);
+                }
+            }
+            pvy_selected_objects.objects = pvy_selected_objects.objects.concat(objects_on_position);
+            if (pvy_selected_objects.last_selected_index + 1 == pvy_selected_objects.objects.length) {
+                if (repeat) {
+                    pvy_selected_objects.last_selected_index = -1;
+                } else {
+                    return;
+                }
+            }
+            pvy_selected_objects.last_selected_index++;
+            return({type: pvy_selected_objects.objects[pvy_selected_objects.last_selected_index].type, id: pvy_selected_objects.objects[pvy_selected_objects.last_selected_index].id});
+        } else {
+            pvy_selected_objects.objects = [];
+            pvy_selected_objects.last_selected_index = -1;
+            return;
+        }
     }
 }
 

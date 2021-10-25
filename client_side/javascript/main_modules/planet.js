@@ -4,6 +4,10 @@ import { Utils } from '../misc_modules/utils.js';
 import { Base_Page } from './base_page.js';
 var utils = new Utils();
 
+var units_details;
+fetch('/client_side/units.json')
+  .then(response => { units_details = response.json() });
+
 class Game extends Base_Page {
     constructor(socket) {
         super();
@@ -16,6 +20,7 @@ class Game extends Base_Page {
         this.units;
         this.unit_ques;
         this.fetched_buildings = {};
+        this.removed_unit_ques = [];
 
         /*
         this.planet_map_canvas;
@@ -143,6 +148,7 @@ class Game extends Base_Page {
         document.getElementById('resource_building_ui').innerHTML = resource_building_ui_html;
         document.getElementById('button_menu').innerHTML = button_menu_html;
 
+        units_details = await units_details;
         this.units = datapack.units;
         var units_building = this.buildings.find(b => b.building_id == 3);
         if (units_building !== undefined) {
@@ -215,7 +221,9 @@ class Game extends Base_Page {
         units_table_html += '</tbody></table>';
         document.getElementById('units_wrapper').innerHTML = units_table_html;
 
-        this.unit_ques = datapack.unit_ques;
+        this.unit_ques = datapack.unit_ques.sort((a,b) => a.unit_que_id - b.unit_que_id);
+        //TODO: if there is no unit_ques in the db from the player, curr_unit_que_id cannot be known. Also, setting up another unit que, the unit quie id will be probably different already from FE, since BE will have probably created another unit_ques for other players, increasing the id, which will now no longer match with FE -> synch somehow? Or just leave it to go from 0, since it doesn't matter if ids match, only the order should match?
+        this.curr_unit_que_id = this.unit_ques[0] !== undefined ? this.unit_ques[this.unit_ques.length - 1].unit_que_id : 0;
         var units_que_table_html = `
         <table id="units_que_table">
             <thead>
@@ -233,19 +241,19 @@ class Game extends Base_Page {
             </thead>
             <tbody>`;
         for (var i = 0; i < this.unit_ques.length; i++) {
-            var uq_index = this.units.findIndex(unit => unit.unit_id == this.unit_ques[i].unit_id);
-            var timeLeft = this.units[uq_index].build_time * this.unit_ques[i].count - (await utils.get_timestamp() - this.unit_ques[i].calculated_timestamp);
+            var ud_index = units_details.findIndex(unit_details => unit_details.unit_id == this.unit_ques[i].unit_id);
+            var timeLeft = units_details[ud_index].build_time * this.unit_ques[i].count;
             units_que_table_html += `
-            <tr id="unit_que_row_${this.units[uq_index].unit_id}" style="display: ${this.unit_ques[i].count == 0 ? 'none' : 'table-row'}">
+            <tr id="unit_que_row_${this.unit_ques[i].unit_que_id}">
                 <td>
-                    <img src="/client_side/images/units/${this.units[uq_index].name.toLowerCase()}.png" height="15px"></img>
-                    <span>${this.units[uq_index].name}</span>
+                    <img src="/client_side/images/units/${units_details[ud_index].name.toLowerCase()}.png" height="15px"></img>
+                    <span>${units_details[ud_index].name}</span>
                 </td>
                 <td>
                     <span class="count">${this.unit_ques[i].count}</span>
                 </td>
                 <td>
-                    <span class="timeLeft">${timeLeft > 0 ? await utils.seconds_to_time(timeLeft) : 0}</span>
+                    <span class="timeLeft">${timeLeft}</span>
                 </td>
             </tr>`;
         }
@@ -603,15 +611,33 @@ class Game extends Base_Page {
                 break;
             }
         }
-
         if (sufficient_resources && units.length > 0) {
             var timestamp = await utils.get_timestamp();
             for (var i = 0; i < units.length; i++) {
-                var uq_index = this.unit_ques.findIndex(unit_que => unit_que.unit_id == units[i].unit_id);
-                if (this.unit_ques[uq_index].count == 0) {
-                    this.unit_ques[uq_index].calculated_timestamp = timestamp;
-                }
-                this.unit_ques[uq_index].count += parseInt(units[i].count);
+                var unit_que = await this.generate_unit_que(units[i], timestamp);
+                var u_index = this.units.findIndex(unit => unit.unit_id == units[i].unit_id);
+                var unit_details = this.units[u_index];
+                var timeLeft = unit_details.build_time * units[i].count;
+                var uq_table = document.getElementById('units_que_table');
+                var uq_row = uq_table.insertRow();
+                uq_row.setAttribute('id','unit_que_row_' + unit_que.unit_que_id);
+                var uq_img_cell = uq_row.insertCell();
+                var unit_img = document.createElement("img");
+                unit_img.setAttribute('src','/client_side/images/units/' + unit_details.name + '.png');
+                unit_img.setAttribute('height','15px');
+                var name_span = document.createElement("span");
+                name_span.append(unit_details.name);
+                uq_img_cell.append(unit_img, name_span);
+                var uq_count_cell = uq_row.insertCell();
+                var count_span = document.createElement("span");
+                count_span.classList.add('count');
+                count_span.append(units[i].count);
+                uq_count_cell.append(count_span);
+                var uq_timeLeft_cell = uq_row.insertCell();
+                var timeLeft_span = document.createElement("span");
+                timeLeft_span.classList.add('timeLeft');
+                timeLeft_span.append(timeLeft);
+                uq_timeLeft_cell.append(timeLeft_span);
             }
             this.resources = remaining_resources;
             this.update_resource_ui();
@@ -669,44 +695,54 @@ class Game extends Base_Page {
     }
 
     async update_unit_que(timestamp) {
+        var update_unit_ui = false;
         for (var i = 0; i < this.unit_ques.length; i++) {
-            if (this.unit_ques[i].count == 0) {
-                continue;
-            }
-            var unit_build_time = this.units.find(unit => unit.unit_id == this.unit_ques[i].unit_id).build_time;
+            var unit_build_time = units_details.find(unit_details => unit_details.unit_id == this.unit_ques[i].unit_id).build_time;
             var created_units = Math.min(Math.floor((timestamp - this.unit_ques[i].calculated_timestamp) / unit_build_time), this.unit_ques[i].count);
             if (created_units < 1) {
-                this.update_unit_que_ui(timestamp);
                 continue;
             } else {
+                update_unit_ui = true;
                 this.unit_ques[i].count = this.unit_ques[i].count - created_units;
-                var time_remainder = (await utils.get_timestamp() - this.unit_ques[i].calculated_timestamp) % unit_build_time;
-                this.unit_ques[i].calculated_timestamp = this.unit_ques[i].count < 1 ? 0 : timestamp - time_remainder;
-                this.update_unit_que_ui(timestamp);
-                var u_index = this.units.findIndex(unit => unit.unit_id == this.unit_ques[i].unit_id);
-                this.units[u_index].count += created_units;
-                this.update_unit_ui();
+                if (this.unit_ques[i].count == 0) {
+                    this.removed_unit_ques.push(this.unit_ques.splice(i--,1));
+                } else {
+                    var time_remainder = (await utils.get_timestamp() - this.unit_ques[i].calculated_timestamp) % unit_build_time;
+                    this.unit_ques[i].calculated_timestamp = this.unit_ques[i].count < 1 ? 0 : timestamp - time_remainder;
+                    var u_index = this.units.findIndex(unit => unit.unit_id == this.unit_ques[i].unit_id);
+                    this.units[u_index].count += created_units;
+                }
             }
         }
+        if (update_unit_ui) {
+            this.update_unit_ui();
+        }
+        this.update_unit_que_ui(timestamp);
     }
 
     async update_unit_que_ui(timestamp) {
-        for(var i = 0; i < this.unit_ques.length; i++) {
-            var uq_index = this.units.findIndex(unit => unit.unit_id == this.unit_ques[i].unit_id);
-            var timeLeft = this.units[uq_index].build_time * this.unit_ques[i].count - (timestamp - this.unit_ques[i].calculated_timestamp);
-            var unit_que_column = document.getElementById('unit_que_row_' + this.unit_ques[i].unit_id);
-            if ((this.unit_ques[i].count == 0) || (this.unit_ques[i].count == 1 && timeLeft < 1)) {
-                if (unit_que_column.style.display != 'none') {
-                    unit_que_column.style.display = 'none';
-                }
-            } else {
-                if (unit_que_column.style.display == 'none') {
-                    unit_que_column.style.display = 'table-row';
-                }
-                unit_que_column.getElementsByClassName('count')[0].innerHTML = this.unit_ques[i].count;
-                unit_que_column.getElementsByClassName('timeLeft')[0].innerHTML = await utils.seconds_to_time(timeLeft);
-            }
+        for (var i = 0; i < this.unit_ques.length; i++) {
+            var ud_index = units_details.findIndex(unit_details => unit_details.unit_id == this.unit_ques[i].unit_id);
+            var timeLeft = units_details[ud_index].build_time * this.unit_ques[i].count - (timestamp - this.unit_ques[i].calculated_timestamp);
+            var unit_que_column = document.getElementById('unit_que_row_' + this.unit_ques[i].unit_que_id);
+            unit_que_column.getElementsByClassName('count')[0].innerHTML = this.unit_ques[i].count;
+            unit_que_column.getElementsByClassName('timeLeft')[0].innerHTML = await utils.seconds_to_time(timeLeft);
         }
+        for (var i = 0; i < this.removed_unit_ques.length; i++) {
+            var unit_que_column = document.getElementById('unit_que_row_' + this.unit_ques[i].unit_id);
+            unit_que_column.remove();
+        }
+    }
+
+    /**
+     * 
+     * @param {Object} units {unit_id, count}
+     * @param {Number} timestamp Unix timestamp
+     * @returns {Object} The newly created unit que object
+     */
+    async generate_unit_que(units, timestamp) {
+        this.unit_ques.push({unit_que_id: this.curr_unit_que_id++, unit_id: units.unit_id, count: units.count, calculated_timestamp: timestamp});
+        return this.unit_ques[this.unit_ques.length - 1];
     }
 
     /*
