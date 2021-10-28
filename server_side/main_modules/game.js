@@ -520,12 +520,7 @@ module.exports = class Game {
             if (player_planet !== undefined || expedition_timer !== undefined) {
                 var units = await this.dbManager.get_player_units(username, 'all');
                 for (var i = p_units.length - 1; i >= 0; i--) {
-                    var unit_index;
-                    if (units[i] === undefined || units[i].unit_id != p_units[i].unit_id) {
-                        unit_index = units.findIndex(unit => unit.unit_id == p_units[i].unit_id);
-                    } else {
-                        unit_index = i;
-                    }
+                    var unit_index = units.findIndex(unit => unit.unit_id == p_units[i].unit_id);
                     if (unit_index != -1) {
                         if (p_units[i].count < 1) {
                             units.splice(unit_index, 1);

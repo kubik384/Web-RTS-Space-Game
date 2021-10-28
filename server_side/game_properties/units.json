@@ -118,7 +118,7 @@
         ]
     },
     {
-        "unit_id": 7,
+        "unit_id": 8,
         "name": "Battle Cruiser",
         "description": "Light-armored ship, weaponry meant to outrange and outspeed both Battleship and Frigate, while Monitors are capable of closing distance",
         "cost": {
@@ -134,7 +134,7 @@
         ]
     },
     {
-        "unit_id": 8,
+        "unit_id": 9,
         "name": "Carrier",
         "description": "Ligh-armored, very poor weaponry for self-defense, enables space travel of Heavy and regular Fighters, slow (speed also depends on how full it is) (140 -> 90)",
         "cost": {
@@ -151,7 +151,7 @@
         "ship_capacity": 200
     },
     {
-        "unit_id": 9,
+        "unit_id": 10,
         "name": "Dreadnaught",
         "description": "Moving fortress able to withstand heavy punishment, weaponry meant for mass destruction",
         "cost": {
@@ -172,7 +172,7 @@
         ]
     },
     {
-        "unit_id": 10,
+        "unit_id": 11,
         "name": "Destroyer",
         "description": "Light-armored ship, slow, longest range",
         "cost": {
@@ -189,7 +189,7 @@
         ]
     },
     {
-        "unit_id": 11,
+        "unit_id": 12,
         "name": "Demolition Ship",
         "description": "",
         "cost": {
@@ -204,7 +204,7 @@
         ]
     },
     {
-        "unit_id": 12,
+        "unit_id": 13,
         "name": "Heavy Demolition Ship",
         "description": "",
         "cost": {
@@ -219,7 +219,7 @@
         ]
     },
     {
-        "unit_id": 13,
+        "unit_id": 14,
         "name": "Transporter",
         "description": "",
         "cost": {
@@ -233,7 +233,7 @@
         ]
     },
     {
-        "unit_id": 14,
+        "unit_id": 15,
         "name": "Heavy Transporter",
         "description": "",
         "cost": {
@@ -247,7 +247,7 @@
         ]
     },
     {
-        "unit_id": 15,
+        "unit_id": 16,
         "name": "Miner",
         "description": "",
         "cost": {
@@ -261,7 +261,7 @@
         ]
     },
     {
-        "unit_id": 16,
+        "unit_id": 17,
         "name": "Heavy Miner",
         "description": "",
         "cost": {
@@ -275,7 +275,7 @@
         ]
     },
     {
-        "unit_id": 17,
+        "unit_id": 18,
         "name": "Recycler",
         "description": "",
         "cost": {
@@ -289,7 +289,7 @@
         ]
     },
     {
-        "unit_id": 18,
+        "unit_id": 19,
         "name": "Heavy Recycler",
         "description": "",
         "cost": {
@@ -303,7 +303,7 @@
         ]
     },
     {
-        "unit_id": 19,
+        "unit_id": 20,
         "name": "Shipwright",
         "description": "",
         "cost": {
@@ -317,7 +317,7 @@
         ]
     },
     {
-        "unit_id": 20,
+        "unit_id": 21,
         "name": "Armored Shipwright",
         "description": "",
         "cost": {
@@ -331,7 +331,7 @@
         ]
     },
     {
-        "unit_id": 21,
+        "unit_id": 22,
         "name": "Probe",
         "description": "",
         "cost": {

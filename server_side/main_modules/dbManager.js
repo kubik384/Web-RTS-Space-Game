@@ -9,7 +9,6 @@ var buildings = require('./../game_properties/buildings.json');
 var units = require('./../game_properties/units.json');
 var unit_weapons = require('./../game_properties/unit_weapons.json');
 var technologies = require('./../game_properties/technologies.json');
-const e = require('cors');
 var mysql_details = process.env.PORT !== undefined ? 
 mysql_details = {
     host: "j5zntocs2dn6c3fj.chr7pe7iynqr.eu-west-1.rds.amazonaws.com",
@@ -147,9 +146,14 @@ module.exports = class DbManager {
         return (await this.execute_query(query, [username]))[0];
     }
 
+    /**
+     * 
+     * @param {String} username Player username
+     * @param {Number} p_building Building id
+     */
     async upgrade_building(username, p_building) {
         await this.update_resource(username);
-        var b_index = buildings.findIndex(building => building.name == p_building);
+        var b_index = buildings.findIndex(building => building.building_id == p_building);
         var building_id = buildings[b_index].building_id;
         await this.update_building_level(username, 'all');
         var query = `SELECT *
@@ -201,10 +205,12 @@ module.exports = class DbManager {
             }
         }
 
-        for (var i = 0; i < bld_lvl_details.req_buildings.length; i++) {
-            var p_bld = p_buildings.find(p_building => p_building.building_id == bld_lvl_details.req_buildings[i].building_id);
-            if (p_bld === undefined || p_bld.level < bld_lvl_details.req_buildings[i].level) {
-                throw new Error('Required building is not high enough level');
+        if (bld_lvl_details.req_buildings !== undefined) {
+            for (var i = 0; i < bld_lvl_details.req_buildings.length; i++) {
+                var p_bld = p_buildings.find(p_building => p_building.building_id == bld_lvl_details.req_buildings[i].building_id);
+                if (p_bld === undefined || p_bld.level < bld_lvl_details.req_buildings[i].level) {
+                    throw new Error('Required building is not high enough level');
+                }
             }
         }
         query += `pb.update_start = UNIX_TIMESTAMP()
@@ -220,8 +226,13 @@ module.exports = class DbManager {
         }
     }
 
+    /**
+     * 
+     * @param {String} username Player username
+     * @param {Number} p_building Building id
+     */
     async cancel_building_update(username, p_building) {
-        var b_index = buildings.findIndex(building => building.name == p_building);
+        var b_index = buildings.findIndex(building => building.building_id == p_building);
         var building_id = buildings[b_index].building_id;
         await this.update_building_level(username, building_id);
         var query = `SELECT p.player_id, pb.level, pb.update_start, pb.downgrade
@@ -270,8 +281,13 @@ module.exports = class DbManager {
         }
     }
 
+    /**
+     * 
+     * @param {String} username Player username
+     * @param {Number} p_building Building id
+     */
     async downgrade_building(username, p_building) {
-        var b_index = buildings.findIndex(building => building.name == p_building);
+        var b_index = buildings.findIndex(building => building.building_id == p_building);
         var building_id = buildings[b_index].building_id;
         await this.update_building_level(username, building_id);
         var execute_query = true;
@@ -303,10 +319,11 @@ module.exports = class DbManager {
     }
 
     /**
-     * Returns result(s) in following format [{player_id, building_id, level, update_start(in UNIX timestamp), upgrade_time}, ..]
+     * 
      * @param {String} username Username of the player
      * @param {String|Number} p_building Building name 'all' can be used to get all buildings from the player. Otherwise only 1 building id can be passed
      * @param {Boolean} update When set to false, the building does not get checked if it's getting upgraded and won't get it's level updated in db if it's done upgrading
+     * @returns [{building_id, level, update_start (in UNIX timestamp), downgrade}]
      */
     async get_player_building_details(username, p_building, update = true) {
         if (update) {
@@ -413,7 +430,7 @@ module.exports = class DbManager {
     }
 
     /**
-     * Returns results in following format [{building_id, name, level_details: [{level, upgrade_time, wood_cost, dirt_cost, iron_cost, pop_cost}, upgrade time, ..]}, ..]
+     * Returns results in following format [{building_id, name, level_details: [{level, upgrade_time, upgrade_cost, ..}, upgrade time, ..]}]
      * @param {Array} p_buildings in format [{building_id, level}]. Level can be an array of levels.
      */
     async get_building_details(p_buildings) {
@@ -505,47 +522,47 @@ module.exports = class DbManager {
         var player_unit_ques = await this.get_player_unit_ques(username, 'all', true);
         var timestamp = await utils.get_timestamp();
         var time_remainder = 0;
+        var update_timestamp = false;
+        var query;
         for (var i = 0; i < player_unit_ques.length; i++) {
-            var query;
             var unit_details = (await this.get_unit_details([player_unit_ques[i]]))[0];
             var unit_build_time = unit_details.build_time;
-            var created_units = Math.min(Math.floor((timestamp - player_unit_ques[i].calculated_timestamp + time_remainder) / unit_build_time), player_unit_ques[i].count);
+            var calculated_timestamp = (update_timestamp ? timestamp : player_unit_ques[i].calculated_timestamp) - time_remainder;
+            var max_created_units = Math.floor((timestamp - calculated_timestamp) / unit_build_time);
+            var created_units = Math.min(max_created_units, player_unit_ques[i].count);
             if (created_units < 1) {
-                if (time_remainder == 0) {
+                if (!update_timestamp) {
                     break;
                 } else {
                     query = `UPDATE player_unit_ques
-                    SET calculated_timestamp = calculated_timestamp - ${time_remainder}
+                    SET calculated_timestamp = ${calculated_timestamp}
                     WHERE unit_que_id = ${player_unit_ques[i].unit_que_id}`;
                     return this.execute_query(query);
                 }
             } else {
                 var updated_count = player_unit_ques[i].count - created_units;
-                time_remainder = (timestamp - player_unit_ques[i].calculated_timestamp + time_remainder) % unit_build_time;
+                time_remainder = (timestamp - calculated_timestamp) % unit_build_time + unit_build_time * (max_created_units - created_units);
                 if (updated_count > 0) {
                     query = `UPDATE player_unit_ques
                     SET count = ${updated_count},
                         calculated_timestamp = ${timestamp - time_remainder}
                     WHERE unit_que_id = ${player_unit_ques[i].unit_que_id}`;
                 } else {
-                    query = `DELETE FROM player_unit_ques puq
-                    WHERE unit_que_id = ${player_unit_ques[i]}`;
+                    update_timestamp = true;
+                    query = `DELETE FROM player_unit_ques
+                    WHERE unit_que_id = ${player_unit_ques[i].unit_que_id}`;
                 }
                 await this.execute_query(query);
 
-                query = `SELECT player_id 
-                FROM players
-                WHERE username = ?`;
-                var player_id = (await this.execute_query(query, [username]))[0].player_id;
-                query = `INSERT INTO player_units VALUES (?,?,?) 
-                ON DUPLICATE KEY UPDATE player_units pu
+                query = `UPDATE player_units pu
                 INNER JOIN players p ON p.player_id = pu.player_id
                 SET pu.count = pu.count + ?
                 WHERE p.username = ? AND pu.unit_id = ?`;
-                if (updated_count > 0 && time_remainder > 0) {
-                    return this.execute_query(query, [player_id ,player_unit_ques[i].unit_id, created_units, created_units, username, player_unit_ques[i].unit_id]);
+                var variables = [created_units, username, player_unit_ques[i].unit_id];
+                if (updated_count > 0) {
+                    return this.execute_query(query, variables);
                 } else {
-                    await this.execute_query(query, [player_id ,player_unit_ques[i].unit_id, created_units, created_units, username, player_unit_ques[i].unit_id]);
+                    await this.execute_query(query, variables);
                 }
             }
         }
@@ -622,26 +639,17 @@ module.exports = class DbManager {
         await this.update_player_unit_que(username, 'all');
         var resources = await this.get_resource(username, 'all');
         var building_details = await this.get_player_building_details(username, 'all');
-        for (var i = 0; i < building_details.length; i++) {
-            building_details[i].curr_level = building_details[i].level;
-            building_details[i].level = [building_details[i].level - 1, building_details[i].level, building_details[i].level + 1];
-        }
         var player_units = await this.get_player_units(username, 'all');
         var player_ques = await this.get_player_unit_ques(username, 'all');
-        var building_results = await this.get_building_details(building_details);
-        var unit_results = JSON.parse(JSON.stringify(await this.get_unit_details(player_units)));
-        for (var i = 0; i < unit_results.length; i++) {
-            unit_results[i].count = player_units[i].count;
-        }
         var new_reports_count =  await this.get_new_reports_count(username);
-        return {resources: resources, buildings: building_details, units: unit_results, unit_ques: player_ques, building_details: building_results, new_reports_count: new_reports_count};
+        return {resources: resources, buildings: building_details, units: player_units, unit_ques: player_ques, new_reports_count: new_reports_count};
     }
 
     async build_units(username, p_units) {
-        await this.update_building_level(username, 4, true);
+        await this.update_building_level(username, 3, true);
         var player_resources = await this.get_resource(username, 'all', true);
-        var p_units_building = await this.get_player_building_details(username, 4);
-        var units_building_level_details = buildings.find(building => building.building_id == p_units_building.building_id).level_details
+        var p_units_building = await this.get_player_building_details(username, 3);
+        var units_building_level_details = buildings.find(building => building.building_id == p_units_building.building_id).level_details;
         var allowed_units = units_building_level_details.find(level_detail => level_detail.level == p_units_building.level).units;
         var updated_player_resources = Object.assign({}, player_resources);
         var query = `SELECT player_id 
@@ -680,11 +688,12 @@ module.exports = class DbManager {
         await this.update_player_unit_que(username);
         //remove the ", " part
         query = query.slice(0, query.length - 2) + ' WHERE player_id = ?';
+        //updates player resources
         await this.execute_query(query, [player_id]);
         var promises = [];
         for (var i = 0; i < p_units.length; i++) {
-            query = `INSERT INTO player_unit_ques VALUES (?,?,?,UNIX_TIMESTAMP())`;
-            promises.push(this.execute_query(query, [player_id, p_units[i].unit_id, p_units[i].count, p_units[i].count, player_id, p_units[i].unit_id]));
+            query = `INSERT INTO player_unit_ques VALUES (NULL,?,?,?,UNIX_TIMESTAMP())`;
+            promises.push(this.execute_query(query, [player_id, p_units[i].unit_id, p_units[i].count]));
         }
         await Promise.all(promises);
     }
@@ -745,11 +754,11 @@ module.exports = class DbManager {
 
     async get_research_datapack(username) {
         var new_reports_count =  await this.get_new_reports_count(username);
-        var research_details = await this.get_research_details(username, true);
+        var research_details = await this.get_player_research_details(username, true);
         return {new_reports_count: new_reports_count, technologies: technologies, research_details: research_details};
     }
 
-    async get_research_details(username, update = false) {
+    async get_player_research_details(username, update = false) {
         if (update) {
             await this.update_research(username);
         }
@@ -760,7 +769,7 @@ module.exports = class DbManager {
     }
 
     async get_researched_techs(username, update = false) {
-        return (await this.get_research_details(username, update)).researched_techs;
+        return (await this.get_player_research_details(username, update)).researched_techs;
     }
 
     async research_technology(username, tech_id) {
@@ -780,7 +789,7 @@ module.exports = class DbManager {
         var query = `SELECT researched_techs
         FROM players
         WHERE username = ?`;
-        var research_details = await this.get_research_details(username, true);
+        var research_details = await this.get_player_research_details(username, true);
         var researched_techs = research_details.researched_techs;
         var valid_tech_id = true;
         for (var i = 0; i < researched_techs.length; i++) {
@@ -815,7 +824,7 @@ module.exports = class DbManager {
     }
 
     async update_research(username) {
-        var research_details = await this.get_research_details(username);
+        var research_details = await this.get_player_research_details(username);
         if (research_details.inResearch !== undefined) {
             var research_time = technologies.find(tech => tech.technology_id == research_details.inResearch).research_time;
             if (await utils.get_timestamp() >= research_details.start_timestamp + research_time) {
@@ -839,5 +848,29 @@ module.exports = class DbManager {
     async add_resource(username, resource, amount) {
         var query = `UPDATE players SET ${resourace} = ${resource} + ${amount} WHERE username = ${username}`;
         return this.execute_query(query);
+    }
+
+    /**
+     * 
+     * @param {String} username Player username
+     * @param {String} hash The hashed player's password
+     * @param {Number} so_id Space object the player got assigned to
+     * @param {Array} units Array of objects of all existing units without duplicates
+     */
+    async register_player(username, hash, so_id) {
+        var query = "INSERT INTO players (username, password, system_id, space_object_id, res_last_update) VALUES ( ? , ? , ? , ? , UNIX_TIMESTAMP())";
+        var query_2 = "SELECT player_id FROM players WHERE username = ?";
+        var query_3 = `INSERT INTO player_buildings VALUES 
+        (?, '1', '1', NULL, 0), 
+        (?, '2', '1', NULL, 0)`;
+        await this.execute_query(query, [username, hash, 1, so_id]);
+        var player_id = (await this.execute_query(query_2, [username]))[0].player_id;
+        var query_4 = `INSERT INTO player_units VALUES `;
+        for (var i = 0; i < units.length; i++) {
+            query_4 += `(${player_id}, ${units[i].unit_id}, 0), `;
+        }
+        query_4 = query_4.substr(0, query_4.length - 2);
+        await this.execute_query(query_3, [player_id, player_id]);
+        return this.execute_query(query_4);
     }
 }

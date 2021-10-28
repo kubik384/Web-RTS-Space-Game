@@ -1,6 +1,48 @@
 "use strict"
 
 class Base_Page {
+    constructor() {
+        this._units_details = sessionStorage.getItem('units_details');
+        if (this._units_details === null) {
+            this.units_details_promise = new Promise(async function(resolve, reject) {
+                var response = await fetch('/client_side/units.json');
+                var response_text = await response.text();
+                resolve(sessionStorage.setItem('units_details', response_text));
+            });
+        } else {
+            this._units_details = JSON.parse(this._units_details);
+        }
+        this._buildings_details = sessionStorage.getItem('buildings_details');
+        if (this._buildings_details === null) {
+            this.buildings_details_promise = new Promise(async function(resolve, reject) {
+                var response = await fetch('/client_side/buildings.json');
+                var response_text = await response.text();
+                resolve(sessionStorage.setItem('buildings_details', response_text));
+            });
+        } else {
+            this._buildings_details = JSON.parse(this._buildings_details);
+        }
+
+        /*
+        sessionStorage.getItem('units_details').then(units_details => {
+            if (units_details === null) {
+                this.units_details_promise = fetch('/client_side/units.json')
+                .then(response => { sessionStorage.setItem('units_details', response.text()) });
+            } else {
+                this._units_details = JSON.parse(units_details);
+            }
+        }).bind(this);
+        JSON.parse(sessionStorage.getItem('units_details')).then(buildings_details => {
+            if (buildings_details === null) {
+                this.buildings_details_promise = fetch('/client_side/buildings.json')
+                .then(response => { sessionStorage.setItem('buildings_details', response.text()) });
+            } else {
+                this._buildings_details = JSON.parse(buildings_details);
+            }
+        }).bind(this);
+        */
+    }
+
     async setup_page(parsed_datapack) {
         if (parsed_datapack.new_reports_count != 0) {
             var new_reports_count_div = document.getElementById('new_report_count');
@@ -57,6 +99,44 @@ class Base_Page {
         if (translate || angle != 0) {
             ctx.restore();
         }
+    }
+
+    async get_bld_details(building_id) {
+        return (await this.get_buildings_details()).find(bd => bd.building_id == building_id);
+    }
+
+    /**
+     * 
+     * @param {Number|Object} building Either an index of the building in this.buildings_details or a building object with level details
+     * @param {Number} lvl Current level of the building
+     * @returns Level Details object
+     */
+    async get_bld_lvl_dts(building, lvl) {
+        if (typeof building == 'number') {
+            return (await this.get_buildings_details())[bld_index].level_details.find(ld => ld.level == lvl);
+        } else {
+            return building.level_details.find(ld => ld.level == lvl);
+        }
+    }
+
+    async get_unit_dts(unit_id) {
+        return (await this.get_units_details()).find(ud => ud.unit_id == unit_id);
+    }
+
+    async get_units_details() {
+        if (this._units_details === null) {
+            await this.units_details_promise;
+            this._units_details = JSON.parse(sessionStorage.getItem('units_details'));
+        }
+        return this._units_details;
+    }
+
+    async get_buildings_details() {
+        if (this._buildings_details === null) {
+            await this.buildings_details_promise;
+            this._buildings_details = JSON.parse(sessionStorage.getItem('buildings_details'));
+        }
+        return this._buildings_details;
     }
 }
 

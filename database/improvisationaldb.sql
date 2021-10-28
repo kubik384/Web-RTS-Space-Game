@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Oct 25, 2021 at 08:23 PM
+-- Generation Time: Oct 26, 2021 at 11:50 AM
 -- Server version: 10.4.17-MariaDB
 -- PHP Version: 8.0.0
 
@@ -47,8 +47,7 @@ CREATE TABLE `players` (
 --
 
 INSERT INTO `players` (`player_id`, `username`, `password`, `system_id`, `space_object_id`, `res_last_update`, `reserved_pop`, `metal`, `kerosene`, `hydrogen`, `uranium`, `research`) VALUES
-(23, 'Newstory', '$2b$10$jqoTtwOPhOALYsS7VtZ90eOLuj0/HFlyLzlfWLsaSLaQDHZpcw3uG', 1, 2, 1635185078, 3.000000, 100.000000, 100.000000, 0.000000, 0.000000, '{\"researched_techs\":[\"1\",\"2\",\"3\"]}'),
-(26, 'Newstory2', '$2b$10$EPSrBeQqVnDsWDGCYkNZfOb4ksHOYlv6mGYBY5rvEAsEbxbsnd2/u', 1, 3, 1635073719, 0.000000, 100.000000, 100.000000, 0.000000, 0.000000, '{\"researched_techs\": []}');
+(1, 'Newstory', '$2b$10$jqoTtwOPhOALYsS7VtZ90eOLuj0/HFlyLzlfWLsaSLaQDHZpcw3uG', 1, 2, 1635235331, 3.000000, 0.774750, 100.000000, 0.000000, 0.000000, '{\"researched_techs\":[\"1\",\"2\",\"3\"]}');
 
 -- --------------------------------------------------------
 
@@ -69,12 +68,10 @@ CREATE TABLE `player_buildings` (
 --
 
 INSERT INTO `player_buildings` (`player_id`, `building_id`, `level`, `update_start`, `downgrade`) VALUES
-(26, 2, 1, NULL, 0),
-(23, 5, 1, NULL, 0),
-(23, 1, 3, NULL, 0),
-(23, 6, 2, NULL, 0),
-(23, 3, 2, NULL, 0),
-(26, 1, 1, NULL, 0);
+(1, 5, 1, NULL, 0),
+(1, 1, 3, NULL, 0),
+(1, 6, 2, NULL, 0),
+(1, 3, 2, NULL, 0);
 
 -- --------------------------------------------------------
 
@@ -91,153 +88,6 @@ CREATE TABLE `player_reports` (
   `gotDisplayed` tinyint(1) NOT NULL,
   `timestamp` int(11) UNSIGNED NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
---
--- Dumping data for table `player_reports`
---
-
-INSERT INTO `player_reports` (`player_id`, `report_id`, `title`, `text`, `isRead`, `gotDisplayed`, `timestamp`) VALUES
-(23, '07f23618-0e55-11ec-acdc-00d861a9d1f0', 'Expedition Result', 'We\'ve received a frantic message from our expedition that their systems are being taken over by some sort of a virus. Immediately after that, the contact with the fleet has been cut. We\'ve been unable to restore it since, despite our numerous attemps.', 0, 1, 1630851890),
-(23, '0c6e3e1a-0d8d-11ec-9390-00d861a9d1f0', 'Expedition Result', 'Our expedition has picked up on a distress beacon and has made it\'s way towards it. After arriving at the coordinates of the beacon\'s distress signal, an entire fleet drifting through space can be seen. After closing in, the scan doesn\'t find any source of life. The ships are in good condition and so after sending some of their crew on board, they manage to get the ships to join our fleet', 1, 1, 1630765999),
-(23, '1212e107-0e52-11ec-acdc-00d861a9d1f0', 'Expedition Result', 'We\'ve received a frantic message from our expedition that their systems are being taken over by some sort of a virus. Immediately after that, the contact with the fleet has been cut. We\'ve been unable to restore it since, despite our numerous attemps.', 0, 1, 1630850619),
-(23, '1257b031-0fe1-11ec-8ee1-00d861a9d1f0', 'Expedition Result', 'Scrapped event idea', 1, 1, 1631021987),
-(23, '1956c7e6-0e6c-11ec-9a68-00d861a9d1f0', 'Expedition Result', 'Our expedition has picked up on a distress beacon and has made it\'s way towards it. After arriving at the coordinates of the beacon\'s distress signal, an entire fleet drifting through space can be seen. After closing in, the scan doesn\'t find any source of life. The ships are in good condition and so after sending some of their crew on board, they manage to get the ships to join our fleet', 0, 1, 1630861798),
-(24, '1db35e31-1ed9-11ec-bf99-00d861a9d1f0', 'Attack result', 'Round 1: \n\n Fleet 1: Hull: 400 - 155 \n Fleet 2: Hull: 440 - 139 \n\nRound 2: \n\n Fleet 1: Hull: 245 - 155 \n Fleet 2: Hull: 301 - 139 \n\nRound 3: \n\n Fleet 1: Hull: 90 - 155 \n Fleet 2: Hull: 162 - 139 \n\n', 0, 1, 1632667839),
-(23, '1db501b7-1ed9-11ec-bf99-00d861a9d1f0', 'Fleet attacked', 'Round 1: \n\n Fleet 1: Hull: 400 - 155 \n Fleet 2: Hull: 440 - 139 \n\nRound 2: \n\n Fleet 1: Hull: 245 - 155 \n Fleet 2: Hull: 301 - 139 \n\nRound 3: \n\n Fleet 1: Hull: 90 - 155 \n Fleet 2: Hull: 162 - 139 \n\n', 0, 1, 1632667839),
-(23, '20c57ad2-3499-11ec-9218-00d861a9d1f0', 'Attack result', 'Fleet 1 Won!', 0, 0, 1635059282),
-(26, '20c5ac60-3499-11ec-9218-00d861a9d1f0', 'Fleet attacked', 'Fleet 1 Won!', 0, 0, 1635059282),
-(26, '20e1019a-3433-11ec-8e42-00d861a9d1f0', 'Attack result', 'Fleet 2 Won!', 0, 1, 1635015466),
-(23, '20e29b19-3433-11ec-8e42-00d861a9d1f0', 'Fleet attacked', 'Fleet 2 Won!', 1, 1, 1635015466),
-(24, '21c3ad7f-1ed5-11ec-bf99-00d861a9d1f0', 'Attack result', 'Round 1: \n\n Fleet 1: Hull: 400 - 155 \n Fleet 2: Hull: 440 - 139 \n\nRound 2: \n\n Fleet 1: Hull: 245 - 155 \n Fleet 2: Hull: 301 - 139 \n\nRound 3: \n\n Fleet 1: Hull: 90 - 155 \n Fleet 2: Hull: 162 - 139 \n\n', 0, 1, 1632666128),
-(23, '21c3e192-1ed5-11ec-bf99-00d861a9d1f0', 'Fleet attacked', 'Round 1: \n\n Fleet 1: Hull: 400 - 155 \n Fleet 2: Hull: 440 - 139 \n\nRound 2: \n\n Fleet 1: Hull: 245 - 155 \n Fleet 2: Hull: 301 - 139 \n\nRound 3: \n\n Fleet 1: Hull: 90 - 155 \n Fleet 2: Hull: 162 - 139 \n\n', 0, 1, 1632666128),
-(24, '27c95e0e-0ed4-11ec-9b1a-00d861a9d1f0', 'Attack result', 'Round 1: \n\n Fleet 1: Hull: 400 - 1490 \n Fleet 2: Hull: 4000 - 50 \n\n', 0, 1, 1630906490),
-(23, '27caf3fa-0ed4-11ec-9b1a-00d861a9d1f0', 'Fleet attacked', 'Round 1: \n\n Fleet 1: Hull: 400 - 1490 \n Fleet 2: Hull: 4000 - 50 \n\n', 0, 1, 1630906490),
-(23, '287866aa-0e55-11ec-acdc-00d861a9d1f0', 'Expedition Result', 'Particle Storm', 0, 1, 1630851945),
-(23, '29157fbf-0e52-11ec-acdc-00d861a9d1f0', 'Expedition Result', 'Our expedition has picked up on a distress beacon and has made it\'s way towards it. After arriving at the coordinates of the beacon\'s distress signal, an entire fleet drifting through space can be seen. After closing in, the scan doesn\'t find any source of life. The ships are in good condition and so after sending some of their crew on board, they manage to get the ships to join our fleet', 0, 1, 1630850658),
-(24, '30f92a5f-1fa5-11ec-8f86-00d861a9d1f0', 'Attack result', 'Round 1: \n\n Fleet 1: Hull: 400 - 155 \n Fleet 2: Hull: 440 - 139 \n\nRound 2: \n\n Fleet 1: Hull: 245 - 155 \n Fleet 2: Hull: 301 - 139 \n\nRound 3: \n\n Fleet 1: Hull: 90 - 155 \n Fleet 2: Hull: 162 - 139 \n\n', 0, 1, 1632755489),
-(23, '30facd09-1fa5-11ec-8f86-00d861a9d1f0', 'Fleet attacked', 'Round 1: \n\n Fleet 1: Hull: 400 - 155 \n Fleet 2: Hull: 440 - 139 \n\nRound 2: \n\n Fleet 1: Hull: 245 - 155 \n Fleet 2: Hull: 301 - 139 \n\nRound 3: \n\n Fleet 1: Hull: 90 - 155 \n Fleet 2: Hull: 162 - 139 \n\n', 0, 1, 1632755489),
-(23, '35d5aee2-0e52-11ec-acdc-00d861a9d1f0', 'Expedition Result', 'Scrapped event idea', 0, 1, 1630850679),
-(23, '35e24c3c-0e55-11ec-acdc-00d861a9d1f0', 'Expedition Result', 'Particle Storm', 0, 1, 1630851968),
-(23, '390e93eb-0e55-11ec-acdc-00d861a9d1f0', 'Expedition Result', 'Our expedition has detected a small fleet slowly drifting away nearby. They are detecting no energy signature and the ships seem to be undamaged. As they close in, no signs of life can be found aboard the ships. Once the fleet moves close enough to properly inspect the state of the ships, one of the ships is suddenly engulfed in a massive explosion, creating a chain reaction. Meanwhile, the sonsors have picked up on an uknown fleet closing in. This was clearly a trap. After receiving this report, the contact with the expedition has been cut. We\'ve been however able to restore it after a while, receiving the report that most of the ships have managed to survived the explosion, but a lot of them have suffered considerable damage. They\'ve been engaged by what has been identified as a pirate fleet shortly after', 0, 1, 1630851973),
-(24, '398c365f-0ed3-11ec-9b1a-00d861a9d1f0', 'Attack result', 'Round 1: \n\n Fleet 1: Hull: 400 - 1490 \n Fleet 2: Hull: 4000 - 50 \n\n', 0, 1, 1630906090),
-(23, '398dd066-0ed3-11ec-9b1a-00d861a9d1f0', 'Fleet attacked', 'Round 1: \n\n Fleet 1: Hull: 400 - 1490 \n Fleet 2: Hull: 4000 - 50 \n\n', 0, 1, 1630906090),
-(23, '3a7d63dd-099b-11ec-916b-00d861a9d1f0', 'Expedition Result', 'Our expedition has detected a very weak energy signature and has decided to move closer to inspect it. What at first glance appeared to be a small asteroid formation to the sensors has turned out to be an abandoned fleet flying aimlessly through space. After closer inspection, they found out that the ships have no fuel left and most of them have already ran out of their battery emergency reserves. Despite their thorough attempts, they\'ve been unable to figure out any clues as to what happened to the ships or where did the crew go. Nonetheless, most of the ships seem to be in an operable state. With enough fuel spare, it should be possible to refuel the ships and move some of the crew to man them so that they can be added to the expedition fleet', 1, 1, 1630332284),
-(24, '3c72f68e-0ed5-11ec-9b1a-00d861a9d1f0', 'Expedition Result', 'Our expedition has picked up on a distress beacon and has made it\'s way towards it. After arriving at the coordinates of the beacon\'s distress signal, a single large cargo ship can be detected. The ship does not respond to any of their attempts to establish a communication channel. After closing in to scan for any signs of life, scans suddenly pick up on a previously undetected fleet closing it\'s way in from behind a nearby planet', 0, 1, 1630906954),
-(23, '3d0c9496-1c9a-11ec-8149-00d861a9d1f0', 'Expedition Result', 'We\'ve received a frantic message from our expedition that their systems are being taken over by some sort of a virus. Immediately after that, the contact with the fleet has been cut. We\'ve been unable to restore it since, despite our numerous attemps.', 0, 1, 1632420931),
-(23, '3e21e286-1ee0-11ec-bf99-00d861a9d1f0', 'Attack result', 'Round 1: \n\n Fleet 1: Hull: 360 - 141 \n Fleet 2: Hull: 400 - 125 \n\nRound 2: \n\n Fleet 1: Hull: 219 - 141 \n Fleet 2: Hull: 275 - 125 \n\nRound 3: \n\n Fleet 1: Hull: 78 - 141 \n Fleet 2: Hull: 150 - 125 \n\n', 0, 1, 1632670900),
-(24, '3e22117b-1ee0-11ec-bf99-00d861a9d1f0', 'Fleet attacked', 'Round 1: \n\n Fleet 1: Hull: 360 - 141 \n Fleet 2: Hull: 400 - 125 \n\nRound 2: \n\n Fleet 1: Hull: 219 - 141 \n Fleet 2: Hull: 275 - 125 \n\nRound 3: \n\n Fleet 1: Hull: 78 - 141 \n Fleet 2: Hull: 150 - 125 \n\n', 0, 1, 1632670900),
-(24, '446287dc-0ed6-11ec-9b1a-00d861a9d1f0', 'Expedition Result', 'Particle Storm', 0, 1, 1630907397),
-(23, '46b5df81-0fdf-11ec-8ee1-00d861a9d1f0', 'Expedition Result', 'Our expedition has detected a small fleet slowly drifting away nearby. They are detecting no energy signature and the ships seem to be undamaged. As they close in, no signs of life can be found aboard the ships. Once the fleet moves close enough to properly inspect the state of the ships, one of the ships is suddenly engulfed in a massive explosion, creating a chain reaction. Meanwhile, the sonsors have picked up on an uknown fleet closing in. This was clearly a trap. After receiving this report, the contact with the expedition has been cut. We\'ve been however able to restore it after a while, receiving the report that most of the ships have managed to survived the explosion, but a lot of them have suffered considerable damage. They\'ve been engaged by what has been identified as a pirate fleet shortly after', 0, 1, 1631021216),
-(23, '48c557ff-0d89-11ec-9390-00d861a9d1f0', 'Expedition Result', 'Our expedition has detected a small fleet slowly drifting away nearby. They are detecting no energy signature and the ships seem to be undamaged. As they close in, no signs of life can be found aboard the ships. Once the fleet moves close enough to properly inspect the state of the ships, one of the ships is suddenly engulfed in a massive explosion, creating a chain reaction. Meanwhile, the sonsors have picked up on an uknown fleet closing in. This was clearly a trap. After receiving this report, the contact with the expedition has been cut. We\'ve been however able to restore it after a while, receiving the report that most of the ships have managed to survived the explosion, but a lot of them have suffered considerable damage. They\'ve been engaged by what has been identified as a pirate fleet shortly after', 1, 1, 1630764382),
-(23, '4c9f7482-0e53-11ec-acdc-00d861a9d1f0', 'Expedition Result', 'Particle Storm', 0, 1, 1630851147),
-(23, '4de7de76-1c9d-11ec-8149-00d861a9d1f0', 'Expedition Result', 'Our expedition has detected a very weak energy signature and has decided to move closer to inspect it. What at first glance appeared to be a small asteroid formation to the sensors has turned out to be an abandoned fleet flying aimlessly through space. After closer inspection, they found out that the ships have no fuel left and most of them have already ran out of their battery emergency reserves. Despite their thorough attempts, they\'ve been unable to figure out any clues as to what happened to the ships or where did the crew go. Nonetheless, most of the ships seem to be in an operable state. With enough fuel spare, it should be possible to refuel the ships and move some of the crew to man them so that they can be added to the expedition fleet', 1, 1, 1632422248),
-(24, '4e33cac5-0ed6-11ec-9b1a-00d861a9d1f0', 'Expedition Result', 'Our expedition has picked up on a distress beacon and has made it\'s way towards it. After arriving at the coordinates of the beacon\'s distress signal, a single large cargo ship can be detected. The ship does not respond to any of their attempts to establish a communication channel. After closing in to scan for any signs of life, scans suddenly pick up on a previously undetected fleet closing it\'s way in from behind a nearby planet', 0, 1, 1630907413),
-(23, '4e6ca0dd-3499-11ec-9218-00d861a9d1f0', 'Attack result', 'Fleet 1 Won!', 0, 0, 1635059359),
-(26, '4e6d5954-3434-11ec-8e42-00d861a9d1f0', 'Attack result', 'Fleet 2 Won!', 0, 0, 1635015980),
-(23, '4e6d86d9-3434-11ec-8e42-00d861a9d1f0', 'Fleet attacked', 'Fleet 2 Won!', 0, 0, 1635015980),
-(26, '4e6e6111-3499-11ec-9218-00d861a9d1f0', 'Fleet attacked', 'Fleet 1 Won!', 0, 0, 1635059359),
-(23, '50f537e8-099b-11ec-916b-00d861a9d1f0', 'Expedition Result', 'We\'ve received a frantic message from our expedition that their systems are being taken over by some sort of a virus. Immediately after that, the contact with the fleet has been cut. We\'ve been unable to restore it since, despite our numerous attemps.', 1, 1, 1630332322),
-(23, '5118ccdf-0d89-11ec-9390-00d861a9d1f0', 'Expedition Result', 'Our expedition has picked up on a distress beacon and has made it\'s way towards it. After arriving at the coordinates of the beacon\'s distress signal, a single large cargo ship can be detected. The ship does not respond to any of their attempts to establish a communication channel. After closing in to scan for any signs of life, scans suddenly pick up on a previously undetected fleet closing it\'s way in from behind a nearby planet', 1, 1, 1630764396),
-(24, '548d5d19-1ecc-11ec-bf99-00d861a9d1f0', 'Attack result', 'Round 1: \n\n Fleet 1: Hull: 400 - 155 \n Fleet 2: Hull: 440 - 139 \n\nRound 2: \n\n Fleet 1: Hull: 245 - 155 \n Fleet 2: Hull: 301 - 139 \n\nRound 3: \n\n Fleet 1: Hull: 90 - 155 \n Fleet 2: Hull: 162 - 139 \n\n', 1, 1, 1632662348),
-(23, '548da25d-1ecc-11ec-bf99-00d861a9d1f0', 'Fleet attacked', 'Round 1: \n\n Fleet 1: Hull: 400 - 155 \n Fleet 2: Hull: 440 - 139 \n\nRound 2: \n\n Fleet 1: Hull: 245 - 155 \n Fleet 2: Hull: 301 - 139 \n\nRound 3: \n\n Fleet 1: Hull: 90 - 155 \n Fleet 2: Hull: 162 - 139 \n\n', 0, 1, 1632662348),
-(23, '553473f1-0d89-11ec-9390-00d861a9d1f0', 'Expedition Result', 'Scrapped event idea', 1, 1, 1630764403),
-(23, '56e13853-1c9a-11ec-8149-00d861a9d1f0', 'Expedition Result', 'Our expedition has detected a very weak energy signature and has decided to move closer to inspect it. What at first glance appeared to be a small asteroid formation to the sensors has turned out to be an abandoned fleet flying aimlessly through space. After closer inspection, they found out that the ships have no fuel left and most of them have already ran out of their battery emergency reserves. Despite their thorough attempts, they\'ve been unable to figure out any clues as to what happened to the ships or where did the crew go. Nonetheless, most of the ships seem to be in an operable state. With enough fuel spare, it should be possible to refuel the ships and move some of the crew to man them so that they can be added to the expedition fleet', 0, 1, 1632420974),
-(24, '57946782-1f9d-11ec-8f86-00d861a9d1f0', 'Attack result', 'Round 1: \n\n Fleet 1: Hull: 400 - 155 \n Fleet 2: Hull: 440 - 139 \n\nRound 2: \n\n Fleet 1: Hull: 245 - 155 \n Fleet 2: Hull: 301 - 139 \n\nRound 3: \n\n Fleet 1: Hull: 90 - 155 \n Fleet 2: Hull: 162 - 139 \n\n', 0, 1, 1632752118),
-(23, '5794a27c-1f9d-11ec-8f86-00d861a9d1f0', 'Fleet attacked', 'Round 1: \n\n Fleet 1: Hull: 400 - 155 \n Fleet 2: Hull: 440 - 139 \n\nRound 2: \n\n Fleet 1: Hull: 245 - 155 \n Fleet 2: Hull: 301 - 139 \n\nRound 3: \n\n Fleet 1: Hull: 90 - 155 \n Fleet 2: Hull: 162 - 139 \n\n', 0, 1, 1632752118),
-(26, '5a3ae526-3499-11ec-9218-00d861a9d1f0', 'Attack result', 'Fleet 1 Won!', 0, 0, 1635059378),
-(23, '5a3c2317-3499-11ec-9218-00d861a9d1f0', 'Fleet attacked', 'Fleet 1 Won!', 0, 0, 1635059378),
-(24, '5c86d68c-0ed6-11ec-9b1a-00d861a9d1f0', 'Expedition Result', 'Our expedition has detected a small fleet slowly drifting away nearby. They are detecting no energy signature however and most of the ships seem to be severely damaged. As they close in, no signs of life can be found aboard the ships. Once the fleet moves close enough to properly inspect the state of the ships and search for anything worth of value left, one of the ships is suddenly engulfed in a massive explosion, creating a chain reaction. This was clearly a set-up After receiving this report, the contact with the expedition has been cut. We\'ve been however able to restore it after a while, receiving the report that most of the ships have managed to survived the explosion, but a lot of them have suffered considerable damage.Some of the have been however rendered immobile, inoperable, unable to sustain it\'s crew or have caught fire and the efforts to contain it have failed and therefore will have to be abandoned. The return time will also be longer than expected due to the damage suffered.', 0, 1, 1630907437),
-(24, '5c96e805-0ed5-11ec-9b1a-00d861a9d1f0', 'Attack result', 'Round 1: \n\n Fleet 1: Hull: 400 - 155 \n Fleet 2: Hull: 440 - 139 \n\nRound 2: \n\n Fleet 1: Hull: 245 - 155 \n Fleet 2: Hull: 301 - 139 \n\nRound 3: \n\n Fleet 1: Hull: 90 - 155 \n Fleet 2: Hull: 162 - 139 \n\n', 0, 1, 1630907008),
-(23, '5c988a16-0ed5-11ec-9b1a-00d861a9d1f0', 'Fleet attacked', 'Round 1: \n\n Fleet 1: Hull: 400 - 155 \n Fleet 2: Hull: 440 - 139 \n\nRound 2: \n\n Fleet 1: Hull: 245 - 155 \n Fleet 2: Hull: 301 - 139 \n\nRound 3: \n\n Fleet 1: Hull: 90 - 155 \n Fleet 2: Hull: 162 - 139 \n\n', 1, 1, 1630907008),
-(26, '5dcdc65f-34b9-11ec-9218-00d861a9d1f0', 'Attack result', 'Fleet 2 Won!', 0, 0, 1635073128),
-(23, '5dcf7066-34b9-11ec-9218-00d861a9d1f0', 'Fleet attacked', 'Fleet 2 Won!', 0, 0, 1635073128),
-(23, '5fc87b61-0e53-11ec-acdc-00d861a9d1f0', 'Expedition Result', 'Particle Storm', 0, 1, 1630851179),
-(23, '6051a317-1c9a-11ec-8149-00d861a9d1f0', 'Expedition Result', 'Our expedition has detected a small fleet slowly drifting away nearby. They are detecting no energy signature however and most of the ships seem to be severely damaged. As they close in, no signs of life can be found aboard the ships. Once the fleet moves close enough to properly inspect the state of the ships and search for anything worth of value left, one of the ships is suddenly engulfed in a massive explosion, creating a chain reaction. This was clearly a set-up After receiving this report, the contact with the expedition has been cut. We\'ve been however able to restore it after a while, receiving the report that most of the ships have managed to survived the explosion, but a lot of them have suffered considerable damage.Some of the have been however rendered immobile, inoperable, unable to sustain it\'s crew or have caught fire and the efforts to contain it have failed and therefore will have to be abandoned. The return time will also be longer than expected due to the damage suffered.', 1, 1, 1632420990),
-(24, '632f3de5-0ed3-11ec-9b1a-00d861a9d1f0', 'Attack result', 'Round 1: \n\n Fleet 1: Hull: 400 - 1490 \n Fleet 2: Hull: 4000 - 50 \n\n', 0, 1, 1630906160),
-(23, '6330ddec-0ed3-11ec-9b1a-00d861a9d1f0', 'Fleet attacked', 'Round 1: \n\n Fleet 1: Hull: 400 - 1490 \n Fleet 2: Hull: 4000 - 50 \n\n', 0, 1, 1630906160),
-(23, '63a1e1f3-1f60-11ec-8f86-00d861a9d1f0', 'Attack result', 'Round 1: \n\n Fleet 1: Hull: 440 - 154 \n Fleet 2: Hull: 440 - 154 \n\nRound 2: \n\n Fleet 1: Hull: 286 - 154 \n Fleet 2: Hull: 286 - 154 \n\nRound 3: \n\n Fleet 1: Hull: 132 - 154 \n Fleet 2: Hull: 132 - 154 \n\n', 1, 1, 1632725939),
-(23, '63a23f1f-1f60-11ec-8f86-00d861a9d1f0', 'Fleet attacked', 'Round 1: \n\n Fleet 1: Hull: 440 - 154 \n Fleet 2: Hull: 440 - 154 \n\nRound 2: \n\n Fleet 1: Hull: 286 - 154 \n Fleet 2: Hull: 286 - 154 \n\nRound 3: \n\n Fleet 1: Hull: 132 - 154 \n Fleet 2: Hull: 132 - 154 \n\n', 0, 1, 1632725939),
-(26, '6678eaad-3434-11ec-8e42-00d861a9d1f0', 'Attack result', 'Fleet 1 Won!', 0, 0, 1635016020),
-(23, '66790c0d-3434-11ec-8e42-00d861a9d1f0', 'Fleet attacked', 'Fleet 1 Won!', 0, 0, 1635016020),
-(26, '689e14e4-3493-11ec-9218-00d861a9d1f0', 'Attack result', 'Fleet 1 Won!', 0, 0, 1635056826),
-(23, '689e3ee4-3493-11ec-9218-00d861a9d1f0', 'Fleet attacked', 'Fleet 1 Won!', 0, 0, 1635056826),
-(24, '6acfc6ef-1fa8-11ec-8f86-00d861a9d1f0', 'Attack result', 'Round 1: \n\n Fleet 1: Hull: 400 - 155 \n Fleet 2: Hull: 440 - 139 \n\nRound 2: \n\n Fleet 1: Hull: 245 - 155 \n Fleet 2: Hull: 301 - 139 \n\nRound 3: \n\n Fleet 1: Hull: 90 - 155 \n Fleet 2: Hull: 162 - 139 \n\n', 0, 1, 1632756874),
-(23, '6ad16072-1fa8-11ec-8f86-00d861a9d1f0', 'Fleet attacked', 'Round 1: \n\n Fleet 1: Hull: 400 - 155 \n Fleet 2: Hull: 440 - 139 \n\nRound 2: \n\n Fleet 1: Hull: 245 - 155 \n Fleet 2: Hull: 301 - 139 \n\nRound 3: \n\n Fleet 1: Hull: 90 - 155 \n Fleet 2: Hull: 162 - 139 \n\n', 0, 1, 1632756874),
-(23, '7389c824-0e53-11ec-acdc-00d861a9d1f0', 'Expedition Result', 'Scrapped event idea', 0, 1, 1630851212),
-(23, '7719f6e5-0e52-11ec-acdc-00d861a9d1f0', 'Expedition Result', 'Our expedition has detected a very weak energy signature and has decided to move closer to inspect it. What at first glance appeared to be a small asteroid formation to the sensors has turned out to be an abandoned fleet flying aimlessly through space. After closer inspection, they found out that the ships have no fuel left and most of them have already ran out of their battery emergency reserves. Despite their thorough attempts, they\'ve been unable to figure out any clues as to what happened to the ships or where did the crew go. Nonetheless, most of the ships seem to be in an operable state. With enough fuel spare, it should be possible to refuel the ships and move some of the crew to man them so that they can be added to the expedition fleet', 0, 1, 1630850788),
-(23, '780f039f-0e53-11ec-acdc-00d861a9d1f0', 'Expedition Result', 'Our expedition has detected a small fleet slowly drifting away nearby. They are detecting no energy signature however and most of the ships seem to be severely damaged. As they close in, no signs of life can be found aboard the ships. Once the fleet moves close enough to properly inspect the state of the ships and search for anything worth of value left, one of the ships is suddenly engulfed in a massive explosion, creating a chain reaction. This was clearly a set-up After receiving this report, the contact with the expedition has been cut. We\'ve been however able to restore it after a while, receiving the report that most of the ships have managed to survived the explosion, but a lot of them have suffered considerable damage.Some of the have been however rendered immobile, inoperable, unable to sustain it\'s crew or have caught fire and the efforts to contain it have failed and therefore will have to be abandoned. The return time will also be longer than expected due to the damage suffered.', 0, 1, 1630851220),
-(24, '7b0ec9c2-0ed5-11ec-9b1a-00d861a9d1f0', 'Attack result', 'Round 1: \n\n Fleet 1: Hull: 400 - 1490 \n Fleet 2: Hull: 4000 - 50 \n\n', 0, 1, 1630907059),
-(23, '7b107684-0ed5-11ec-9b1a-00d861a9d1f0', 'Fleet attacked', 'Round 1: \n\n Fleet 1: Hull: 400 - 1490 \n Fleet 2: Hull: 4000 - 50 \n\n', 0, 1, 1630907059),
-(24, '80649f37-0ed3-11ec-9b1a-00d861a9d1f0', 'Attack result', 'Round 1: \n\n Fleet 1: Hull: 400 - 1490 \n Fleet 2: Hull: 4000 - 50 \n\n', 0, 1, 1630906209),
-(23, '80663c4c-0ed3-11ec-9b1a-00d861a9d1f0', 'Fleet attacked', 'Round 1: \n\n Fleet 1: Hull: 400 - 1490 \n Fleet 2: Hull: 4000 - 50 \n\n', 0, 1, 1630906209),
-(23, '8296ad80-0e53-11ec-acdc-00d861a9d1f0', 'Expedition Result', 'Our expedition has detected a small fleet slowly drifting away nearby. They are detecting no energy signature and the ships seem to be undamaged. As they close in, no signs of life can be found aboard the ships. Once the fleet moves close enough to properly inspect the state of the ships, one of the ships is suddenly engulfed in a massive explosion, creating a chain reaction. Meanwhile, the sonsors have picked up on an uknown fleet closing in. This was clearly a trap. After receiving this report, the contact with the expedition has been cut. We\'ve been however able to restore it after a while, receiving the report that most of the ships have managed to survived the explosion, but a lot of them have suffered considerable damage. They\'ve been engaged by what has been identified as a pirate fleet shortly after', 0, 1, 1630851237),
-(23, '84ad2ed8-0fdf-11ec-8ee1-00d861a9d1f0', 'Expedition Result', 'Our expedition has picked up on a distress beacon and has made it\'s way towards it. After arriving at the coordinates of the beacon\'s distress signal, a single large cargo ship can be detected. The ship does not respond to any of their attempts to establish a communication channel. After closing in to scan for any signs of life, scans suddenly pick up on a previously undetected fleet closing it\'s way in from behind a nearby planet', 0, 1, 1631021319),
-(23, '878bf937-0e55-11ec-acdc-00d861a9d1f0', 'Expedition Result', 'Our expedition has detected a small fleet slowly drifting away nearby. They are detecting no energy signature however and most of the ships seem to be severely damaged. As they close in, no signs of life can be found aboard the ships. Once the fleet moves close enough to properly inspect the state of the ships and search for anything worth of value left, one of the ships is suddenly engulfed in a massive explosion, creating a chain reaction. This was clearly a set-up After receiving this report, the contact with the expedition has been cut. We\'ve been however able to restore it after a while, receiving the report that most of the ships have managed to survived the explosion, but a lot of them have suffered considerable damage.Some of the have been however rendered immobile, inoperable, unable to sustain it\'s crew or have caught fire and the efforts to contain it have failed and therefore will have to be abandoned. The return time will also be longer than expected due to the damage suffered.', 0, 1, 1630852105),
-(23, '8c461b1c-0fdf-11ec-8ee1-00d861a9d1f0', 'Expedition Result', 'Scrapped event idea', 0, 1, 1631021332),
-(23, '90a9244b-0e52-11ec-acdc-00d861a9d1f0', 'Expedition Result', 'Our expedition has picked up on a distress beacon and has made it\'s way towards it. After arriving at the coordinates of the beacon\'s distress signal, an entire fleet drifting through space can be seen. After closing in, the scan doesn\'t find any source of life. The ships are in good condition and so after sending some of their crew on board, they manage to get the ships to join our fleet', 0, 1, 1630850831),
-(23, '919441bc-0fdf-11ec-8ee1-00d861a9d1f0', 'Expedition Result', 'Our expedition has detected a small fleet slowly drifting away nearby. They are detecting no energy signature however and most of the ships seem to be severely damaged. As they close in, no signs of life can be found aboard the ships. Once the fleet moves close enough to properly inspect the state of the ships and search for anything worth of value left, one of the ships is suddenly engulfed in a massive explosion, creating a chain reaction. This was clearly a set-up After receiving this report, the contact with the expedition has been cut. We\'ve been however able to restore it after a while, receiving the report that most of the ships have managed to survived the explosion, but a lot of them have suffered considerable damage.Some of the have been however rendered immobile, inoperable, unable to sustain it\'s crew or have caught fire and the efforts to contain it have failed and therefore will have to be abandoned. The return time will also be longer than expected due to the damage suffered.', 0, 1, 1631021341),
-(24, '92257c31-1c9c-11ec-8149-00d861a9d1f0', 'Attack result', 'Round 1: \n\n Fleet 1: Hull: 400 - 155 \n Fleet 2: Hull: 440 - 139 \n\nRound 2: \n\n Fleet 1: Hull: 245 - 155 \n Fleet 2: Hull: 301 - 139 \n\nRound 3: \n\n Fleet 1: Hull: 90 - 155 \n Fleet 2: Hull: 162 - 139 \n\n', 0, 1, 1632421933),
-(23, '92271ab0-1c9c-11ec-8149-00d861a9d1f0', 'Fleet attacked', 'Round 1: \n\n Fleet 1: Hull: 400 - 155 \n Fleet 2: Hull: 440 - 139 \n\nRound 2: \n\n Fleet 1: Hull: 245 - 155 \n Fleet 2: Hull: 301 - 139 \n\nRound 3: \n\n Fleet 1: Hull: 90 - 155 \n Fleet 2: Hull: 162 - 139 \n\n', 1, 1, 1632421933),
-(23, '97c7ab78-1f9d-11ec-8f86-00d861a9d1f0', 'Attack result', 'Round 1: \n\n Fleet 1: Hull: 440 - 139 \n Fleet 2: Hull: 400 - 155 \n\nRound 2: \n\n Fleet 1: Hull: 301 - 139 \n Fleet 2: Hull: 245 - 155 \n\nRound 3: \n\n Fleet 1: Hull: 162 - 139 \n Fleet 2: Hull: 90 - 155 \n\n', 0, 1, 1632752225),
-(24, '97c94a86-1f9d-11ec-8f86-00d861a9d1f0', 'Fleet attacked', 'Round 1: \n\n Fleet 1: Hull: 440 - 139 \n Fleet 2: Hull: 400 - 155 \n\nRound 2: \n\n Fleet 1: Hull: 301 - 139 \n Fleet 2: Hull: 245 - 155 \n\nRound 3: \n\n Fleet 1: Hull: 162 - 139 \n Fleet 2: Hull: 90 - 155 \n\n', 0, 1, 1632752225),
-(23, '97dfe933-0e51-11ec-acdc-00d861a9d1f0', 'Expedition Result', 'We\'ve received a frantic message from our expedition that their systems are being taken over by some sort of a virus. Immediately after that, the contact with the fleet has been cut. We\'ve been unable to restore it since, despite our numerous attemps.', 0, 1, 1630850414),
-(23, '98064044-3356-11ec-8f62-00d861a9d1f0', 'Attack result', 'Fleet 1 Won!', 0, 1, 1634920753),
-(26, '98066374-3356-11ec-8f62-00d861a9d1f0', 'Fleet attacked', 'Fleet 1 Won!', 0, 1, 1634920753),
-(24, '9afa40c4-0ed2-11ec-9b1a-00d861a9d1f0', 'Attack result', 'Round 1: \n\n Fleet 1: Hull: 360 - 141 \n Fleet 2: Hull: 400 - 125 \n\nRound 2: \n\n Fleet 1: Hull: 219 - 141 \n Fleet 2: Hull: 275 - 125 \n\nRound 3: \n\n Fleet 1: Hull: 78 - 141 \n Fleet 2: Hull: 150 - 125 \n\n', 0, 1, 1630905824),
-(23, '9afa77b5-0ed2-11ec-9b1a-00d861a9d1f0', 'Fleet attacked', 'Round 1: \n\n Fleet 1: Hull: 360 - 141 \n Fleet 2: Hull: 400 - 125 \n\nRound 2: \n\n Fleet 1: Hull: 219 - 141 \n Fleet 2: Hull: 275 - 125 \n\nRound 3: \n\n Fleet 1: Hull: 78 - 141 \n Fleet 2: Hull: 150 - 125 \n\n', 0, 1, 1630905824),
-(26, '9c97136a-3434-11ec-8e42-00d861a9d1f0', 'Attack result', 'Fleet 1 Won!', 0, 0, 1635016111),
-(23, '9c98b476-3434-11ec-8e42-00d861a9d1f0', 'Fleet attacked', 'Fleet 1 Won!', 0, 0, 1635016111),
-(23, '9f86de05-1f9e-11ec-8f86-00d861a9d1f0', 'Attack result', 'Round 1: \n\n Fleet 1: Hull: 440 - 139 \n Fleet 2: Hull: 400 - 155 \n\nRound 2: \n\n Fleet 1: Hull: 301 - 139 \n Fleet 2: Hull: 245 - 155 \n\nRound 3: \n\n Fleet 1: Hull: 162 - 139 \n Fleet 2: Hull: 90 - 155 \n\n', 0, 1, 1632752668),
-(24, '9f888cff-1f9e-11ec-8f86-00d861a9d1f0', 'Fleet attacked', 'Round 1: \n\n Fleet 1: Hull: 440 - 139 \n Fleet 2: Hull: 400 - 155 \n\nRound 2: \n\n Fleet 1: Hull: 301 - 139 \n Fleet 2: Hull: 245 - 155 \n\nRound 3: \n\n Fleet 1: Hull: 162 - 139 \n Fleet 2: Hull: 90 - 155 \n\n', 0, 1, 1632752668),
-(23, 'a53666f4-0e53-11ec-acdc-00d861a9d1f0', 'Expedition Result', 'Our expedition has picked up on a distress beacon and has made it\'s way towards it. After arriving at the coordinates of the beacon\'s distress signal, a single large cargo ship can be detected. The ship does not respond to any of their attempts to establish a communication channel. After closing in to scan for any signs of life, scans suddenly pick up on a previously undetected fleet closing it\'s way in from behind a nearby planet', 0, 1, 1630851295),
-(23, 'a6085603-3433-11ec-8e42-00d861a9d1f0', 'Attack result', 'Fleet 1 Won!', 1, 1, 1635015697),
-(26, 'a60bf3bd-3433-11ec-8e42-00d861a9d1f0', 'Fleet attacked', 'Fleet 1 Won!', 0, 1, 1635015697),
-(23, 'a874533f-0e53-11ec-acdc-00d861a9d1f0', 'Expedition Result', 'Our expedition has picked up on a distress beacon and has made it\'s way towards it. After arriving at the coordinates of the beacon\'s distress signal, an entire fleet drifting through space can be seen. After closing in, the scan doesn\'t find any source of life. The ships are in good condition and so after sending some of their crew on board, they manage to get the ships to join our fleet', 0, 1, 1630851301),
-(23, 'ab6b77d4-0e53-11ec-acdc-00d861a9d1f0', 'Expedition Result', 'Our expedition has detected a very weak energy signature and has decided to move closer to inspect it. What at first glance appeared to be a small asteroid formation to the sensors has turned out to be an abandoned fleet flying aimlessly through space. After closer inspection, they found out that the ships have no fuel left and most of them have already ran out of their battery emergency reserves. Despite their thorough attempts, they\'ve been unable to figure out any clues as to what happened to the ships or where did the crew go. Nonetheless, most of the ships seem to be in an operable state. With enough fuel spare, it should be possible to refuel the ships and move some of the crew to man them so that they can be added to the expedition fleet', 0, 1, 1630851306),
-(23, 'ae7d4b9c-0e51-11ec-acdc-00d861a9d1f0', 'Expedition Result', 'Our expedition has detected a small fleet slowly drifting away nearby. They are detecting no energy signature and the ships seem to be undamaged. As they close in, no signs of life can be found aboard the ships. Once the fleet moves close enough to properly inspect the state of the ships, one of the ships is suddenly engulfed in a massive explosion, creating a chain reaction. Meanwhile, the sonsors have picked up on an uknown fleet closing in. This was clearly a trap. After receiving this report, the contact with the expedition has been cut. We\'ve been however able to restore it after a while, receiving the report that most of the ships have managed to survived the explosion, but a lot of them have suffered considerable damage. They\'ve been engaged by what has been identified as a pirate fleet shortly after', 0, 1, 1630850452),
-(24, 'bbdec7e5-1f9d-11ec-8f86-00d861a9d1f0', 'Attack result', 'Round 1: \n\n Fleet 1: Hull: 400 - 155 \n Fleet 2: Hull: 440 - 139 \n\nRound 2: \n\n Fleet 1: Hull: 245 - 155 \n Fleet 2: Hull: 301 - 139 \n\nRound 3: \n\n Fleet 1: Hull: 90 - 155 \n Fleet 2: Hull: 162 - 139 \n\n', 0, 1, 1632752286),
-(23, 'bbe068dd-1f9d-11ec-8f86-00d861a9d1f0', 'Fleet attacked', 'Round 1: \n\n Fleet 1: Hull: 400 - 155 \n Fleet 2: Hull: 440 - 139 \n\nRound 2: \n\n Fleet 1: Hull: 245 - 155 \n Fleet 2: Hull: 301 - 139 \n\nRound 3: \n\n Fleet 1: Hull: 90 - 155 \n Fleet 2: Hull: 162 - 139 \n\n', 0, 1, 1632752286),
-(24, 'c0a5fa47-0ed2-11ec-9b1a-00d861a9d1f0', 'Attack result', 'Round 1: \n\n Fleet 1: Hull: 400 - 65 \n Fleet 2: Hull: 200 - 145 \n\nRound 2: \n\n Fleet 1: Hull: 335 - 65 \n Fleet 2: Hull: 55 - 145 \n\n', 0, 1, 1630905887),
-(23, 'c0a79eba-0ed2-11ec-9b1a-00d861a9d1f0', 'Fleet attacked', 'Round 1: \n\n Fleet 1: Hull: 400 - 65 \n Fleet 2: Hull: 200 - 145 \n\nRound 2: \n\n Fleet 1: Hull: 335 - 65 \n Fleet 2: Hull: 55 - 145 \n\n', 0, 1, 1630905887),
-(24, 'c1051d37-1edb-11ec-bf99-00d861a9d1f0', 'Attack result', 'Round 1: \n\n Fleet 1: Hull: 400 - 155 \n Fleet 2: Hull: 440 - 139 \n\nRound 2: \n\n Fleet 1: Hull: 245 - 155 \n Fleet 2: Hull: 301 - 139 \n\nRound 3: \n\n Fleet 1: Hull: 90 - 155 \n Fleet 2: Hull: 162 - 139 \n\n', 0, 1, 1632668972),
-(23, 'c106c3b3-1edb-11ec-bf99-00d861a9d1f0', 'Fleet attacked', 'Round 1: \n\n Fleet 1: Hull: 400 - 155 \n Fleet 2: Hull: 440 - 139 \n\nRound 2: \n\n Fleet 1: Hull: 245 - 155 \n Fleet 2: Hull: 301 - 139 \n\nRound 3: \n\n Fleet 1: Hull: 90 - 155 \n Fleet 2: Hull: 162 - 139 \n\n', 0, 1, 1632668972),
-(24, 'c1c5bd6f-0ed3-11ec-9b1a-00d861a9d1f0', 'Fleet attacked', 'Round 1: \n\n Fleet 1: Hull: 4000 - 50 \n Fleet 2: Hull: 400 - 1490 \n\n', 0, 1, 1630906319),
-(23, 'c3ffa503-3432-11ec-8e42-00d861a9d1f0', 'Attack result', 'Fleet 2 Won!', 1, 1, 1635015310),
-(26, 'c3ffea44-3432-11ec-8e42-00d861a9d1f0', 'Fleet attacked', 'Fleet 2 Won!', 0, 1, 1635015310),
-(23, 'c865e22e-3434-11ec-8e42-00d861a9d1f0', 'Attack result', 'Fleet 2 Won!', 0, 0, 1635016184),
-(26, 'c8678706-3434-11ec-8e42-00d861a9d1f0', 'Fleet attacked', 'Fleet 2 Won!', 0, 0, 1635016184),
-(23, 'cca35acc-0e51-11ec-acdc-00d861a9d1f0', 'Expedition Result', 'We\'ve received a frantic message from our expedition that their systems are being taken over by some sort of a virus. Immediately after that, the contact with the fleet has been cut. We\'ve been unable to restore it since, despite our numerous attemps.', 0, 1, 1630850503),
-(23, 'cde4cdc0-34ba-11ec-9218-00d861a9d1f0', 'Attack result', 'Fleet 2 Won!', 0, 0, 1635073746),
-(26, 'cde665ad-34ba-11ec-9218-00d861a9d1f0', 'Fleet attacked', 'Fleet 2 Won!', 0, 0, 1635073746),
-(23, 'd6abb1e1-0d84-11ec-9390-00d861a9d1f0', 'Expedition Result', 'Our expedition has picked up on a distress beacon and has made it\'s way towards it. After arriving at the coordinates of the beacon\'s distress signal, a single large cargo ship can be detected. The ship does not respond to any of their attempts to establish a communication channel. After closing in to scan for any signs of life, scans suddenly pick up on a previously undetected fleet closing it\'s way in from behind a nearby planet', 1, 1, 1630762473),
-(23, 'd72f4ff7-0fe2-11ec-8ee1-00d861a9d1f0', 'Expedition Result', 'Our expedition has detected a small fleet slowly drifting away nearby. They are detecting no energy signature however and most of the ships seem to be severely damaged. As they close in, no signs of life can be found aboard the ships. Once the fleet moves close enough to properly inspect the state of the ships and search for anything worth of value left, one of the ships is suddenly engulfed in a massive explosion, creating a chain reaction. This was clearly a set-up After receiving this report, the contact with the expedition has been cut. We\'ve been however able to restore it after a while, receiving the report that most of the ships have managed to survived the explosion, but a lot of them have suffered considerable damage.Some of the have been however rendered immobile, inoperable, unable to sustain it\'s crew or have caught fire and the efforts to contain it have failed and therefore will have to be abandoned. The return time will also be longer than expected due to the damage suffered.', 1, 1, 1631022746),
-(23, 'ddb18433-0d82-11ec-9390-00d861a9d1f0', 'Expedition Result', 'Our expedition has detected a small fleet slowly drifting away nearby. They are detecting no energy signature however and most of the ships seem to be severely damaged. As they close in, no signs of life can be found aboard the ships. Once the fleet moves close enough to properly inspect the state of the ships and search for anything worth of value left, one of the ships is suddenly engulfed in a massive explosion, creating a chain reaction. This was clearly a set-up After receiving this report, the contact with the expedition has been cut. We\'ve been however able to restore it after a while, receiving the report that most of the ships have managed to survived the explosion, but a lot of them have suffered considerable damage.Some of the have been however rendered immobile, inoperable, unable to sustain it\'s crew or have caught fire and the efforts to contain it have failed and therefore will have to be abandoned. The return time will also be longer than expected due to the damage suffered.', 1, 1, 1630761625),
-(23, 'e4b16de3-3433-11ec-8e42-00d861a9d1f0', 'Attack result', 'Fleet 2 Won!', 0, 0, 1635015802),
-(26, 'e4b3137c-3433-11ec-8e42-00d861a9d1f0', 'Fleet attacked', 'Fleet 2 Won!', 0, 0, 1635015802),
-(24, 'e5fa5ef7-0ed2-11ec-9b1a-00d861a9d1f0', 'Attack result', 'Round 1: \n\n Fleet 1: Hull: 400 - 140 \n Fleet 2: Hull: 400 - 140 \n\nRound 2: \n\n Fleet 1: Hull: 260 - 140 \n Fleet 2: Hull: 260 - 140 \n\nRound 3: \n\n Fleet 1: Hull: 120 - 140 \n Fleet 2: Hull: 120 - 140 \n\n', 0, 1, 1630905950),
-(23, 'e5fbfbf4-0ed2-11ec-9b1a-00d861a9d1f0', 'Fleet attacked', 'Round 1: \n\n Fleet 1: Hull: 400 - 140 \n Fleet 2: Hull: 400 - 140 \n\nRound 2: \n\n Fleet 1: Hull: 260 - 140 \n Fleet 2: Hull: 260 - 140 \n\nRound 3: \n\n Fleet 1: Hull: 120 - 140 \n Fleet 2: Hull: 120 - 140 \n\n', 0, 1, 1630905950),
-(23, 'e6dc734a-34a6-11ec-9218-00d861a9d1f0', 'Attack result', 'Fleet 2 Won!', 0, 0, 1635065198),
-(26, 'e6de1f77-34a6-11ec-9218-00d861a9d1f0', 'Fleet attacked', 'Fleet 2 Won!', 0, 0, 1635065198),
-(23, 'ead70e80-0e54-11ec-acdc-00d861a9d1f0', 'Expedition Result', 'We\'ve received a frantic message from our expedition that their systems are being taken over by some sort of a virus. Immediately after that, the contact with the fleet has been cut. We\'ve been unable to restore it since, despite our numerous attemps.', 0, 1, 1630851842),
-(24, 'ed9a0dc4-1edb-11ec-bf99-00d861a9d1f0', 'Attack result', 'Round 1: \n\n Fleet 1: Hull: 400 - 155 \n Fleet 2: Hull: 440 - 139 \n\nRound 2: \n\n Fleet 1: Hull: 245 - 155 \n Fleet 2: Hull: 301 - 139 \n\nRound 3: \n\n Fleet 1: Hull: 90 - 155 \n Fleet 2: Hull: 162 - 139 \n\n', 0, 1, 1632669047),
-(23, 'ed9baca3-1edb-11ec-bf99-00d861a9d1f0', 'Fleet attacked', 'Round 1: \n\n Fleet 1: Hull: 400 - 155 \n Fleet 2: Hull: 440 - 139 \n\nRound 2: \n\n Fleet 1: Hull: 245 - 155 \n Fleet 2: Hull: 301 - 139 \n\nRound 3: \n\n Fleet 1: Hull: 90 - 155 \n Fleet 2: Hull: 162 - 139 \n\n', 0, 1, 1632669047),
-(23, 'eea4f4f8-3434-11ec-8e42-00d861a9d1f0', 'Attack result', 'Fleet 1 Won!', 0, 0, 1635016248),
-(26, 'eea69734-3434-11ec-8e42-00d861a9d1f0', 'Fleet attacked', 'Fleet 1 Won!', 0, 0, 1635016248),
-(23, 'f1cea428-3357-11ec-8f62-00d861a9d1f0', 'Attack result', 'Fleet 1 Won!', 0, 1, 1634921333),
-(26, 'f1d04325-3357-11ec-8f62-00d861a9d1f0', 'Fleet attacked', 'Fleet 1 Won!', 0, 1, 1634921333),
-(23, 'f347afb9-1fa4-11ec-8f86-00d861a9d1f0', 'Attack result', 'Round 1: \n\n Fleet 1: Hull: 440 - 139 \n Fleet 2: Hull: 400 - 155 \n\nRound 2: \n\n Fleet 1: Hull: 301 - 139 \n Fleet 2: Hull: 245 - 155 \n\nRound 3: \n\n Fleet 1: Hull: 162 - 139 \n Fleet 2: Hull: 90 - 155 \n\n', 0, 1, 1632755385),
-(24, 'f3495833-1fa4-11ec-8f86-00d861a9d1f0', 'Fleet attacked', 'Round 1: \n\n Fleet 1: Hull: 440 - 139 \n Fleet 2: Hull: 400 - 155 \n\nRound 2: \n\n Fleet 1: Hull: 301 - 139 \n Fleet 2: Hull: 245 - 155 \n\nRound 3: \n\n Fleet 1: Hull: 162 - 139 \n Fleet 2: Hull: 90 - 155 \n\n', 0, 1, 1632755385),
-(23, 'f394d882-0d84-11ec-9390-00d861a9d1f0', 'Expedition Result', 'Our expedition has detected a small fleet slowly drifting away nearby. They are detecting no energy signature however and most of the ships seem to be severely damaged. As they close in, no signs of life can be found aboard the ships. Once the fleet moves close enough to properly inspect the state of the ships and search for anything worth of value left, one of the ships is suddenly engulfed in a massive explosion, creating a chain reaction. This was clearly a set-up After receiving this report, the contact with the expedition has been cut. We\'ve been however able to restore it after a while, receiving the report that most of the ships have managed to survived the explosion, but a lot of them have suffered considerable damage.Some of the have been however rendered immobile, inoperable, unable to sustain it\'s crew or have caught fire and the efforts to contain it have failed and therefore will have to be abandoned. The return time will also be longer than expected due to the damage suffered.', 1, 1, 1630762521),
-(24, 'f3f82594-1ed8-11ec-bf99-00d861a9d1f0', 'Attack result', 'Round 1: \n\n Fleet 1: Hull: 400 - 155 \n Fleet 2: Hull: 440 - 139 \n\nRound 2: \n\n Fleet 1: Hull: 245 - 155 \n Fleet 2: Hull: 301 - 139 \n\nRound 3: \n\n Fleet 1: Hull: 90 - 155 \n Fleet 2: Hull: 162 - 139 \n\n', 0, 1, 1632667769),
-(23, 'f3f8573f-1ed8-11ec-bf99-00d861a9d1f0', 'Fleet attacked', 'Round 1: \n\n Fleet 1: Hull: 400 - 155 \n Fleet 2: Hull: 440 - 139 \n\nRound 2: \n\n Fleet 1: Hull: 245 - 155 \n Fleet 2: Hull: 301 - 139 \n\nRound 3: \n\n Fleet 1: Hull: 90 - 155 \n Fleet 2: Hull: 162 - 139 \n\n', 0, 1, 1632667769),
-(24, 'f5829642-1f9d-11ec-8f86-00d861a9d1f0', 'Attack result', 'Round 1: \n\n Fleet 1: Hull: 400 - 155 \n Fleet 2: Hull: 440 - 139 \n\nRound 2: \n\n Fleet 1: Hull: 245 - 155 \n Fleet 2: Hull: 301 - 139 \n\nRound 3: \n\n Fleet 1: Hull: 90 - 155 \n Fleet 2: Hull: 162 - 139 \n\n', 0, 1, 1632752383),
-(23, 'f584343f-1f9d-11ec-8f86-00d861a9d1f0', 'Fleet attacked', 'Round 1: \n\n Fleet 1: Hull: 400 - 155 \n Fleet 2: Hull: 440 - 139 \n\nRound 2: \n\n Fleet 1: Hull: 245 - 155 \n Fleet 2: Hull: 301 - 139 \n\nRound 3: \n\n Fleet 1: Hull: 90 - 155 \n Fleet 2: Hull: 162 - 139 \n\n', 0, 1, 1632752383),
-(24, 'f5cf3a2b-1fa2-11ec-8f86-00d861a9d1f0', 'Attack result', 'Round 1: \n\n Fleet 1: Hull: 400 - 155 \n Fleet 2: Hull: 440 - 139 \n\nRound 2: \n\n Fleet 1: Hull: 245 - 155 \n Fleet 2: Hull: 301 - 139 \n\nRound 3: \n\n Fleet 1: Hull: 90 - 155 \n Fleet 2: Hull: 162 - 139 \n\n', 0, 1, 1632754531),
-(23, 'f5d0ecef-1fa2-11ec-8f86-00d861a9d1f0', 'Fleet attacked', 'Round 1: \n\n Fleet 1: Hull: 400 - 155 \n Fleet 2: Hull: 440 - 139 \n\nRound 2: \n\n Fleet 1: Hull: 245 - 155 \n Fleet 2: Hull: 301 - 139 \n\nRound 3: \n\n Fleet 1: Hull: 90 - 155 \n Fleet 2: Hull: 162 - 139 \n\n', 0, 1, 1632754531),
-(23, 'fb665610-0e51-11ec-acdc-00d861a9d1f0', 'Expedition Result', 'Particle Storm', 0, 1, 1630850581),
-(23, 'fb9011eb-0d82-11ec-9390-00d861a9d1f0', 'Expedition Result', 'Our expedition has picked up on a distress beacon and has made it\'s way towards it. After arriving at the coordinates of the beacon\'s distress signal, a single large cargo ship can be detected. The ship does not respond to any of their attempts to establish a communication channel. After closing in to scan for any signs of life, scans suddenly pick up on a previously undetected fleet closing it\'s way in from behind a nearby planet', 1, 1, 1630761675),
-(26, 'fc29eb0b-3355-11ec-8f62-00d861a9d1f0', 'Attack result', 'Fleet 1 Won!', 1, 1, 1634920492),
-(23, 'fc2b95d1-3355-11ec-8f62-00d861a9d1f0', 'Fleet attacked', 'Fleet 1 Won!', 0, 1, 1634920492);
 
 -- --------------------------------------------------------
 
@@ -256,20 +106,28 @@ CREATE TABLE `player_units` (
 --
 
 INSERT INTO `player_units` (`player_id`, `unit_id`, `count`) VALUES
-(23, 1, 1093),
-(23, 2, 211),
-(23, 3, 200),
-(23, 4, 200),
-(23, 5, 200),
-(23, 6, 200),
-(23, 7, 200),
-(23, 8, 200),
-(23, 9, 200),
-(23, 10, 200),
-(23, 11, 200),
-(23, 12, 200),
-(26, 1, 100),
-(26, 2, 0);
+(1, 1, 1093),
+(1, 2, 211),
+(1, 3, 200),
+(1, 4, 200),
+(1, 5, 200),
+(1, 6, 200),
+(1, 7, 200),
+(1, 8, 200),
+(1, 9, 200),
+(1, 10, 200),
+(1, 11, 200),
+(1, 12, 200),
+(1, 13, 0),
+(1, 14, 0),
+(1, 15, 0),
+(1, 16, 0),
+(1, 17, 0),
+(1, 18, 0),
+(1, 19, 0),
+(1, 20, 0),
+(1, 21, 0),
+(1, 22, 0);
 
 -- --------------------------------------------------------
 
@@ -278,6 +136,7 @@ INSERT INTO `player_units` (`player_id`, `unit_id`, `count`) VALUES
 --
 
 CREATE TABLE `player_unit_ques` (
+  `unit_que_id` int(8) UNSIGNED NOT NULL,
   `player_id` int(9) NOT NULL,
   `unit_id` int(3) NOT NULL,
   `count` int(8) NOT NULL,
@@ -314,6 +173,12 @@ ALTER TABLE `player_units`
   ADD PRIMARY KEY (`player_id`,`unit_id`);
 
 --
+-- Indexes for table `player_unit_ques`
+--
+ALTER TABLE `player_unit_ques`
+  ADD PRIMARY KEY (`unit_que_id`);
+
+--
 -- AUTO_INCREMENT for dumped tables
 --
 
@@ -321,7 +186,13 @@ ALTER TABLE `player_units`
 -- AUTO_INCREMENT for table `players`
 --
 ALTER TABLE `players`
-  MODIFY `player_id` mediumint(9) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
+  MODIFY `player_id` mediumint(9) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `player_unit_ques`
+--
+ALTER TABLE `player_unit_ques`
+  MODIFY `unit_que_id` int(8) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

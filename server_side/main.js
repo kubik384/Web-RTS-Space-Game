@@ -41,47 +41,29 @@ app.get('/', function(req, res) {
 	res.sendFile(path.join(root, 'pages/index.html'));
 });
 
-app.post('/register', function(req, res) {
+app.post('/register', async function(req, res) {
 	var { username, password } = req.body;
 	
 	if (password != '' && username != '') {
-		var query = "SELECT password FROM players WHERE username = ?";
-		dbManager.execute_query(query, [username]).then(results => {
-			dbManager.get_player_count().then(player_count => {
-				if (player_count < 50) {
-					if (results.length == 1) {
-						res.status(401).send("Entered username already exists, please select a different username");
-					} else {
-						bcrypt.hash(password, saltRounds, function(err, hash) {
-							if (err) {
-								throw err;
-							}
-							game.get_player_so().then(so_id => {
-								query = "INSERT INTO players (username, password, system_id, space_object_id, res_last_update) VALUES ( ? , ? , ? , ? , UNIX_TIMESTAMP())";
-								var query_2 = `SELECT player_id FROM players WHERE username = ${username}`;
-								var query_3 = `INSERT INTO player_buildings VALUES 
-								(?, '1', '1', NULL, 0), 
-								(?, '2', '1', NULL, 0)`;
-								dbManager.execute_query(query, [username, hash, 1, so_id]).then(() => {
-									dbManager.execute_query(query_2).then(results => {
-										var player_id = results[0].player_id;
-										dbManager.execute_query(query_3, [player_id,player_id]).then(() => {
-											res.sendStatus(200);
-										});
-									});
-								}).catch(err => { throw err });
-							}).catch(err => { throw err });
-						});
+		var query = "SELECT player_id FROM players WHERE username = ?";
+		var results = await dbManager.execute_query(query, [username]);
+		var player_count = await dbManager.get_player_count();
+		if (player_count < 50) {
+			if (results.length == 1) {
+				res.status(401).send("Entered username already exists, please select a different username");
+			} else {
+				bcrypt.hash(password, saltRounds, async function(err, hash) {
+					if (err) {
+						throw err;
 					}
-				} else {
-					res.status(401).send("The maximum number of players has been reached");
-				}
-			}).catch(err => {
-				throw err;
-			});
-		}).catch(err => {
-			throw err;
-		});
+					var so_id = await game.get_player_so();
+					await dbManager.register_player(username, hash, so_id);
+					res.sendStatus(200);
+				});
+			}
+		} else {
+			res.status(401).send("The maximum number of players has been reached");
+		}
 	}
 });
 
@@ -212,10 +194,6 @@ io.on('connection', socket => {
 				throw e;
 			}
 		});
-	});
-
-	socket.on('fetch_building_details', data => {
-		dbManager.get_building_details(data).then(results => { socket.emit('building_fetch_result', results[0]);});
 	});
 
 	socket.on('cancel_building_update', building => {
