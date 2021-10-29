@@ -1,5 +1,6 @@
 #ignore reports
 /node_modules
+/server_side/fight_records
 debug.log
 .vscode/launch.json
 package-lock.json
