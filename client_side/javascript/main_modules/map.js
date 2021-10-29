@@ -58,6 +58,7 @@ class Game extends Base_Page {
                 var disable_button = true;
                 for (var i = 0; i < this.available_units.length; i++) {
                     if (this.available_units[i].count > 0) {
+                        var unit_details = await this.get_unit_dts(this.available_units[i].unit_id);
                         disable_button = false;
                         var row = assemble_fleet_table.insertRow(-1);
                         var unit_img_cell = row.insertCell(-1);
@@ -66,11 +67,11 @@ class Game extends Base_Page {
                         var unit_count = row.insertCell(-1);
                         
                         var unit_type_img = document.createElement('img');
-                        unit_type_img.setAttribute('src', '/client_side/images/units/' + this.available_units[i].name.toLowerCase() + '.png');
+                        unit_type_img.setAttribute('src', '/client_side/images/units/' + unit_details.name.toLowerCase() + '.png');
                         unit_img_cell.append(unit_type_img);
                         unit_img_cell.classList.add('img_cell');
                         var unit_name_label = document.createElement('label');
-                        unit_name_label.append(' ' + this.available_units[i].name);
+                        unit_name_label.append(' ' + unit_details.name);
                         unit_label_cell.append(unit_name_label);
                         var unit_number_input = document.createElement('input');
                         unit_number_input.setAttribute("type", "number");
@@ -360,16 +361,22 @@ class Game extends Base_Page {
                                     type_cell.textContent = 'Unit';
                                     number_cell.textContent = 'Count';
                                     for (var j = 0; j < fleet.units.length; j++) {
-                                        var row = new_tbody.insertRow(-1);
-                                        var img = row.insertCell(-1);
-                                        var unit = row.insertCell(-1);
-                                        var count = row.insertCell(-1);
-                                        var unit_img = document.createElement('img');
-                                        unit_img.setAttribute('src','/client_side/images/units/' + fleet.units[j].name.toLowerCase() + '.png');
-                                        img.classList.add('img_cell');
-                                        img.append(unit_img);
-                                        unit.textContent = fleet.units[j].name;
-                                        count.textContent = fleet.units[j].count;
+                                        (async () => {
+                                            var unit = fleet.units[j];
+                                            if (unit.count > 0) {
+                                                var unit_details = await this.get_unit_dts(unit.unit_id);
+                                                var row = new_tbody.insertRow(-1);
+                                                var img = row.insertCell(-1);
+                                                var name = row.insertCell(-1);
+                                                var count = row.insertCell(-1);
+                                                var unit_img = document.createElement('img');
+                                                unit_img.setAttribute('src','/client_side/images/units/' + unit_details.name.toLowerCase() + '.png');
+                                                img.classList.add('img_cell');
+                                                img.append(unit_img);
+                                                name.textContent = unit_details.name;
+                                                count.textContent = unit.count;
+                                            };
+                                        })();
                                     }
                                 }
                                 table.append(new_tbody);
