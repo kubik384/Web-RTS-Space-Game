@@ -5,6 +5,12 @@ var expedition_results = require('./../game_properties/expedition_results.json')
 var fs = require('fs');
 var fsPromises = fs.promises;
 var path = require('path');
+const { report } = require('process');
+const fr_name = 'fight_';
+const fr_meta_file = '_meta';
+const fr_dir = path.resolve(__dirname, '../fight_records') + '/';
+const fr_dir_size_limit = 1000000;
+const fr_max_dir_size = 2000000;
 
 module.exports = class Game {
     constructor(dbManager, server) {
@@ -30,11 +36,14 @@ module.exports = class Game {
         this.all_habitable_space_objects = [];
         this.no_space_systems = 1;
         this.systems = [{}];
+        this.fight_records = [];
+        this.fr_dir_size = 0;
     }
 
     async setup_game() {
         this.finished_loading = false;
         await this.attempt_game_load(process.argv[2]);
+        await this.load_fr_timers();
         const timestamp = Date.now();
         this.last_tick = timestamp;
         this.last_save = timestamp;
@@ -416,10 +425,10 @@ module.exports = class Game {
                         }
                         this.fleets[i].x += this.fleets[i].velocity.x * this.time_passed;
                         this.fleets[i].y += this.fleets[i].velocity.y * this.time_passed;
-                    } else if (this.fleets[i].fighting_cooldown !== undefined) {
+                    } else if (this.fleets[i].calculating_fight === undefined && this.fleets[i].fighting_cooldown !== undefined) {
                         this.fleets[i].fighting_cooldown -= this.time_passed;
                         if (this.fleets[i].fighting_cooldown <= 0) {
-                            await this.execute_fight(this.fleets[i], timestamp);
+                            this.execute_fight(this.fleets[i], timestamp);
                         }
                     }
                 }
@@ -788,18 +797,18 @@ module.exports = class Game {
         }
     }
 
+    //TODO: Currently creates huge files when the number of units reaches certain amount. Change the files to use binary over text (need only 3 bits as opposed to the 1 byte for text)
     async execute_fight(p_fleet, timestamp) {
-        const root = path.resolve(__dirname, '../fight_records') + '/';
-        const name = 'fight_';
+        p_fleet.calculating_fight = true;
+        var opposing_fleet_index = this.fleets.findIndex(opposing_fleet => opposing_fleet.fleet_id == p_fleet.engaged_fleet_id);
+        var opposing_fleet = this.fleets[opposing_fleet_index];
+        opposing_fleet.calculating_fight = true;
         var id = 0;
         var file_found = true;
         var file_path;
-        if (!fs.existsSync(root)){
-            fs.mkdirSync(root);
-        }
         while(file_found) {
             try {
-                file_path = root + name + id + '.txt';
+                file_path = fr_dir + fr_name + id + '.txt';
                 await fsPromises.readFile(file_path);
                 id++;
             } catch (err) {
@@ -810,40 +819,38 @@ module.exports = class Game {
                 }
             }
         }
-        var file_handle;
+        var file_id = id - 1;
         var file;
-        var readable;
-        var writable;
+        var dir_size_exceeded = await this.check_fr_dir_size();
+        const file_timer = dir_size_exceeded ? 1800 : 7200;
+        var unix_timestamp = Math.floor(timestamp/1000);
         try {
-            file_handle = await fsPromises.open(file_path, 'a+');
-            readable = file_handle.createReadStream();
-            writable = file_handle.createWriteStream();
-            file = readable.pipe(writable);
-            await new Promise((resolve, reject) => {
-                file.write('test', () => {
-                    resolve();
+            var file_handle = await fsPromises.open(file_path, 'a+');
+            await this.add_fr_timer(file_path, unix_timestamp, file_timer);
+            file = file_handle.createWriteStream();
+            file.on('error', (err) => {
+                throw (err);
+            });
+            await fsPromises.appendFile(fr_dir + fr_name + id + fr_meta_file + '.txt', JSON.stringify([unix_timestamp, file_timer]));
+            var file_write = async function(data) {
+                return new Promise((resolve, reject) => {
+                    if (file.write(data)) {
+                        process.nextTick(resolve);
+                    } else {
+                        file.once('drain', resolve);
+                    }
                 });
-            });
-
-            readable.on('error', (err) => {
-                console.log('Error in read stream...');
-                console.log(err);
-            });
-
-            writable.on('error', (err) => {
-                console.log('Error in write stream...');
-                console.log(err);
-            });
-            
-            var unix_timestamp = Math.floor(timestamp/1000);
-            var opposing_fleet_index = this.fleets.findIndex(opposing_fleet => opposing_fleet.fleet_id == p_fleet.engaged_fleet_id);
-            var opposing_fleet = this.fleets[opposing_fleet_index];
+            }
+            await file_write('[');
             const fleet_spacing = 7000;
             var unit_detail = {};
             var unit_detail_2 = {};
             var units = [[],[]];
+            var last_id;
 
+            //units.length is set to the number of parties involved in the fight, which is currently hardcoded to 2 -> each array in units will contain the units of one of the sides
             for (var i = 0; i < units.length; i++) {
+                var unit_capture = [];
                 var fleet_unit_count = 0;
                 var fleet = i == 0 ? p_fleet : opposing_fleet;
                 for (var j = 0; j < fleet.units.length; j++) {
@@ -857,19 +864,25 @@ module.exports = class Game {
                     if (unit_detail.unit_id !== undefined || unit_detail.unit_id != unit.unit_id) {
                         unit_detail = (await this.dbManager.get_unit_details([unit]))[0];
                     }
-                    units[i].push(...Array(unit.count).fill({unit_id: unit.unit_id, hull: unit_detail.hull, shield: unit_detail.shield, mobility: unit_detail.mobility, weapons: JSON.parse(JSON.stringify(unit_detail.weapons)), taken_shots: 0}));
+                    units[i].push(...Array(unit.count).fill(JSON.stringify({unit_id: unit.unit_id, hull: unit_detail.hull, shield: unit_detail.shield, mobility: unit_detail.mobility, weapons: JSON.parse(JSON.stringify(unit_detail.weapons)), taken_shots: 0})));
                 }
                 var weapon_details;
                 var prev_unit_id = -1;
                 for (var j = 0; j < units[i].length; j++) {
+                    units[i][j] = JSON.parse(units[i][j]);
                     var unit = units[i][j];
                     unit.x = 0 + curr_col++ * 40;
-                    unit.y = 0 - curr_row * 60 - (z == 1 ? fleet_spacing : 0);
+                    unit.y = 0 + (i == 1 ? -curr_row * 60 : curr_row * 60) - (i == 1 ? fleet_spacing : 0);
                     unit.move_by = {x: 0, y: -Math.floor(unit.mobility/10)};
                     if (curr_col > columns) {
                         curr_col = 1;
                         curr_row++;
                     }
+                    if (unit.unit_id !== last_id) {
+                        unit_capture.push([unit.unit_id]);
+                        last_id = unit.unit_id;
+                    }
+                    unit_capture.push(unit.x, unit.y);
                     if (weapon_details === undefined || unit.unit_id != prev_unit_id) {
                         weapon_details = await this.dbManager.get_unit_weapon_details(unit.weapons);
                         prev_unit_id = unit.unit_id;
@@ -879,33 +892,43 @@ module.exports = class Game {
                     }
                     unit.disabled = false;
                 }
+                await file_write(JSON.stringify(unit_capture) + ',');
             }
             var wreck_field = {metal: 0};
             var disabled_units = [];
+            var fighting = units[0].length > 0 && units[1].length > 0;
             //TODO: make a dmg e.g. 70% -> 130% representing that the damage dealt depends on the part of the hit ship. Increase chance to deal the lower amount when higher mobility?
-            while (units[0].length > 1 && units[1].length > 1) {
+            while (fighting) {
+                var unit_capture = [[],[]];
+                //units from [0] get to fire twice when destroyed (they fire first round, then get destroyed that round, then fire 2nd round and only then they get spliced, meaning they get an extra "round")
                 for (var z = 0; z < units.length; z++) {
-                    var fleet_units = units[z];
                     var opposing_fleet_units = units[(z + 1 == units.length ? 0 : z + 1)];
-                    for (var i = 0; i < fleet_units.length; i++) {
-                        var unit = fleet_units[i];
+                    for (var i = 0; i < units[z].length; i++) {
+                        var unit = units[z][i];
                         unit.x += unit.move_by.x;
                         unit.y += unit.move_by.y;
+                        unit_capture[z].push([Math.floor(unit.x), Math.floor(unit.y)]);
                         var weapon_details = await this.dbManager.get_unit_weapon_details(unit.weapons);
-                        var enemy_in_range = false;
+                        unit.move = true;
                         for (var j = 0; j < opposing_fleet_units.length; j++) {
                             var target_unit = opposing_fleet_units[j];
                             if (target_unit.hull > 0 && !target_unit.disabled) {
                                 for (var k = 0; k < weapon_details.length; k++) {
+                                    var units_distance = await (new Vector(unit, target_unit)).length();
+                                    if (units_distance <= weapon_details[k].range) {
+                                        unit.move = false;
+                                    }
                                     var firing = true;
                                     var charged_weapon_index = unit.weapons[k].curr_cds.findIndex(curr_cd => curr_cd <= 0);
-                                    while (charged_weapon_index != -1 && firing) {
+                                    while (charged_weapon_index != -1 && firing && !target_unit.disabled && !target_unit.hull <= 0) {
                                         if ((weapon_details[k].weapon_id != 4 || target_unit.shield > 0) && (weapon_details[k].weapon_id != 5 || target_unit.shield < 1)) {
-                                            var units_distance = await (new Vector(unit, target_unit)).length();
                                             if (units_distance <= weapon_details[k].range) {
-                                                var evade_chance = ((target_unit.mobility)/weapon_details[k].velocity)*2 + (units_distance/weapon_details[k].velocity)/5 - target_unit.taken_shots * 0.08;
+                                                var mobility_velocity_ratio = (target_unit.mobility)/weapon_details[k].velocity;
+                                                var evade_chance = (mobility_velocity_ratio + mobility_velocity_ratio/4) + (units_distance/weapon_details[k].velocity)/5 - target_unit.taken_shots * 0.08;
                                                 target_unit.taken_shots++;
                                                 var isHit = Math.random() > evade_chance;
+                                                //using length of unit_capture instead of i, since i gets decremented every time a unit gets deleted or disabled
+                                                unit_capture[z][unit_capture[z].length - 1].push(j, isHit);
                                                 if (isHit) {
                                                     if (weapon_details[k].damage !== undefined) {
                                                         var damage_leftover = weapon_details[k].damage - target_unit.shield;
@@ -920,7 +943,7 @@ module.exports = class Game {
                                                                 if (Math.random() <= (0.08 + damaged_hull_ratio)) {
                                                                     //if the unit receives over 60% dmg of it's current hull, 50% + % dmg of it's current hull over 60% that the unit explodes and 50% - % dmg of it's current hull over 60% that it just gets disabled
                                                                     if (Math.random() <= (0.5 + hull_damage_ratio - 0.6)) {
-                                                                        unit.hull = 0;
+                                                                        target_unit.hull = 0;
                                                                     } else {
                                                                         target_unit.disabled = true;
                                                                     }
@@ -932,7 +955,6 @@ module.exports = class Game {
                                                         target_unit.shield -= weapon_details[k].shield_damage; 
                                                     }
                                                 }
-                                                enemy_in_range = true;
                                                 unit.weapons[k].curr_cds[charged_weapon_index] = weapon_details[k].cooldown + 1;
                                             } else {
                                                 firing = false;
@@ -945,6 +967,12 @@ module.exports = class Game {
                                 }
                             }
                         }
+                    }
+                }
+                for (var i = 0; i < units.length; i++) {
+                    for (var j = units[i].length - 1; j >= 0; j--) {
+                        var unit = units[i][j];
+                        unit_capture[i][j].push(unit.disabled, unit.hull <= 0);
                         if (unit.hull > 0) {
                             if (!unit.disabled) {
                                 for (var k = 0; k < weapon_details.length; k++) {
@@ -967,29 +995,32 @@ module.exports = class Game {
                                         unit.shield = (unit_detail.shield >= new_shield_value ? new_shield_value : unit_detail.shield);
                                     }
                                 }
+                                if (unit.move) {
+                                    var opposing_fleet_units = units[(i == 0 ? 1 : 0)];
+                                    var target_unit = opposing_fleet_units[Math.floor(Math.random() * opposing_fleet_units.length)];
+                                    var target_vector = new Vector(unit, target_unit);
+                                    var target_vector_length = await target_vector.length();
+                                    if (target_vector_length > 0) {
+                                        target_vector = await target_vector.normalize();
+                                        unit.move_by = await target_vector.multiply(Math.floor(unit.mobility/10));
+                                    } else {
+                                        unit.move_by = {x:0,y:0};
+                                    }
+                                } else {
+                                    unit.move_by = {x:0,y:0};
+                                }
                             } else {
                                 disabled_units.push(unit);
-                                fleet_units.splice(i--,1);
+                                units[i].splice(j,1);
                             }
                         } else {
                             wreck_field.metal += (wreck_field.metal !== undefined ? 0 : wreck_field.metal) + unit_detail.cost.metal;
-                            fleet_units.splice(i--,1);
-                        }
-                        if (!enemy_in_range) {
-                            var target_unit = opposing_fleet_units[Math.floor(Math.random() * opposing_fleet_units.length)];
-                            var target_vector = new Vector(unit, target_unit);
-                            var target_vector_length = await target_vector.length();
-                            if (target_vector_length > 0) {
-                                target_vector = await target_vector.normalize();
-                                unit.move_by = await target_vector.multiply(Math.floor(unit.mobility/10));
-                            } else {
-                                unit.move_by = {x:0,y:0};
-                            }
-                        } else {
-                            unit.move_by = {x:0,y:0};
+                            units[i].splice(j,1);
                         }
                     }
                 }
+                fighting = units[0].length > 0 && units[1].length > 0;
+                await file_write(JSON.stringify(unit_capture) + (fighting ? ',' : ''));
             }
             for (var i = disabled_units.length - 1; i >= 0; i--) {
                 if (unit_detail.unit_id !== undefined || unit_detail.unit_id != disabled_units[i].unit_id) {
@@ -998,75 +1029,93 @@ module.exports = class Game {
                 wreck_field.metal += (wreck_field.metal !== undefined ? 0 : wreck_field.metal) + unit_detail.cost.metal;
                 disabled_units.splice(i,1);
             }
-            var rounds_text = `Fleet ${units[0].length > 1 ? 1 : 2} Won!`;
-            this.generate_report(p_fleet.owner, 'Attack result', rounds_text, unix_timestamp);
-            this.generate_report(opposing_fleet.owner, 'Fleet attacked', rounds_text, unix_timestamp);
+            var rounds_text;
+            if (units[0].length > 0) {
+                rounds_text = "Fleet 1 Won";
+            } else if (units[1].length > 0) {
+                rounds_text = "Fleet 2 Won";
+            } else {
+                rounds_text = "Both fleets have been lost";
+            }
+            this.generate_report(p_fleet.owner, 'Attack result', rounds_text, unix_timestamp, file_id);
+            this.generate_report(opposing_fleet.owner, 'Fleet attacked', rounds_text, unix_timestamp, file_id);
 
             p_fleet.engaged_fleet_id = undefined;
             p_fleet.fighting_cooldown = undefined;
             p_fleet.assigned_object_id = undefined;
             p_fleet.assigned_object_type = undefined;
             p_fleet.move_point = undefined;
+            p_fleet.calculating_fight = undefined;
             opposing_fleet.engaged_fleet_id = undefined;
             opposing_fleet.fighting_cooldown = undefined;
             opposing_fleet.assigned_object_id = undefined;
             opposing_fleet.assigned_object_type = undefined;
             opposing_fleet.move_point = undefined;
+            opposing_fleet.calculating_fight = undefined;
             delete p_fleet.units;
             delete opposing_fleet.units;
 
-            var defeated_fleet_index;
-            var defeated_fleet;
-            var winning_fleet;
+            var defeated_fleets_index = [];
+            var defeated_fleets = [];
+            var winner_fleet;
             var fleet_units;
-            if (units[0].length > 1) {
-                winning_fleet = p_fleet;
-                defeated_fleet = opposing_fleet;
-                defeated_fleet_index = opposing_fleet_index;
-                fleet_units = units[0];
+            if (units[0].length < 1) {
+                defeated_fleets.push(p_fleet);
+                defeated_fleets_index.push(this.fleets.findIndex(f_fleet => f_fleet.fleet_id == p_fleet.fleet_id));
             } else {
-                winning_fleet = opposing_fleet;
-                defeated_fleet = p_fleet;
-                defeated_fleet_index = this.fleets.findIndex(f_fleet => f_fleet.fleet_id == fleet.fleet_id);
+                winner_fleet = p_fleet;
+                fleet_units = units[0];
+            }
+            if (units[1].length < 1) {
+                defeated_fleets.push(opposing_fleet);
+                defeated_fleets_index.push(opposing_fleet_index);
+            } else {
+                winner_fleet = opposing_fleet;
                 fleet_units = units[1];
             }
-            
-            var units = [];
-            var capacity = 0;
-            for (i = 0; i < fleet_units.length; i++) {
-                var u_index = units.findIndex(unit => unit.unit_id == fleet_units[i].unit_id);
-                if (u_index != -1) {
-                    units[u_index].count++;
-                } else {
-                    units.push({unit_id: fleet_units[i].unit_id, count: 1});
+            defeated_fleets_index.sort((a, b) => b - a);
+            if (winner_fleet !== undefined) {
+                var units = [];
+                var capacity = 0;
+                for (i = 0; i < fleet_units.length; i++) {
+                    var u_index = units.findIndex(unit => unit.unit_id == fleet_units[i].unit_id);
+                    if (u_index != -1) {
+                        units[u_index].count++;
+                    } else {
+                        units.push({unit_id: fleet_units[i].unit_id, count: 1});
+                    }
                 }
-            }
-            var unit_details = await this.dbManager.get_unit_details(units);
-            for (var i = 0; i < unit_details.length; i++) {
-                if (units[i].count > 0) {
-                    capacity += unit_details[i].capacity * units[i].count;
+                var unit_details = await this.dbManager.get_unit_details(units);
+                for (var i = 0; i < unit_details.length; i++) {
+                    if (units[i].count > 0) {
+                        capacity += unit_details[i].capacity * units[i].count;
+                    }
+                    units[i].name = unit_details[i].name;
                 }
-                units[i].name = unit_details[i].name;
+                winner_fleet.capacity = capacity;
+                winner_fleet.units = units;
             }
-            winning_fleet.capacity = capacity;
-            winning_fleet.units = units;
             if (wreck_field.metal <= 0) {
-                this.deleted_fleets.push(defeated_fleet_index);
-                this.fleets.splice(defeated_fleet_index, 1);
+                for (var i = 0; i < defeated_fleets.length; i++) {
+                    this.deleted_fleets.push(defeated_fleets_index[i]);
+                    this.fleets.splice(defeated_fleets_index[i], 1);
+                }
             } else {
                 //TODO: only resources that the destroyed fleet was carrying will get added to the wreck_field, but the resources from the other fleet should be added as well (for now probably just the resources that couldn't fit due to possibly transporters getting destroyed, reducing the capacity of the fleet)
-                defeated_fleet.resources += wreck_field.metal * 0.4;
-                defeated_fleet.owner = undefined;
-                defeated_fleet.abandoned = true;
-                defeated_fleet.velocity = new Vector(Math.floor((0.0003 + Math.random() * 0.002) * Math.sign(Math.random() - 0.49) * 1e4) / 1e4, Math.floor((0.0003 + Math.random() * 0.002) * Math.sign(Math.random() - 0.49) * 1e4) / 1e4);
+                this.fleets[defeated_fleets_index[0]].resources += wreck_field.metal * 0.4;
+                this.fleets[defeated_fleets_index[0]].owner = undefined;
+                this.fleets[defeated_fleets_index[0]].abandoned = true;
+                this.fleets[defeated_fleets_index[0]].velocity = new Vector(Math.floor((0.0003 + Math.random() * 0.002) * Math.sign(Math.random() - 0.49) * 1e4) / 1e4, Math.floor((0.0003 + Math.random() * 0.002) * Math.sign(Math.random() - 0.49) * 1e4) / 1e4);
+                for (var i = 1; i < defeated_fleets.length; i++) {
+                    this.deleted_fleets.push(defeated_fleets_index[i]);
+                    this.fleets.splice(defeated_fleets_index[i], 1);
+                }
             }
-            await new Promise((resolve, reject) => {
-                file.write('test', () => {
-                    resolve();
-                });
-            });
+            await file_write(']');
+            var file_size = await this.get_file_size(file_path);
+            this.fr_dir_size += file_size;
+            this.check_fr_dir_size();
         } finally {
-            writable?.end();
             file?.end();
         }
     }
@@ -1175,11 +1224,11 @@ module.exports = class Game {
         fleet.expedition_length_id = undefined;
     }
 
-    async generate_report(username, title, content, timestamp) {
+    async generate_report(username, title, content, timestamp, file_id) {
         var player_socket;
         //going through socket connections instead of players because a user can be on other pages than map, which means they won't be in the players array, but they still will be connected through a socket and should be informed of new reports
         this.server.sockets.sockets.forEach(socket => { if (socket.username == username) {player_socket = socket}});
-        await this.dbManager.save_report(username, title, content, timestamp);
+        await this.dbManager.save_report(username, title, content, timestamp, file_id);
         if (player_socket !== undefined) {
             player_socket.emit('new_report');
         }
@@ -1203,6 +1252,115 @@ module.exports = class Game {
         return this.available_space_objects.shift();
     }
 
+    /**
+     * Loads the times of fight record files
+     */
+    async load_fr_timers() {
+        var files = await fsPromises.readdir(fr_dir);
+        for (var i = 0; i < files.length; i++) {
+            var is_meta_file = (files[i].split(fr_meta_file).length > 1);
+            if (files[i] != 'tmp.txt' && !is_meta_file) {
+                var file_path = fr_dir + files[i];
+                var file_size = await this.get_file_size(file_path);
+                this.fr_dir_size += file_size;
+                var meta_file_path = file_path.split('.txt')[0] + fr_meta_file + '.txt';
+                var file_content = JSON.parse(await this.load_file_content(meta_file_path));
+                await this.add_fr_timer(file_path, file_content[0], file_content[1]);
+            }
+        }
+        this.fight_records.sort((a,b) => a.timestamp - b.timestamp);
+        return this.check_fr_dir_size();
+    }
+
+    async add_fr_timer(file_path, timestamp, duration) {
+        this.fight_records.push({file_path: path.normalize(file_path), timestamp: timestamp, duration: duration, deleting: false, reading: false});
+    }
+
+    /**
+     * Checks if any of the files have exceeded their duration timers and deletes one of them
+     * @param {Boolean} force_delete Default false. When true, delete the oldest file whether the duration has been exceeded or not (does not sort the fight_records array or compare timestamps, expected to be already sorted)
+     * @returns True if a file has been successfully deleted, false if no file has been deleted
+     */
+    async delete_fr_file(force_delete) {
+        //TODO: Probably need to check first that the file is not being sent to a player before deleting it
+        if (force_delete) {
+            var file_size = await this.get_file_size(this.fight_records[0].file_path);
+            var file_id = this.fight_records[0].file_path.split(fr_name)[1].split('.txt')[0];
+            await this.dbManager.timeout_report(file_id);
+            fs.unlinkSync(this.fight_records[0].file_path);
+            fs.unlinkSync(this.fight_records[0].file_path.split('.txt')[0] + fr_meta_file + '.txt');
+            this.fr_dir_size -= file_size;
+            this.fight_records.splice(0,1);
+            return true;
+        } else {
+            for (var i = 0; i < this.fight_records.length; i++) {
+                var fr_record = this.fight_records[i];
+                if (fr_record.timestamp + fr_record.duration <= await utils.get_timestamp()) {
+                    var file_size = await this.get_file_size(fr_record.file_path);
+                    var file_id = this.fight_records[0].file_path.split(fr_name)[1].split('.txt')[0];
+                    await this.dbManager.timeout_report(file_id);
+                    fs.unlinkSync(fr_record.file_path);
+                    fs.unlinkSync(fr_record.file_path.split('.txt')[0] + fr_meta_file + '.txt');
+                    this.fr_dir_size -= file_size;
+                    this.fight_records.splice(i,1);
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    async get_file_size(file_path) {
+        var file_stats = await fsPromises.stat(file_path);
+        var file_size = file_stats.size;
+        var file_actual_size = file_size + file_stats.blksize - file_size % file_stats.blksize;
+        return file_actual_size;
+    }
+
+    /**
+     * 
+     * @returns True if the current fr_dir size exceeds or equals fr_dir size limit, otherwise returns false
+     */
+    async check_fr_dir_size() {
+        var file_deleted = true;
+        while (file_deleted && this.fr_dir_size >= fr_dir_size_limit) {
+            file_deleted = await this.delete_fr_file();
+        }
+        while (this.fr_dir_size >= fr_max_dir_size) {
+            await this.delete_fr_file(true);
+        }
+        return this.fr_dir_size >= fr_dir_size_limit;
+    }
+
+    async load_file_content(file_path) {
+        return fsPromises.readFile(file_path);
+    }
+
+    /**
+     * 
+     * @param {Number} report_id "ID" of the file
+     * @returns {Readstream} Readstream of the file if the file exists (else undefined)
+     */
+    async get_fr(file_id) {
+        return fs.createReadStream(fr_dir + '/' + fr_name + file_id + '.txt');
+    }
+
+    async get_report_details(report_id) {
+        var report_details = await this.dbManager.get_report_details(report_id);
+        if (report_details !== undefined) {
+            if (report_details.file_id !== null) {
+                var file_path = path.normalize(fr_dir + '/' + fr_name + report_details.file_id + '.txt');
+                var file_details = this.fight_records.find(fight_record => fight_record.file_path == file_path);
+                if (file_details !== undefined) {
+                    report_details.fr_timestamp = file_details.timestamp;
+                    report_details.duration = file_details.duration;
+                }
+            }
+            delete report_details.file_id;
+            return report_details;
+        }
+        return;
+    }
 
     async stop() {
 		clearTimeout(this.logic_loop);

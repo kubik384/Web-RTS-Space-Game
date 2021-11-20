@@ -699,15 +699,25 @@ module.exports = class DbManager {
     }
 
     //certain information is being saved (e.g. fleets, space objects, etc.) in a file. This is however being saved only every x minutes. In case the server shut downs or something happens to the data, everything that happens before the last save will be rolled back. However, since reports are being saved on the db (since keeping them in RAM makes no sense), they are permanently saved immediately. Which can result in players keeping reports of actions that have been reverted and therefore haven't happened.
-    async save_report(username, title, content, timestamp) {
+    async save_report(username, title, content, timestamp, file_id) {
         var query = `SELECT player_id 
         FROM players
         WHERE username = ?`;
         var player_id = (await this.execute_query(query, [username]))[0].player_id;
-
+        var arg_array = [player_id, title, content, timestamp];
+        if (file_id !== undefined) {
+            arg_array.push(file_id);
+        }
         var query = `INSERT INTO player_reports
-        VALUES (?,UUID(),?,?,0,0,?)`;
-        return this.execute_query(query, [player_id, title, content, timestamp]);
+        VALUES (?,UUID(),?,?,0,0,?${file_id !== undefined ? ',?' : ''})`;
+        return this.execute_query(query, arg_array);
+    }
+
+    async timeout_report(file_id) {
+        var query = `UPDATE player_reports
+        SET file_id = NULL
+        WHERE file_id = ?`;
+        return this.execute_query(query, [file_id]);
     }
 
     async get_new_reports_count(username) {
@@ -730,11 +740,19 @@ module.exports = class DbManager {
         return {reports: newest_reports, new_reports_count: new_reports_count};
     }
 
-    async get_report_details(report_id) {
-        var query = `SELECT report_id, title, text, timestamp
-        FROM player_reports
-        WHERE report_id = ?`;
-        return ((await this.execute_query(query, [report_id]))[0]);
+    async get_report_details(report_id, username) {
+        var query = `SELECT pr.report_id, pr.title, pr.text, pr.timestamp, pr.file_id
+        FROM player_reports pr
+        `;
+        var arg_array = [report_id];
+        if (username === undefined) {
+            query += 'WHERE pr.report_id = ?';
+        } else {
+            query += `INNER JOIN players p ON p.player_id = pr.player_id
+            WHERE pr.report_id = ? && p.username = ?`;
+            arg_array.push(username);
+        }
+        return ((await this.execute_query(query, arg_array))[0]);
     }
 
     async mark_reports_displayed(username, timestamp) {

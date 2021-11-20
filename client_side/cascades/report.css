@@ -32,6 +32,15 @@ a {
 	overflow-y: auto;
 }
 
+#report_container a {
+	font-size: 14px;
+	color: blue;
+}
+
+#report_container a:hover {
+	color: darkblue;
+}
+
 #report_overlay {
 	position: fixed;
 	top: 0;
@@ -43,4 +52,24 @@ a {
 
 tr > td {
 	padding-right: 30px;
+}
+
+#fr_canvas {
+	width: 80%;
+	height: 80%;
+	position: absolute;
+	top: 10%;
+	left: 10%;
+	z-index: 4;
+	background-color: black;
+}
+
+.unavailable_link {
+	color: black !important;
+	cursor: default;
+}
+
+.unavailable_link:hover {
+	color: black;
+	cursor: default;
 }

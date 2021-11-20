@@ -22,6 +22,16 @@ class Base_Page {
         } else {
             this._buildings_details = JSON.parse(this._buildings_details);
         }
+        this._unit_weapons = sessionStorage.getItem('unit_weapons');
+        if (this._unit_weapons === null) {
+            this.unit_weapons_promise = new Promise(async function(resolve, reject) {
+                var response = await fetch('/client_side/unit_weapons.json');
+                var response_text = await response.text();
+                resolve(sessionStorage.setItem('unit_weapons', response_text));
+            });
+        } else {
+            this._unit_weapons = JSON.parse(this._unit_weapons);
+        }
 
         /*
         sessionStorage.getItem('units_details').then(units_details => {
@@ -137,6 +147,18 @@ class Base_Page {
             this._buildings_details = JSON.parse(sessionStorage.getItem('buildings_details'));
         }
         return this._buildings_details;
+    }
+
+    async get_unit_weapon_dts(weapon_id) {
+        return (await this.get_unit_weapons_dts()).find(uw => uw.weapon_id == weapon_id);
+    }
+
+    async get_unit_weapons_dts() {
+        if (this._unit_weapons === null) {
+            await this.unit_weapons_promise;
+            this._unit_weapons = JSON.parse(sessionStorage.getItem('unit_weapons'));
+        }
+        return this._unit_weapons;
     }
 }
 

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Oct 26, 2021 at 11:50 AM
+-- Generation Time: Nov 20, 2021 at 03:02 PM
 -- Server version: 10.4.17-MariaDB
 -- PHP Version: 8.0.0
 
@@ -47,7 +47,8 @@ CREATE TABLE `players` (
 --
 
 INSERT INTO `players` (`player_id`, `username`, `password`, `system_id`, `space_object_id`, `res_last_update`, `reserved_pop`, `metal`, `kerosene`, `hydrogen`, `uranium`, `research`) VALUES
-(1, 'Newstory', '$2b$10$jqoTtwOPhOALYsS7VtZ90eOLuj0/HFlyLzlfWLsaSLaQDHZpcw3uG', 1, 2, 1635235331, 3.000000, 0.774750, 100.000000, 0.000000, 0.000000, '{\"researched_techs\":[\"1\",\"2\",\"3\"]}');
+(1, 'Newstory', '$2b$10$jqoTtwOPhOALYsS7VtZ90eOLuj0/HFlyLzlfWLsaSLaQDHZpcw3uG', 1, 2, 1637414478, 3.000000, 500.000000, 100.000000, 0.000000, 0.000000, '{\"researched_techs\":[\"1\",\"2\",\"3\"]}'),
+(2, 'Newstory2', '$2b$10$GnLP0TiKVWZPj/SxWaqWc.9ON02/eiXvBW.Q/JUlyQvvgtGbDgW5.', 1, 3, 1636733282, 0.000000, 100.000000, 100.000000, 0.000000, 0.000000, '{\"researched_techs\": []}');
 
 -- --------------------------------------------------------
 
@@ -68,10 +69,17 @@ CREATE TABLE `player_buildings` (
 --
 
 INSERT INTO `player_buildings` (`player_id`, `building_id`, `level`, `update_start`, `downgrade`) VALUES
-(1, 5, 1, NULL, 0),
+(2, 1, 2, NULL, 0),
 (1, 1, 3, NULL, 0),
 (1, 6, 2, NULL, 0),
-(1, 3, 2, NULL, 0);
+(1, 3, 2, NULL, 0),
+(1, 4, 2, NULL, 0),
+(2, 2, 3, NULL, 0),
+(2, 3, 1, NULL, 0),
+(2, 6, 1, NULL, 0),
+(2, 5, 1, NULL, 0),
+(1, 5, 1, NULL, 0),
+(2, 4, 2, NULL, 0);
 
 -- --------------------------------------------------------
 
@@ -86,7 +94,8 @@ CREATE TABLE `player_reports` (
   `text` text NOT NULL,
   `isRead` tinyint(1) NOT NULL,
   `gotDisplayed` tinyint(1) NOT NULL,
-  `timestamp` int(11) UNSIGNED NOT NULL
+  `timestamp` int(11) UNSIGNED NOT NULL,
+  `file_id` int(2) UNSIGNED DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -106,8 +115,8 @@ CREATE TABLE `player_units` (
 --
 
 INSERT INTO `player_units` (`player_id`, `unit_id`, `count`) VALUES
-(1, 1, 1093),
-(1, 2, 211),
+(1, 1, 1000000),
+(1, 2, 252),
 (1, 3, 200),
 (1, 4, 200),
 (1, 5, 200),
@@ -127,7 +136,29 @@ INSERT INTO `player_units` (`player_id`, `unit_id`, `count`) VALUES
 (1, 19, 0),
 (1, 20, 0),
 (1, 21, 0),
-(1, 22, 0);
+(1, 22, 0),
+(2, 1, 3),
+(2, 2, 1),
+(2, 3, 0),
+(2, 4, 0),
+(2, 5, 0),
+(2, 6, 0),
+(2, 7, 0),
+(2, 8, 0),
+(2, 9, 0),
+(2, 10, 0),
+(2, 11, 0),
+(2, 12, 0),
+(2, 13, 0),
+(2, 14, 0),
+(2, 15, 0),
+(2, 16, 0),
+(2, 17, 0),
+(2, 18, 0),
+(2, 19, 0),
+(2, 20, 0),
+(2, 21, 0),
+(2, 22, 0);
 
 -- --------------------------------------------------------
 
@@ -186,13 +217,13 @@ ALTER TABLE `player_unit_ques`
 -- AUTO_INCREMENT for table `players`
 --
 ALTER TABLE `players`
-  MODIFY `player_id` mediumint(9) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `player_id` mediumint(9) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `player_unit_ques`
 --
 ALTER TABLE `player_unit_ques`
-  MODIFY `unit_que_id` int(8) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `unit_que_id` int(8) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

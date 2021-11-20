@@ -18,6 +18,7 @@ const saltRounds = 10;
 const gameURL = '/game';
 const planetURL = gameURL + '/planet';
 const mapURL = gameURL + '/map';
+const reportsURL = gameURL + '/reports';
 const reportURL = gameURL + '/report';
 const messageURL = gameURL + '/message';
 const researchURL = gameURL + '/research';
@@ -149,7 +150,7 @@ app.get(researchURL, function(req,res) {
 	}
 });
 
-app.get(reportURL, function(req,res) {
+app.get(reportsURL, function(req,res) {
 	if (req.cookies !== undefined && req.cookies.token !== undefined) {
 		if (is_valid_token(req.cookies.token)) {
 			res.sendFile(path.join(root, 'pages/report.html'));
@@ -161,6 +162,49 @@ app.get(reportURL, function(req,res) {
 		res.redirect(303, '/');
 	}
 });
+
+app.get(reportURL, async function(req,res) {
+	if (req.cookies !== undefined && req.cookies.token !== undefined) {
+		if (is_valid_token(req.cookies.token)) {
+			var username = req.cookies.token;
+			var report_id = req.query.id;
+			var report_details = await dbManager.get_report_details(report_id, username);
+			if (report_details !== undefined) {
+				if (report_details.file_id !== null) {
+					var readstream = await game.get_fr(report_details.file_id);
+					readstream.pipe(res);
+					readstream.on('error', (err) => {
+						if (err.code == 'ENOENT') {
+							console.log('Error: Fight Record was not found despite remaining in "available" state');
+							res.status(409).send();
+						} else {
+							console.log('Error occured when reading report file: ' + err);
+							res.status(500).send();
+						}
+					});
+					res.on('error', (err) => {
+						console.log('Error occured when writing out report file: ' + err);
+						res.status(500).send();
+					});
+					readstream.on('finish', () => {
+						res.status(200).send();
+					});
+				} else {
+					res.status(404).send();
+				}
+			} else {
+				res.status(400).send();
+			}
+		} else {
+			res.clearCookie('token');
+			res.redirect(303, '/');
+		}
+	} else {
+		res.redirect(303, '/');
+	}
+});
+
+app.listen(3000);
 
 app.use(function(req, res){
 	res.redirect('/');
@@ -248,7 +292,7 @@ io.on('connection', socket => {
 	});
 
 	socket.on('load_report', report_id => {
-		dbManager.get_report_details(report_id).then(report_details => { socket.emit('report_details', JSON.stringify(report_details)); });
+		game.get_report_details(report_id).then(report_details => { socket.emit('report_details', JSON.stringify(report_details)); });
 	});
 
 	socket.on('reports_displayed', timestamp => {
@@ -257,6 +301,11 @@ io.on('connection', socket => {
 
 	socket.on('report_read', report_id => {
 		dbManager.mark_report_displayed(report_id);
+	});
+
+	socket.on('get_fr_status', async (report_id) => {
+		var report_details = await dbManager.get_report_details(report_id, username);
+		socket.emit('fr_availability', (report_details !== undefined && report_details.file_id !== null));
 	});
 
 	socket.on('research_datapack_request', () => {

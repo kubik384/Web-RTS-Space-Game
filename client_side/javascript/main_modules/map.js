@@ -336,6 +336,7 @@ class Game extends Base_Page {
                                 var fleets = this.updates[0].fleets;
                                 var f_index = fleets.findIndex(fleet => fleet.fleet_id == object.id);
                                 var fleet = fleets[f_index];
+                                console.log(fleet);
                                 var fleet_name = document.getElementById('fleet_name');
                                 fleet_name.textContent = this.get_fleet_name(fleet);
                                 var table = document.getElementById('fleet_units_table');
@@ -565,7 +566,7 @@ class Game extends Base_Page {
                         this.map_ctx.beginPath();
                         this.map_ctx.moveTo(x_position, y_position);
                         this.map_ctx.lineTo(fleets[i].move_point.x * this.zoom, fleets[i].move_point.y * this.zoom);
-                        this.map_ctx.strokeStyle = "red";
+                        this.map_ctx.strokeStyle = "lightblue";
                         this.map_ctx.stroke();
                         this.map_ctx.restore();
                     }
@@ -585,8 +586,10 @@ class Game extends Base_Page {
                     this.map_ctx.textBaseline = "middle";
                     if (i == this.controlled_fleet_index) {
                         this.map_ctx.fillStyle = "lightblue";
-                    } else {
+                    } else if (fleets[i].abandoned === undefined) {
                         this.map_ctx.fillStyle = "red";
+                    } else {
+                        this.map_ctx.fillStyle = "gray";
                     }
                     this.map_ctx.fillText(this.get_fleet_name(fleets[i]), x_position, y_position - this.fleet_name_spacing * this.zoom);
                     this.map_ctx.restore();
