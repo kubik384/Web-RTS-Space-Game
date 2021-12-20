@@ -10,7 +10,7 @@
         "capacity": 0,
         "hull": 15,
         "shield": 1,
-        "mobility": 250,
+        "mobility": 0.25,
         "weapons": [
             {"weapon_id": 1, "count": 1}
         ]
@@ -26,7 +26,7 @@
         "capacity": 0,
         "hull": 25,
         "shield": 5,
-        "mobility": 210,
+        "mobility": 0.21,
         "weapons": [
             {"weapon_id": 1, "count": 2}
         ]
@@ -42,7 +42,7 @@
         "capacity": 10,
         "hull": 30,
         "shield": 60,
-        "mobility": 160,
+        "mobility": 0.16,
         "weapons": [
             {"weapon_id": 1, "count": 5},
             {"weapon_id": 2, "count": 1}
@@ -59,7 +59,7 @@
         "capacity": 20,
         "hull": 60,
         "shield": 75,
-        "mobility": 120,
+        "mobility": 0.12,
         "weapons": [
             {"weapon_id": 1, "count": 2},
             {"weapon_id": 2, "count": 4}
@@ -76,7 +76,7 @@
         "capacity": 5,
         "hull": 20,
         "shield": 20,
-        "mobility": 190,
+        "mobility": 0.19,
         "weapons": [
             {"weapon_id": 1, "count": 2},
             {"weapon_id": 3, "count": 1}
@@ -93,7 +93,7 @@
         "capacity": 6,
         "hull": 100,
         "shield": 100,
-        "mobility": 110,
+        "mobility": 0.11,
         "weapons": [
             {"weapon_id": 2, "count": 4},
             {"weapon_id": 3, "count": 3}
@@ -110,7 +110,7 @@
         "capacity": 6,
         "hull": 300,
         "shield": 150,
-        "mobility": 90,
+        "mobility": 0.09,
         "weapons": [
             {"weapon_id": 3, "count": 3},
             {"weapon_id": 4, "count": 1},
@@ -128,7 +128,7 @@
         "capacity": 6,
         "hull": 150,
         "shield": 150,
-        "mobility": 140,
+        "mobility": 0.14,
         "weapons": [
             {"weapon_id": 6, "count": 2}
         ]
@@ -144,7 +144,7 @@
         "capacity": 6,
         "hull": 100,
         "shield": 10,
-        "mobility": 140,
+        "mobility": 0.14,
         "weapons": [
             {"weapon_id": 2, "count": 4}
         ],
@@ -161,7 +161,7 @@
         "capacity": 6,
         "hull": 500,
         "shield": 750,
-        "mobility": 70,
+        "mobility": 0.07,
         "weapons": [
             {"weapon_id": 2, "count": 24},
             {"weapon_id": 3, "count": 10},
@@ -182,7 +182,7 @@
         "capacity": 6,
         "hull": 300,
         "shield": 400,
-        "mobility": 110,
+        "mobility": 0.11,
         "weapons": [
             {"weapon_id": 7, "count": 2},
             {"weapon_id": 8, "count": 1}

@@ -3,65 +3,65 @@
         "weapon_id": 1,
         "name": "low-energy laser",
         "damage": 15,
-        "range": 150,
-        "velocity": 500,
-        "cooldown": 1
+        "range": 250,
+        "velocity": 0.50,
+        "cooldown": 300
     },
     {
         "weapon_id": 2,
         "name": "medium-energy laser",
         "damage": 30,
-        "range": 220,
-        "velocity": 620,
-        "cooldown": 2
+        "range": 365,
+        "velocity": 0.62,
+        "cooldown": 600
     },
     {
         "weapon_id": 3,
         "name": "high-energy laser",
         "damage": 85,
-        "range": 310,
-        "velocity": 700,
-        "cooldown": 3
+        "range": 515,
+        "velocity": 0.74,
+        "cooldown": 900
     },
     {
         "weapon_id": 4,
         "name": "Ion cannon",
         "shield-damage": 85,
-        "range": 380,
-        "velocity": 3820,
-        "cooldown": 2
+        "range": 630,
+        "velocity": 3.82,
+        "cooldown": 600
     },
     {
         "weapon_id": 5,
         "name": "Beam cannon",
         "damage": 85,
-        "range": 400,
-        "velocity": 4260,
-        "cooldown": 4
+        "range": 670,
+        "velocity": 4.26,
+        "cooldown": 1200
     },
     {
         "weapon_id": 6,
         "name": "Gauss cannon",
         "damage": 220,
-        "range": 470,
-        "velocity": 820,
-        "cooldown": 5
+        "range": 780,
+        "velocity": 0.82,
+        "cooldown": 1500
     },
     {
         "weapon_id": 7,
         "name": "Plasma cannon",
         "damage": 480,
-        "range": 590,
-        "velocity": 1070,
-        "cooldown": 10
+        "range": 980,
+        "velocity": 1.07,
+        "cooldown": 3000
     },
     {
         "weapon_id": 8,
         "name": "Neutron cannon",
         "damage": 800,
-        "range": 840,
-        "velocity": 1750,
-        "cooldown": 20
+        "range": 1395,
+        "velocity": 1.75,
+        "cooldown": 6000
     },
     {
         "weapon_id": 9,

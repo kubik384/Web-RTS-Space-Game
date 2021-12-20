@@ -93,6 +93,7 @@ class Canvas {
             this.dist_travelled.y = 0;
         });
         this.tick_timestamp = Date.now();
+        this.draw_timestamp = Date.now();
         window.requestAnimationFrame(this.draw.bind(this));
     }
 

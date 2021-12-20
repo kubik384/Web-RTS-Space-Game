@@ -7,7 +7,7 @@ class Vector {
     constructor(a, b, c, d) {
         if (typeof a === "number" && !isNaN(a)) {
             if (b === undefined) {
-                var angle = Math.toRad(a);
+                var angle = a/(Math.PI/180);
                 this.x = Math.cos(angle);
                 this.y = Math.sin(angle);
             }
@@ -87,6 +87,19 @@ class Vector {
     async isNull() {
         return (this.x == 0 && this.y == 0);
     }
+    
+    async angle(v) {
+        if (typeof v === "object" && typeof v.x === "number" && typeof v.y === "number") {
+            var a = Math.atan2(this.y, this.x);
+            var b = Math.atan2(v.y, v.x);
+            var angle = Math.floor(Math.abs(a-b) * 15)/15;
+            if(angle > 180) {
+                return 360 - angle;
+            }
+            else return angle;
+        }
+        else return (Math.floor(Math.atan2(this.y, this.x) * 15)/15);
+    };
     
 }
 

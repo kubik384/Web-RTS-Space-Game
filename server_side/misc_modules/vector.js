@@ -63,7 +63,7 @@ module.exports = class Vector {
         for (var i = 0; i < arguments.length; i++) {
             var v = arguments[i];
             if (typeof v !== "object" || typeof v.x !== "number" || typeof v.y !== "number")
-                throw new Error("Invalid vector (parameter " + (i+1) + ")");
+                throw new Error(`Invalid vector (parameter " + ${i+1} + ")`);
             else {
                 x+=v.x;
                 y+=v.y;

@@ -6,6 +6,7 @@ var fs = require('fs');
 var fsPromises = fs.promises;
 var path = require('path');
 const { report } = require('process');
+const e = require('cors');
 const fr_name = 'fight_';
 const fr_meta_file = '_meta';
 const fr_dir = path.resolve(__dirname, '../fight_records') + '/';
@@ -797,7 +798,7 @@ module.exports = class Game {
         }
     }
 
-    //TODO: Currently creates huge files when the number of units reaches certain amount. Change the files to use binary over text (need only 3 bits as opposed to the 1 byte for text)
+    //TODO: Currently creates huge files when the number of units reaches certain amount. Change the files to use binary over text (need only 3 bits as opposed to the 1 byte for text, also instead of using false/true, just shorten it to f, t. Also when units move a long distance in generally the same vector or are just standing still, only the start and end of the vector can/should be captured to preserve even more space, etc. etc.)
     async execute_fight(p_fleet, timestamp) {
         p_fleet.calculating_fight = true;
         var opposing_fleet_index = this.fleets.findIndex(opposing_fleet => opposing_fleet.fleet_id == p_fleet.engaged_fleet_id);
@@ -846,6 +847,7 @@ module.exports = class Game {
             var unit_detail = {};
             var unit_detail_2 = {};
             var units = [[],[]];
+            var defeated_fleets_index = [];
             var last_id;
 
             //units.length is set to the number of parties involved in the fight, which is currently hardcoded to 2 -> each array in units will contain the units of one of the sides
@@ -868,12 +870,12 @@ module.exports = class Game {
                 }
                 var weapon_details;
                 var prev_unit_id = -1;
-                for (var j = 0; j < units[i].length; j++) {
+                for (var j = units[i].length - 1; j >= 0; j--) {
                     units[i][j] = JSON.parse(units[i][j]);
                     var unit = units[i][j];
-                    unit.x = 0 + curr_col++ * 40;
+                    unit.x = 0 + 40 * i + curr_col++ * 100;
                     unit.y = 0 + (i == 1 ? -curr_row * 60 : curr_row * 60) - (i == 1 ? fleet_spacing : 0);
-                    unit.move_by = {x: 0, y: -Math.floor(unit.mobility/10)};
+                    unit.velocity = new Vector(0, (i == 1 ? 1 : -1) * Math.floor(unit.mobility));
                     if (curr_col > columns) {
                         curr_col = 1;
                         curr_row++;
@@ -895,86 +897,201 @@ module.exports = class Game {
                 await file_write(JSON.stringify(unit_capture) + ',');
             }
             var wreck_field = {metal: 0};
-            var disabled_units = [];
-            var fighting = units[0].length > 0 && units[1].length > 0;
+            var projectiles = [];
+            var projectile_id = 1;
+            var calculating = units[0].length > 0 && units[1].length > 0;
+            var loop_no = 0;
+            var unit_capture = [[],[],[]];
+            var projectiles_generated = [];
+            var projectile_hits = [];
+            var neutralized_unit_positions = [];
+            var is_capture_loop = true;
+            var is_last_loop = false;
             //TODO: make a dmg e.g. 70% -> 130% representing that the damage dealt depends on the part of the hit ship. Increase chance to deal the lower amount when higher mobility?
-            while (fighting) {
-                var unit_capture = [[],[]];
-                //units from [0] get to fire twice when destroyed (they fire first round, then get destroyed that round, then fire 2nd round and only then they get spliced, meaning they get an extra "round")
+            while (calculating || is_last_loop) {
+                if (loop_no == 100 || is_last_loop) {
+                    loop_no = 0;
+                    is_capture_loop = true;
+                } else {
+                    loop_no++;
+                    unit_capture = [[],[],[]];
+                    if (is_capture_loop) {
+                        is_capture_loop = false;
+                    }
+                }
+                var fighting = true;
                 for (var z = 0; z < units.length; z++) {
+                    var has_functioning_units = false;
                     var opposing_fleet_units = units[(z + 1 == units.length ? 0 : z + 1)];
                     for (var i = 0; i < units[z].length; i++) {
                         var unit = units[z][i];
-                        unit.x += unit.move_by.x;
-                        unit.y += unit.move_by.y;
-                        unit_capture[z].push([Math.floor(unit.x), Math.floor(unit.y)]);
-                        var weapon_details = await this.dbManager.get_unit_weapon_details(unit.weapons);
-                        unit.move = true;
-                        for (var j = 0; j < opposing_fleet_units.length; j++) {
-                            var target_unit = opposing_fleet_units[j];
-                            if (target_unit.hull > 0 && !target_unit.disabled) {
-                                for (var k = 0; k < weapon_details.length; k++) {
-                                    var units_distance = await (new Vector(unit, target_unit)).length();
-                                    if (units_distance <= weapon_details[k].range) {
-                                        unit.move = false;
-                                    }
-                                    var firing = true;
-                                    var charged_weapon_index = unit.weapons[k].curr_cds.findIndex(curr_cd => curr_cd <= 0);
-                                    while (charged_weapon_index != -1 && firing && !target_unit.disabled && !target_unit.hull <= 0) {
-                                        if ((weapon_details[k].weapon_id != 4 || target_unit.shield > 0) && (weapon_details[k].weapon_id != 5 || target_unit.shield < 1)) {
-                                            if (units_distance <= weapon_details[k].range) {
-                                                var mobility_velocity_ratio = (target_unit.mobility)/weapon_details[k].velocity;
-                                                var evade_chance = (mobility_velocity_ratio + mobility_velocity_ratio/4) + (units_distance/weapon_details[k].velocity)/5 - target_unit.taken_shots * 0.08;
-                                                target_unit.taken_shots++;
-                                                var isHit = Math.random() > evade_chance;
-                                                //using length of unit_capture instead of i, since i gets decremented every time a unit gets deleted or disabled
-                                                unit_capture[z][unit_capture[z].length - 1].push(j, isHit);
-                                                if (isHit) {
-                                                    if (weapon_details[k].damage !== undefined) {
-                                                        var damage_leftover = weapon_details[k].damage - target_unit.shield;
-                                                        target_unit.shield -= weapon_details[k].damage;
-                                                        if (damage_leftover > 0) {
-                                                            var hull_damage_ratio = damage_leftover/target_unit.hull;
-                                                            if (damage_leftover < target_unit.hull && hull_damage_ratio >= 0.6) {
-                                                                if (unit_detail_2.unit_id !== undefined || unit_detail_2.unit_id != target_unit.unit_id) {
-                                                                    unit_detail_2 = (await this.dbManager.get_unit_details([target_unit]))[0];
-                                                                }
-                                                                var damaged_hull_ratio = 1 - (target_unit.hull - damage_leftover)/unit_detail_2.hull;
-                                                                if (Math.random() <= (0.08 + damaged_hull_ratio)) {
-                                                                    //if the unit receives over 60% dmg of it's current hull, 50% + % dmg of it's current hull over 60% that the unit explodes and 50% - % dmg of it's current hull over 60% that it just gets disabled
-                                                                    if (Math.random() <= (0.5 + hull_damage_ratio - 0.6)) {
-                                                                        target_unit.hull = 0;
-                                                                    } else {
-                                                                        target_unit.disabled = true;
-                                                                    }
-                                                                }
-                                                            }
-                                                            target_unit.hull -= damage_leftover;
-                                                        }
-                                                    } else if (weapon_details[k].shield_damage !== undefined) {
-                                                        target_unit.shield -= weapon_details[k].shield_damage; 
+                        if (unit.neutralized === undefined) {
+                            has_functioning_units = true;
+                            if (is_capture_loop) {
+                                unit_capture[z].push([unit]);
+                            }
+                            var weapon_details = await this.dbManager.get_unit_weapon_details(unit.weapons);
+                            //c = current (?)
+                            var c_unit_distance = undefined;
+                            var c_unit = undefined;
+                            for (var j = 0; j < opposing_fleet_units.length; j++) {
+                                var target_unit = opposing_fleet_units[j];
+                                if (target_unit.hull > 0 && !target_unit.disabled) {
+                                    for (var k = 0; k < weapon_details.length; k++) {
+                                        //calculating distance between two units twice (once for each of the two units) -> can be optimized?
+                                        var units_distance = await (new Vector(unit, target_unit)).length();
+                                        if (c_unit_distance === undefined) {
+                                            c_unit_distance = units_distance;
+                                            c_unit = target_unit;
+                                        } else if (c_unit_distance > units_distance) {
+                                            c_unit_distance = units_distance;
+                                            c_unit = target_unit;
+                                        }
+                                        var firing = true;
+                                        var charged_weapon_index = unit.weapons[k].curr_cds.findIndex(curr_cd => curr_cd <= 0);
+                                        while (charged_weapon_index != -1 && firing && !target_unit.disabled && !target_unit.hull <= 0) {
+                                            if ((weapon_details[k].weapon_id != 4 || target_unit.shield > 0) && (weapon_details[k].weapon_id != 5 || target_unit.shield < 1)) {
+                                                if (units_distance <= weapon_details[k].range) {
+                                                    //x and y do not change, only there to calculate the distance of the original position of the projectile and the target unit
+                                                    projectiles.push({projectile_id: projectile_id, x: unit.x, y: unit.y, dist_travelled: weapon_details[k].velocity, source: weapon_details[k], target_unit: target_unit});
+                                                    if (is_capture_loop) {
+                                                        unit_capture[z][unit_capture[z].length - 1].push(projectile_id, j);
+                                                    } else {
+                                                        projectiles_generated.push(projectile_id, z, unit, j);
                                                     }
+                                                    projectile_id++;
+                                                    unit.weapons[k].curr_cds[charged_weapon_index] = weapon_details[k].cooldown + 1;
+                                                } else {
+                                                    firing = false;
                                                 }
-                                                unit.weapons[k].curr_cds[charged_weapon_index] = weapon_details[k].cooldown + 1;
                                             } else {
                                                 firing = false;
                                             }
-                                        } else {
-                                            firing = false;
+                                            charged_weapon_index = unit.weapons[k].curr_cds.findIndex(curr_cd => curr_cd == 0);
                                         }
-                                        charged_weapon_index = unit.weapons[k].curr_cds.findIndex(curr_cd => curr_cd == 0);
                                     }
+                                }
+                            }
+                            //not an ideal implementation, as the calculated closest unit might no longer be the closest unit, since the unit has moved since then (or rather will)
+                            if (c_unit !== undefined) {
+                                unit.target_position = new Vector(c_unit);
+                            }
+                        } else if (is_capture_loop) {
+                            //units get neutralized between capture loops. For this, their last position is saved in the capture array that's later written onto a file. However, if their "unit array" is missing in the unit capture array, then their last position can't be saved (the unit array which stores this info doesn't exist)
+                            for (var j = 0; j < neutralized_unit_positions.length; j++) {
+                                var fleet_index = neutralized_unit_positions[j];
+                                var unit_index = neutralized_unit_positions[j + 1];
+                                var x = neutralized_unit_positions[j + 2];
+                                var y = neutralized_unit_positions[j + 3];
+                                if (z == fleet_index && i == unit_index) {
+                                    unit_capture[fleet_index].push([Math.floor(x), Math.floor(y)]);
                                 }
                             }
                         }
                     }
+                    fighting = has_functioning_units && fighting;
+                }
+                for (var i = projectiles.length - 1; i >= 0; i--) {
+                    var projectile = projectiles[i];
+                    var weapon_details = projectile.source;
+                    if (projectile.target_unit.neutralized === undefined || unit.hull > 0) {
+                        var distance = await (new Vector(projectile, projectile.target_unit)).length();
+                        if (projectile.dist_travelled >= distance) {
+                            var target_unit = projectile.target_unit;
+                            var mobility_velocity_ratio = (target_unit.mobility)/weapon_details.velocity;
+                            var evade_chance = (mobility_velocity_ratio + mobility_velocity_ratio/4) + (units_distance/weapon_details.velocity)/5 - target_unit.taken_shots * 0.08;
+                            target_unit.taken_shots++;
+                            var isHit = Math.random() > evade_chance;
+                            var target_status;
+                            if (isHit) {
+                                if (weapon_details.damage !== undefined) {
+                                    var damage_leftover = weapon_details.damage - target_unit.shield;
+                                    target_unit.shield -= weapon_details.damage;
+                                    if (damage_leftover > 0) {
+                                        var hull_damage_ratio = damage_leftover/target_unit.hull;
+                                        if (damage_leftover < target_unit.hull && hull_damage_ratio >= 0.6) {
+                                            if (unit_detail_2.unit_id !== undefined || unit_detail_2.unit_id != target_unit.unit_id) {
+                                                unit_detail_2 = (await this.dbManager.get_unit_details([target_unit]))[0];
+                                            }
+                                            var damaged_hull_ratio = 1 - (target_unit.hull - damage_leftover)/unit_detail_2.hull;
+                                            if (Math.random() <= (0.08 + damaged_hull_ratio)) {
+                                                //if the unit receives over 60% dmg of it's current hull, 50% + % dmg of it's current hull over 60% that the unit explodes and 50% - % dmg of it's current hull over 60% that it just gets disabled
+                                                if (Math.random() <= (0.5 + hull_damage_ratio - 0.6)) {
+                                                    target_unit.hull = 0;
+                                                } else {
+                                                    target_unit.disabled = true;
+                                                }
+                                            }
+                                        }
+                                        target_unit.hull -= damage_leftover;
+                                    }
+                                } else if (weapon_details.shield_damage !== undefined) {
+                                    target_unit.shield -= weapon_details.shield_damage; 
+                                }
+                            }
+                            target_status = (!isHit ? 1 : target_unit.disabled ? 3 : target_unit.hull <= 0 ? 4 : 2);
+                            if (is_capture_loop) {
+                                unit_capture[2].push(projectile.projectile_id, target_status);
+                            } else {
+                                projectile_hits.push(projectile.projectile_id, target_status);
+                            }
+                            //in case the unit is only disabled, so the initial if statement passed, but the unit is no longer being captured in the file due to it being neutralized, so previous position of the said unit cannot be found by FE, hence using -1
+                            if (target_unit.neutralized === undefined) {
+                                units_loop: for (var j = 0; j < units.length; j++) {
+                                    var functional_unit_count = 0;
+                                    for (var k = 0; k < units[j].length; k++) {
+                                        if (units[j][k] == target_unit) {
+                                            if (is_capture_loop) {
+                                                unit_capture[2].push(functional_unit_count);
+                                            } else {
+                                                projectile_hits.push(k);
+                                            }
+                                            break units_loop;
+                                        }
+                                        if (units[j][k].neutralized === undefined) {
+                                            functional_unit_count++;
+                                        }
+                                    }
+                                }
+                            } else {
+                                if (is_capture_loop) {
+                                    unit_capture[2].push(-1);
+                                } else {
+                                    projectile_hits.push(-1);
+                                }
+                            }
+                            projectiles.splice(i,1);
+                        } else if (projectile.dist_travelled >= weapon_details.range) {
+                            if (is_capture_loop) {
+                                unit_capture[2].push(projectile.projectile_id, 0, -1);
+                            } else {
+                                projectile_hits.push(projectile.projectile_id, 0, -1);
+                            }
+                            projectiles.splice(i,1);
+                        } else {
+                            projectile.dist_travelled += weapon_details.velocity;
+                        }
+                    } else {
+                        if (is_capture_loop) {
+                            unit_capture[2].push(projectile.projectile_id, 0, -1);
+                        } else {
+                            projectile_hits.push(projectile.projectile_id, 0, -1);
+                        }
+                        projectiles.splice(i,1);
+                    }
                 }
                 for (var i = 0; i < units.length; i++) {
+                    var u_index = 0;
                     for (var j = units[i].length - 1; j >= 0; j--) {
                         var unit = units[i][j];
-                        unit_capture[i][j].push(unit.disabled, unit.hull <= 0);
-                        if (unit.hull > 0) {
-                            if (!unit.disabled) {
+                        if (unit.neutralized === undefined) {
+                            unit.x += unit.velocity.x;
+                            unit.y += unit.velocity.y;
+                            if (is_capture_loop) {
+                                unit_capture[i][u_index].push(Math.floor(unit.x), Math.floor(unit.y));
+                            }
+                            u_index++;
+                            if (unit.hull > 0 && !unit.disabled) {
                                 for (var k = 0; k < weapon_details.length; k++) {
                                     for (var l = 0; l < unit.weapons[k].curr_cds.length; l++) {
                                         if (unit.weapons[k].curr_cds[l] > 0) {
@@ -995,47 +1112,108 @@ module.exports = class Game {
                                         unit.shield = (unit_detail.shield >= new_shield_value ? new_shield_value : unit_detail.shield);
                                     }
                                 }
-                                if (unit.move) {
-                                    var opposing_fleet_units = units[(i == 0 ? 1 : 0)];
-                                    var target_unit = opposing_fleet_units[Math.floor(Math.random() * opposing_fleet_units.length)];
-                                    var target_vector = new Vector(unit, target_unit);
-                                    var target_vector_length = await target_vector.length();
-                                    if (target_vector_length > 0) {
-                                        target_vector = await target_vector.normalize();
-                                        unit.move_by = await target_vector.multiply(Math.floor(unit.mobility/10));
+                                if (unit.target_position !== undefined) {
+                                    var target_vector = new Vector(unit, unit.target_position);
+                                    //math random 10 - 40 above or below and right or left of the target
+                                    //add a target change cd? like for 10 ticks, do not change the target and keep the velocity pulled towards it
+                                    if (Math.abs(target_vector.y) > Math.abs(target_vector.x)) {
+                                        unit.velocity = await unit.velocity.add({x: 0, y: unit.mobility/10 * Math.sign(target_vector.y)});
                                     } else {
-                                        unit.move_by = {x:0,y:0};
+                                        unit.velocity = await unit.velocity.add(await (await (target_vector.normalize())).multiply(unit.mobility));
                                     }
-                                } else {
-                                    unit.move_by = {x:0,y:0};
+                                    var speed = await unit.velocity.length();
+                                    if (speed > unit.mobility) {
+                                        unit.velocity = await (await unit.velocity.normalize(speed)).multiply(unit.mobility);
+                                    }
                                 }
                             } else {
-                                disabled_units.push(unit);
-                                units[i].splice(j,1);
+                                if (!is_capture_loop) {
+                                    neutralized_unit_positions.push(i, j, Math.floor(unit.x), Math.floor(unit.y))
+                                }
+                                unit.neutralized = true;
                             }
-                        } else {
-                            wreck_field.metal += (wreck_field.metal !== undefined ? 0 : wreck_field.metal) + unit_detail.cost.metal;
-                            units[i].splice(j,1);
                         }
                     }
                 }
-                fighting = units[0].length > 0 && units[1].length > 0;
-                await file_write(JSON.stringify(unit_capture) + (fighting ? ',' : ''));
-            }
-            for (var i = disabled_units.length - 1; i >= 0; i--) {
-                if (unit_detail.unit_id !== undefined || unit_detail.unit_id != disabled_units[i].unit_id) {
-                    unit_detail = (await this.dbManager.get_unit_details([disabled_units[i]]))[0];
+                calculating = fighting || projectiles.length > 0;
+                if (is_capture_loop) {
+                    for (var i = 0; i < projectiles_generated.length; i += 4) {
+                        var projectile_id = projectiles_generated[i];
+                        var source_fleet_index = projectiles_generated[i + 1]
+                        var source_unit = projectiles_generated[i + 2];
+                        var target_unit_index = projectiles_generated[i + 3];
+                        for (var j = 0; j < unit_capture[source_fleet_index].length; j++) {
+                            if (unit_capture[source_fleet_index][j][0] == source_unit) {
+                                unit_capture[source_fleet_index][j].push(projectile_id, target_unit_index);
+                            }
+                        }
+                    }
+                    for (var i = 0; i < projectile_hits.length; i += 3) {
+                        var projectile_id = projectile_hits[i];
+                        var target_status = projectile_hits[i + 1];
+                        var target_unit_index = projectile_hits[i + 2];
+                        unit_capture[2].push(projectile_id, target_status, target_unit_index);
+                    }
+                    for (var i = 0; i < unit_capture.length - 1; i++) {
+                        for (var j = 0; j < unit_capture[i].length; j++) {
+                            //removes the unit referrence that's been added to figure out which unit fired which projectile (since the projectile is fired between capture loops and units can be neutralized in between, causing descrepancies in indices of units that fired the projectile saved in the projectile objects)
+                            unit_capture[i][j].shift();
+                        }
+                    }
+                    projectiles_generated = [];
+                    projectile_hits = [];
+                    neutralized_unit_positions = [];
                 }
-                wreck_field.metal += (wreck_field.metal !== undefined ? 0 : wreck_field.metal) + unit_detail.cost.metal;
-                disabled_units.splice(i,1);
+                
+                
+                //TODO: Remove once done debuggin -> temporary safeguard against infinite loops creating massive files
+                var curr_file_size = await this.get_file_size(file_path);
+                if (is_capture_loop || is_last_loop) {
+                    await file_write(JSON.stringify(unit_capture) + (calculating && curr_file_size < fr_max_dir_size ? ',' : ''));
+                }
+                if (curr_file_size >= fr_max_dir_size) {
+                    console.log('Max file size exceeded! Current file size: ' + curr_file_size);
+                    break;
+                }
+                
+                var last_loop_finished = is_last_loop;
+                if (!calculating) {
+                    if (!last_loop_finished) {
+                        is_last_loop = true;
+                    } else {
+                        is_last_loop = false;
+                    }
+                }
+            }
+            var defeated_fleets_index = [];
+            var defeated_fleets = [];
+            var winner_fleet;
+            var fleet_units;
+            for (var i = 0; i < units.length; i++) {
+                var has_functioning_units = false;
+                for (var j = 0; j < units[i].length; j++) {
+                    if (units[i][j].neutralized !== undefined) {
+                        if (unit_detail.unit_id !== undefined || unit_detail.unit_id != units[i][j].unit_id) {
+                            unit_detail = (await this.dbManager.get_unit_details([units[i][j]]))[0];
+                        }
+                        wreck_field.metal += (wreck_field.metal !== undefined ? 0 : wreck_field.metal) + unit_detail.cost.metal;
+                    } else {
+                        has_functioning_units = true;
+                    }
+                }
+                if (has_functioning_units) {
+                    fleet_units = units[i];
+                    winner_fleet = (i == 0 ? p_fleet : opposing_fleet);
+                } else {
+                    defeated_fleets_index.push(i);
+                    defeated_fleets.push((i == 0 ? p_fleet : opposing_fleet));
+                }
             }
             var rounds_text;
-            if (units[0].length > 0) {
-                rounds_text = "Fleet 1 Won";
-            } else if (units[1].length > 0) {
-                rounds_text = "Fleet 2 Won";
-            } else {
+            if (defeated_fleets_index.length > 1) {
                 rounds_text = "Both fleets have been lost";
+            } else {
+                rounds_text = "Fleet " + (winner_fleet.fleet_id + 1) + " Won";
             }
             this.generate_report(p_fleet.owner, 'Attack result', rounds_text, unix_timestamp, file_id);
             this.generate_report(opposing_fleet.owner, 'Fleet attacked', rounds_text, unix_timestamp, file_id);
@@ -1055,34 +1233,18 @@ module.exports = class Game {
             delete p_fleet.units;
             delete opposing_fleet.units;
 
-            var defeated_fleets_index = [];
-            var defeated_fleets = [];
-            var winner_fleet;
-            var fleet_units;
-            if (units[0].length < 1) {
-                defeated_fleets.push(p_fleet);
-                defeated_fleets_index.push(this.fleets.findIndex(f_fleet => f_fleet.fleet_id == p_fleet.fleet_id));
-            } else {
-                winner_fleet = p_fleet;
-                fleet_units = units[0];
-            }
-            if (units[1].length < 1) {
-                defeated_fleets.push(opposing_fleet);
-                defeated_fleets_index.push(opposing_fleet_index);
-            } else {
-                winner_fleet = opposing_fleet;
-                fleet_units = units[1];
-            }
             defeated_fleets_index.sort((a, b) => b - a);
             if (winner_fleet !== undefined) {
                 var units = [];
                 var capacity = 0;
                 for (i = 0; i < fleet_units.length; i++) {
-                    var u_index = units.findIndex(unit => unit.unit_id == fleet_units[i].unit_id);
-                    if (u_index != -1) {
-                        units[u_index].count++;
-                    } else {
-                        units.push({unit_id: fleet_units[i].unit_id, count: 1});
+                    if (fleet_units[i].neutralized === undefined) {
+                        var u_index = units.findIndex(unit => unit.unit_id == fleet_units[i].unit_id);
+                        if (u_index != -1) {
+                            units[u_index].count++;
+                        } else {
+                            units.push({unit_id: fleet_units[i].unit_id, count: 1});
+                        }
                     }
                 }
                 var unit_details = await this.dbManager.get_unit_details(units);
@@ -1102,6 +1264,10 @@ module.exports = class Game {
                 }
             } else {
                 //TODO: only resources that the destroyed fleet was carrying will get added to the wreck_field, but the resources from the other fleet should be added as well (for now probably just the resources that couldn't fit due to possibly transporters getting destroyed, reducing the capacity of the fleet)
+                if (this.fleets[defeated_fleets_index[0]] == undefined) {
+                    console.log(JSON.stringify(defeated_fleets_index));
+                    console.log(JSON.stringify(this.fleets));
+                }
                 this.fleets[defeated_fleets_index[0]].resources += wreck_field.metal * 0.4;
                 this.fleets[defeated_fleets_index[0]].owner = undefined;
                 this.fleets[defeated_fleets_index[0]].abandoned = true;
@@ -1115,6 +1281,8 @@ module.exports = class Game {
             var file_size = await this.get_file_size(file_path);
             this.fr_dir_size += file_size;
             this.check_fr_dir_size();
+        } catch(err) {
+            console.log(err);
         } finally {
             file?.end();
         }
