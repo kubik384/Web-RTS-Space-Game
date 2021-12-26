@@ -5,6 +5,7 @@ import { Utils } from '../misc_modules/utils.js';
 import { Vector } from '../misc_modules/vector.js';
 import { Base_Page } from './base_page.js';
 var utils = new Utils();
+var print = 0;
 
 class Game extends Base_Page {
     constructor(socket) {
@@ -70,32 +71,32 @@ class Game extends Base_Page {
     }
 
     async load_report(p_report_details) {
-        var report_details = JSON.parse(p_report_details);
-        var dialog_id = 'report_container';
-        var dialog_overlay_id = 'report_overlay';
-        var old_report = document.getElementById(dialog_id);
+        let report_details = JSON.parse(p_report_details);
+        let dialog_id = 'report_container';
+        let dialog_overlay_id = 'report_overlay';
+        let old_report = document.getElementById(dialog_id);
         if (old_report !== null) {
-            var old_overlay = document.getElementById(dialog_overlay_id);
+            let old_overlay = document.getElementById(dialog_overlay_id);
             old_report.remove();
             old_overlay.remove();
         }
-        var report_container_id = dialog_id;
-        var report_overlay_id = dialog_overlay_id;
-        var report_container = document.createElement('div');
+        let report_container_id = dialog_id;
+        let report_overlay_id = dialog_overlay_id;
+        let report_container = document.createElement('div');
         report_container.setAttribute("id", report_container_id);
-        var report_text_paragraph = document.createElement('p');
+        let report_text_paragraph = document.createElement('p');
         report_text_paragraph.append(report_details.text);
-        var report_time_paragraph = document.createElement('p');
+        let report_time_paragraph = document.createElement('p');
         report_time_paragraph.append(await utils.miliseconds_to_date(report_details.timestamp * 1000));
         if (report_details.fr_timestamp !== undefined && report_details.fr_timestamp !== null) {
-            var fight_record_link = document.createElement('a');
+            let fight_record_link = document.createElement('a');
             this.fr_timestamp = report_details.fr_timestamp;
             this.fr_duration = report_details.duration;
             this.curr_report_id = report_details.report_id;
             this.fr_link = fight_record_link;
             this.update_fr_timer();
             this.fr_interval = setInterval(this.update_fr_timer.bind(this), 1000);
-            var _that = this;
+            let _that = this;
             fight_record_link.addEventListener('click', async function() {
                 _that.load_fight_report(report_details.report_id).then((fr_data) => {
                     _that.fr_canvas = document.createElement('canvas');
@@ -115,7 +116,7 @@ class Game extends Base_Page {
         }
         report_container.append(report_text_paragraph);
         report_container.append(report_time_paragraph);
-        var report_overlay = document.createElement('div');
+        let report_overlay = document.createElement('div');
         report_overlay.setAttribute("id", report_overlay_id);
         report_overlay.addEventListener('click', async function() {
             if (this.fr_canvas !== undefined) {
@@ -131,7 +132,7 @@ class Game extends Base_Page {
     }
 
     async load_fight_report(report_id) {
-        var response = await fetch('/game/report?id=' + report_id);
+        let response = await fetch('/game/report?id=' + report_id);
         if (!response.ok) {
             throw new Error('There was an issue with fetching a fight record from the server', { cause: response.status });
         }
@@ -139,18 +140,18 @@ class Game extends Base_Page {
     }
 
     async display_fight_report(canvas, fr_data) {
-        var tick = 30;
-        var units = [[],[]];
-        var projectiles = [];
-        var unit_id;
-        for (var i = 0; i < units.length; i++) {
-            for (var j = 0; j < fr_data[i].length; j++) {
+        let tick = 30;
+        let units = [[],[]];
+        let projectiles = [];
+        let unit_id;
+        for (let i = 0; i < units.length; i++) {
+            for (let j = 0; j < fr_data[i].length; j++) {
                 if (j == 0 && unit_id !== undefined) {
                     fr_data[i].unshift([unit_id]);
                 }
                 if (Array.isArray(fr_data[i][j])) {
                     unit_id = fr_data[i][j][0];
-                    var color = 'white';
+                    let color = 'white';
                     switch (fr_data[i][j][0]) {
                         case 1:
                             color = 'red';
@@ -195,38 +196,50 @@ class Game extends Base_Page {
         }
         const projectile_width = 4;
         const projectile_height = 14;
-        var _that = this;
+        let _that = this;
         //TODO: The entire FE for loading fr needs to be updated since BE part has been updated
-        var draw_func = async function() {
-            var timestamp = Date.now();
-            var tick_time_passed = timestamp - this.tick_timestamp;
-            var ctx = this.ctx;
-            var interpol_ratio = tick_time_passed/tick;
+        let draw_func = async function() {
+            let timestamp = Date.now();
+            let tick_time_passed = timestamp - this.tick_timestamp;
+            let ctx = this.ctx;
+            let interpol_ratio = tick_time_passed/tick;
             ctx.clearRect(0, 0, this.width, this.height);
             ctx.save();
             ctx.translate(this.xOffset, this.yOffset);
             ctx.fillStyle = 'red';
             //TODO: Need to add angle to projectiles
-            for (var i = projectiles.length - 1; i >= 0; i--) {
-                var weapon_details = await _that.get_unit_weapon_dts(1);
-                var projectile = projectiles[i];
-                var move_by = await (await projectile.future_pos.subtract(projectile.pos)).multiply(interpol_ratio);
-                var x = projectile.pos.x + move_by.x;
-                var y = projectile.pos.y + move_by.y;
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                let weapon_details = await _that.get_unit_weapon_dts(1);
+                let projectile = projectiles[i];
+                let move_by = await (await projectile.future_pos.subtract(projectile.pos)).multiply(interpol_ratio);
+                let x = projectile.pos.x + move_by.x;
+                let y = projectile.pos.y + move_by.y;
                 //TODO: Make sure this is the correct calculation of the current projectile height under the set angle
-                var y_hit_calc_adj = move_by.y < 0 ? -projectile_height * Math.abs(projectile.angle / Math.PI) : 0;
+                //let y_hit_calc_adj = move_by.y < 0 ? -projectile_height * Math.abs(projectile.angle / Math.PI) : 0;
+                //has to be only less than one, else a projectile might get deleted earlier than intended
                 if (interpol_ratio < 1) {
                     if (projectile.hit) {
                         //TODO: instead of splicing the projectile once it reaches it's target, make it appear as if it was slowly disappearing while hitting the ship? Make the height of the projectile smaller by the amount of distance passed by the target position, until the height reaches 0 or < 0, deleting it
-                        if (await (new Vector({x: projectile.pos.x, y: projectile.pos.y + y_hit_calc_adj}, projectile.target_position)).length() < 10) {
-                            console.log('reached');
-                        }
-                        if (Math.sign(projectile.target_position.x - x) != Math.sign(projectile.target_position.x - projectile.pos.x) || Math.sign(projectile.target_position.y - (y + y_hit_calc_adj)) != Math.sign(projectile.target_position.y - projectile.pos.y)) {
+                        if (projectile.travelled >= projectile.init_target_dist) {
+                            let target_unit = projectile.target_unit;
+                            switch (projectile.target_status) {
+                                case 3:
+                                    target_unit.neutralized = true;
+                                    target_unit.disabled = true;
+                                break;
+                                case 4:
+                                    target_unit.neutralized = true;
+                                    //was disabled, but additional shot fired, before it got disabled, which destroyed it
+                                    if (target_unit.disabled == true) {
+                                        target_unit.disabled = false;
+                                    }
+                                break;
+                            }
                             projectiles.splice(i,1);
                             continue;
                         }
                     } else {
-                        if (projectile.travelled + weapon_details.velocity * interpol_ratio >= weapon_details.range) {
+                        if (projectile.travelled + weapon_details.velocity * 100 * interpol_ratio >= weapon_details.range) {
                             projectiles.splice(i,1);
                             continue;
                         }
@@ -238,11 +251,7 @@ class Game extends Base_Page {
                 ctx.translate(x, y);
                 ctx.rotate(projectile.angle + 0.5 * Math.PI);
                 ctx.translate(-x, -y);
-                if (projectile.projectile_id == 6) {
-                    ctx.fillStyle = 'purple';
-                } else {
-                    ctx.fillStyle = 'red';
-                }
+                ctx.fillStyle = 'red';
                 ctx.beginPath();
                 ctx.rect(x, y, projectile_width * this.zoom, projectile_height * this.zoom);
                 ctx.fill();
@@ -307,59 +316,69 @@ class Game extends Base_Page {
                             func_units_count++;
                         }
                     }
+                    /*
+                    if (fr_data[i][j].length == 2 && k == 0 && j == 0 && print < 1) {
+                        console.log(fr_data[i - 1]);
+                    }
+                    if (fr_data[i][j].length == 2 && k == 0 && j == 0 && print < 3) {
+                        console.log(JSON.stringify(units));
+                        console.log(fr_data[i]);
+                        print++;
+                    }
+                    */
                     var unit = units[j][u_index];
                     unit.x = unit.next_x;
                     unit.y = unit.next_y;
                     var unit_data = fr_data[i][j][k];
-                    unit.next_x = unit_data[unit_data.length - 2];
-                    unit.next_y = unit_data[unit_data.length - 1];
-                    for (var l = 0; l < unit_data.length - 2; l += 2) {
-                        var fleet_index = (j == 0 ? 1 : 0);
+                    unit.next_x = unit_data[0];
+                    unit.next_y = unit_data[1];
+                    for (var l = 2; l < unit_data.length; l += 2) {
+                        var oppf_index = j == 0 ? 1 : 0;
+                        var projectile_id = fr_data[i][j][k][l];
                         //l + 1 = index of the target unit in units array
-                        var target_unit = units[fleet_index][unit_data[l + 1]];
+                        var target_unit = units[oppf_index][unit_data[l + 1]];
                         //originally was also + or - height/2, but on the BE the projectile is generated on the x and y of the ship (which is drawn as the middle). If the projectile was drawn starting from the edge of the ship, it would take less time to reach the target, which could cause it to arrive a tick earlier than planned, causing issues
                         var y_adj = (target_unit.next_y > unit.y ? 0 : -projectile_height);
-                        projectiles.push({projectile_id: fr_data[i][j][k][l], pos: new Vector(unit.x, unit.y + y_adj)});
+                        projectiles.push({projectile_id: projectile_id, pos: new Vector(unit.x, unit.y + y_adj)});
                         tick = 1000;
                         for (var m = i; m < fr_data.length; m++) {
                             for (var n = 0; n < fr_data[m][2].length; n += 3) {
-                                if (fr_data[m][2][n] == fr_data[i][j][k][l]) {
-                                    var oppf_index = j == 0 ? 1 : 0;
-                                    var unit_index = fr_data[i][j][k][l + 1];
-                                    var target_unit_data = fr_data[i][oppf_index][unit_index];
-                                    var x;
-                                    var y;
+                                if (fr_data[m][2][n] == projectile_id) {
+                                    let unit_index = fr_data[i][j][k][l + 1];
+                                    let target_unit_data = fr_data[i][oppf_index][unit_index];
+                                    let x;
+                                    let y;
                                     if (target_unit_data === undefined) {
                                         x = units[oppf_index][unit_index].next_x;
                                         y = units[oppf_index][unit_index].next_y;
                                     } else {
-                                        x = target_unit_data[target_unit_data.length - 2];
-                                        y = target_unit_data[target_unit_data.length - 1];
+                                        x = target_unit_data[0];
+                                        y = target_unit_data[1];
                                     }
-                                    var projectile = projectiles[projectiles.length - 1];
+                                    let projectile = projectiles[projectiles.length - 1];
                                     projectile.target_unit = target_unit;
                                     projectile.target_status = fr_data[m][2][n + 1];
                                     projectile.hit = projectile.target_status > 1;
-                                    var weapon_details = await _that.get_unit_weapon_dts(1);
-                                    var unit_prev_index = fr_data[m][2][n + 2];
+                                    let weapon_details = await _that.get_unit_weapon_dts(1);
+                                    let unit_prev_index = fr_data[m][2][n + 2];
                                     if (unit_prev_index != -1) {
-                                        var unit_prev_data = fr_data[m - 1][oppf_index][unit_prev_index];
-                                        var prev_target_pos = {x: unit_prev_data[unit_prev_data.length - 2], y: unit_prev_data[unit_prev_data.length - 1]};
-                                        var prev_to_curr = new Vector(prev_target_pos, {x: x, y: y});
-                                        var distance = await prev_to_curr.length();
-                                        var interpol_ratio = (distance % weapon_details.velocity)/weapon_details.velocity;
+                                        let unit_prev_data = fr_data[m - 1][oppf_index][unit_prev_index];
+                                        let prev_target_pos = {x: unit_prev_data[0], y: unit_prev_data[1]};
+                                        let prev_to_curr = new Vector(prev_target_pos, {x: x, y: y});
+                                        let distance = await prev_to_curr.length();
+                                        let interpol_ratio = (distance % (weapon_details.velocity * 100))/(weapon_details.velocity * 100);
                                         prev_to_curr = await prev_to_curr.multiply(interpol_ratio != 0 ? interpol_ratio : 1);
                                         projectile.target_position = await prev_to_curr.add(prev_target_pos);
                                     } else {
                                         projectile.target_position = new Vector(x,y);
                                     }
-                                    
-                                    var future_pos = projectile.pos;
-                                    var move_by = await (await future_pos.subtract(projectile.pos)).multiply(0.007);
-                                    var y_hit_calc_adj = move_by.y < 0 ? -projectile_height * Math.abs(projectile.angle / Math.PI) : 0;
-                                    var dist = await (new Vector({x: projectile.pos.x, y: projectile.pos.y + y_hit_calc_adj}, projectile.target_position)).length();
+                                    let future_pos = projectile.pos;
+                                    let move_by = await (await future_pos.subtract(projectile.pos)).multiply(0.007);
+                                    let y_hit_calc_adj = move_by.y < 0 ? -projectile_height * Math.abs(projectile.angle / Math.PI) : 0;
+                                    let dist = await (new Vector({x: projectile.pos.x, y: projectile.pos.y + y_hit_calc_adj}, projectile.target_position)).length();
                                     if (dist > 250 && unit_prev_index != -1) {
-                                        console.log('debug');
+                                        console.log(dist);
+                                        console.log(projectile.projectile_id);
                                     }
                                     break;
                                 }
@@ -368,49 +387,35 @@ class Game extends Base_Page {
                     }
                 }
             }
-            for (var j = projectiles.length - 1; j >= 0; j--) {
-                var projectile = projectiles[j];
+            for (let j = projectiles.length - 1; j >= 0; j--) {
+                let projectile = projectiles[j];
                 if (projectile.delete) {
                     projectiles.splice(j, 1);
                     continue;
                 }
-                var weapon_details = await _that.get_unit_weapon_dts(1);
+                let to_target_vector = new Vector(projectile.pos, projectile.target_position);
+                let weapon_details = await _that.get_unit_weapon_dts(1);
                 if (projectile.velocity_vector === undefined) {
-                    var p_vector_2 = new Vector(projectile.pos, projectile.target_position);
-                    var p_vector = await p_vector_2.normalize();
-                    projectile.velocity_vector = p_vector;
-                    projectile.angle = await p_vector.angle();
-                    if (!projectile.hit) {
-                        //velocity gets added in the same tick -> travelled value ends up being 0 and during drawing is calculated as travelled + weapon_velocity * interpolation_ratio 
-                        projectile.travelled = -weapon_details.velocity;
+                    projectile.velocity_vector = await to_target_vector.normalize();
+                    projectile.angle = await projectile.velocity_vector.angle();
+                    projectile.travelled = -weapon_details.velocity * 100;
+                    if (projectile.hit) {
+                        projectile.init_target_dist = await to_target_vector.length();
                     }
                     projectile.future_pos = projectile.pos;
                 }
-                var p_vector = await projectile.velocity_vector.multiply(weapon_details.velocity);
                 if (projectile.hit) {
-                    var target_unit = projectile.target_unit;
-                    if (Math.abs(p_vector.x) >= Math.abs(p_vector_2.x) || Math.abs(p_vector.y) >= Math.abs(p_vector_2.y)) {
-                        //the draw function should delete the projectile once it reaches the destination, however, the interpol doesn't usually reach the value of 1, so if the hit happened right at the end of a tick, it won't get drawn and therefore deleted -> check in the next tick if it was supposed to get deleted and delete
+                    if (projectile.travelled + weapon_details.velocity * 100 >= projectile.init_target_dist) {
+                        //the draw function should delete the projectile once it reaches the destination, however, the interpol doesn't usually reach the value of 1, so if the hit happened right at the end of a tick, it won't get drawn and therefore deleted -> checked in the next tick if it was supposed to get deleted and deletes
                         projectile.delete = true;
-                        switch (projectile.target_status) {
-                            case 3:
-                                target_unit.neutralized = true;
-                                target_unit.disabled = true;
-                            break;
-                            case 4:
-                                target_unit.neutralized = true;
-                                //was disabled, but additional shot fired, before it got disabled, which destroyed it
-                                if (target_unit.disabled == true) {
-                                    target_unit.disabled = false;
-                                }
-                            break;
-                        }
                     }
-                } else {
-                    projectile.travelled += weapon_details.velocity;
+                } else if (projectile.travelled + weapon_details.velocity * 100 >= weapon_details.range) {
+                    projectile.delete = true;
                 }
+                projectile.travelled += weapon_details.velocity * 100;
                 projectile.pos = projectile.future_pos;
-                projectile.future_pos = await p_vector.add(projectile.pos);
+                let p_move_vector = await projectile.velocity_vector.multiply(weapon_details.velocity * 100);
+                projectile.future_pos = await p_move_vector.add(projectile.pos);
             }
             await new Promise((resolve, reject) => setTimeout(resolve, tick));
             this.fight_record_canvas.tick_timestamp = Date.now();
@@ -424,7 +429,7 @@ class Game extends Base_Page {
     }
 
     async update_fr_timer() {
-        var fr_time_left = this.fr_timestamp + this.fr_duration - await utils.get_timestamp();
+        let fr_time_left = this.fr_timestamp + this.fr_duration - await utils.get_timestamp();
         if (fr_time_left == 0) {
             clearInterval(this.fr_interval);
             this.fr_interval = setInterval(this.request_fr_status.bind(this), 2500);

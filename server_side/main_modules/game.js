@@ -820,7 +820,7 @@ module.exports = class Game {
                 }
             }
         }
-        var file_id = id - 1;
+        var file_id = id;
         var file;
         var dir_size_exceeded = await this.check_fr_dir_size();
         const file_timer = dir_size_exceeded ? 1800 : 7200;
@@ -870,7 +870,7 @@ module.exports = class Game {
                 }
                 var weapon_details;
                 var prev_unit_id = -1;
-                for (var j = units[i].length - 1; j >= 0; j--) {
+                for (var j = 0; j < units[i].length; j++) {
                     units[i][j] = JSON.parse(units[i][j]);
                     var unit = units[i][j];
                     unit.x = 0 + 40 * i + curr_col++ * 100;
@@ -898,7 +898,7 @@ module.exports = class Game {
             }
             var wreck_field = {metal: 0};
             var projectiles = [];
-            var projectile_id = 1;
+            var curr_projectile_id = 1;
             var calculating = units[0].length > 0 && units[1].length > 0;
             var loop_no = 0;
             var unit_capture = [[],[],[]];
@@ -931,7 +931,7 @@ module.exports = class Game {
                                 unit_capture[z].push([unit]);
                             }
                             var weapon_details = await this.dbManager.get_unit_weapon_details(unit.weapons);
-                            //c = current (?)
+                            //c = closest
                             var c_unit_distance = undefined;
                             var c_unit = undefined;
                             for (var j = 0; j < opposing_fleet_units.length; j++) {
@@ -953,13 +953,9 @@ module.exports = class Game {
                                             if ((weapon_details[k].weapon_id != 4 || target_unit.shield > 0) && (weapon_details[k].weapon_id != 5 || target_unit.shield < 1)) {
                                                 if (units_distance <= weapon_details[k].range) {
                                                     //x and y do not change, only there to calculate the distance of the original position of the projectile and the target unit
-                                                    projectiles.push({projectile_id: projectile_id, x: unit.x, y: unit.y, dist_travelled: weapon_details[k].velocity, source: weapon_details[k], target_unit: target_unit});
-                                                    if (is_capture_loop) {
-                                                        unit_capture[z][unit_capture[z].length - 1].push(projectile_id, j);
-                                                    } else {
-                                                        projectiles_generated.push(projectile_id, z, unit, j);
-                                                    }
-                                                    projectile_id++;
+                                                    projectiles.push({projectile_id: curr_projectile_id, x: unit.x, y: unit.y, dist_travelled: 0, source: weapon_details[k], target_unit: target_unit});
+                                                    projectiles_generated.push(curr_projectile_id, z, unit, j);
+                                                    curr_projectile_id++;
                                                     unit.weapons[k].curr_cds[charged_weapon_index] = weapon_details[k].cooldown + 1;
                                                 } else {
                                                     firing = false;
@@ -978,28 +974,33 @@ module.exports = class Game {
                             }
                         } else if (is_capture_loop) {
                             //units get neutralized between capture loops. For this, their last position is saved in the capture array that's later written onto a file. However, if their "unit array" is missing in the unit capture array, then their last position can't be saved (the unit array which stores this info doesn't exist)
-                            for (var j = 0; j < neutralized_unit_positions.length; j++) {
-                                var fleet_index = neutralized_unit_positions[j];
-                                var unit_index = neutralized_unit_positions[j + 1];
-                                var x = neutralized_unit_positions[j + 2];
-                                var y = neutralized_unit_positions[j + 3];
-                                if (z == fleet_index && i == unit_index) {
-                                    unit_capture[fleet_index].push([Math.floor(x), Math.floor(y)]);
+                            if (unit.last_capture === undefined) {
+                                for (var j = 0; j < neutralized_unit_positions.length; j += 4) {
+                                    var fleet_index = neutralized_unit_positions[j];
+                                    var unit_index = neutralized_unit_positions[j + 1];
+                                    var x = neutralized_unit_positions[j + 2];
+                                    var y = neutralized_unit_positions[j + 3];
+                                    if (z == fleet_index && i == unit_index) {
+                                        unit_capture[fleet_index].push([unit, Math.floor(x), Math.floor(y)]);
+                                    }
                                 }
+                                //an attribute signifying that the unit has been recorded in the unit_capture array despite it being neutralized (when unit coordinates are captured, the unit arrays are filled. However, this unit array does not need to be filled with coords, as it does no longer move (no new coordinates are calculated), hence it skips this array by increasing the index)
+                                unit.last_capture = true;
                             }
                         }
                     }
                     fighting = has_functioning_units && fighting;
                 }
+                //TODO: Projectiles do less dmg the further they have to travel?
                 for (var i = projectiles.length - 1; i >= 0; i--) {
                     var projectile = projectiles[i];
                     var weapon_details = projectile.source;
-                    if (projectile.target_unit.neutralized === undefined || unit.hull > 0) {
+                    if (projectile.target_unit.neutralized === undefined || projectile.target_unit.hull > 0) {
                         var distance = await (new Vector(projectile, projectile.target_unit)).length();
                         if (projectile.dist_travelled >= distance) {
                             var target_unit = projectile.target_unit;
                             var mobility_velocity_ratio = (target_unit.mobility)/weapon_details.velocity;
-                            var evade_chance = (mobility_velocity_ratio + mobility_velocity_ratio/4) + (units_distance/weapon_details.velocity)/5 - target_unit.taken_shots * 0.08;
+                            var evade_chance = (mobility_velocity_ratio + mobility_velocity_ratio/4) + (units_distance/(weapon_details.velocity * 100))/5 - target_unit.taken_shots * 0.08;
                             target_unit.taken_shots++;
                             var isHit = Math.random() > evade_chance;
                             var target_status;
@@ -1036,7 +1037,7 @@ module.exports = class Game {
                                 projectile_hits.push(projectile.projectile_id, target_status);
                             }
                             //in case the unit is only disabled, so the initial if statement passed, but the unit is no longer being captured in the file due to it being neutralized, so previous position of the said unit cannot be found by FE, hence using -1
-                            if (target_unit.neutralized === undefined) {
+                            if (target_unit.neutralized === undefined || (target_unit.last_capture !== undefined && target_unit.last_capture)) {
                                 units_loop: for (var j = 0; j < units.length; j++) {
                                     var functional_unit_count = 0;
                                     for (var k = 0; k < units[j].length; k++) {
@@ -1044,11 +1045,11 @@ module.exports = class Game {
                                             if (is_capture_loop) {
                                                 unit_capture[2].push(functional_unit_count);
                                             } else {
-                                                projectile_hits.push(k);
+                                                projectile_hits.push(functional_unit_count);
                                             }
                                             break units_loop;
                                         }
-                                        if (units[j][k].neutralized === undefined) {
+                                        if (units[j][k].neutralized === undefined || (units[j][k].last_capture !== undefined && units[j][k].last_capture)) {
                                             functional_unit_count++;
                                         }
                                     }
@@ -1081,16 +1082,16 @@ module.exports = class Game {
                     }
                 }
                 for (var i = 0; i < units.length; i++) {
-                    var u_index = 0;
-                    for (var j = units[i].length - 1; j >= 0; j--) {
+                    var unit_capture_index = 0;
+                    for (var j = 0; j < units[i].length; j++) {
                         var unit = units[i][j];
                         if (unit.neutralized === undefined) {
                             unit.x += unit.velocity.x;
                             unit.y += unit.velocity.y;
                             if (is_capture_loop) {
-                                unit_capture[i][u_index].push(Math.floor(unit.x), Math.floor(unit.y));
+                                unit_capture[i][unit_capture_index].push(Math.floor(unit.x), Math.floor(unit.y));
                             }
-                            u_index++;
+                            unit_capture_index++;
                             if (unit.hull > 0 && !unit.disabled) {
                                 for (var k = 0; k < weapon_details.length; k++) {
                                     for (var l = 0; l < unit.weapons[k].curr_cds.length; l++) {
@@ -1116,10 +1117,24 @@ module.exports = class Game {
                                     var target_vector = new Vector(unit, unit.target_position);
                                     //math random 10 - 40 above or below and right or left of the target
                                     //add a target change cd? like for 10 ticks, do not change the target and keep the velocity pulled towards it
+                                    const target_pos_limit = 100;
+                                    if (unit.target_position_timer === undefined) {
+                                        unit.target_position_timer = target_pos_limit;
+                                    }
                                     if (Math.abs(target_vector.y) > Math.abs(target_vector.x)) {
                                         unit.velocity = await unit.velocity.add({x: 0, y: unit.mobility/10 * Math.sign(target_vector.y)});
                                     } else {
-                                        unit.velocity = await unit.velocity.add(await (await (target_vector.normalize())).multiply(unit.mobility));
+                                        if (unit.target_position_timer == target_pos_limit) {
+                                            const adj_max = 110;
+                                            var x_adj = Math.random() * adj_max * Math.sign(Math.random() - 0.49);
+                                            var y_adj = Math.random() * (adj_max - x_adj) * Math.sign(Math.random() - 0.49);
+                                            unit.target_pos_adj = new Vector(x_adj, y_adj);
+                                            unit.target_position_timer = 0;
+                                        }
+                                        unit.velocity = await unit.velocity.add(await (await (await target_vector.add(unit.target_pos_adj)).normalize()).multiply(unit.mobility));
+                                    }
+                                    if (unit.target_position_timer != target_pos_limit) {
+                                        unit.target_position_timer++;
                                     }
                                     var speed = await unit.velocity.length();
                                     if (speed > unit.mobility) {
@@ -1129,9 +1144,15 @@ module.exports = class Game {
                             } else {
                                 if (!is_capture_loop) {
                                     neutralized_unit_positions.push(i, j, Math.floor(unit.x), Math.floor(unit.y))
+                                } else {
+                                    //has been already captured during this capture loop
+                                    unit.last_capture = false;
                                 }
                                 unit.neutralized = true;
                             }
+                        } else if (unit.last_capture) {
+                            unit_capture_index++;
+                            unit.last_capture = false;
                         }
                     }
                 }
@@ -1165,14 +1186,20 @@ module.exports = class Game {
                     neutralized_unit_positions = [];
                 }
                 
-                
+                const time_limit = 25000;
+                var time_passed = Date.now() - timestamp;
                 //TODO: Remove once done debuggin -> temporary safeguard against infinite loops creating massive files
                 var curr_file_size = await this.get_file_size(file_path);
                 if (is_capture_loop || is_last_loop) {
-                    await file_write(JSON.stringify(unit_capture) + (calculating && curr_file_size < fr_max_dir_size ? ',' : ''));
+                    await file_write(JSON.stringify(unit_capture) + (!is_last_loop && curr_file_size < fr_max_dir_size && time_passed < time_limit ? ',' : ''));
                 }
-                if (curr_file_size >= fr_max_dir_size) {
-                    console.log('Max file size exceeded! Current file size: ' + curr_file_size);
+                if (curr_file_size >= fr_max_dir_size || time_passed >= time_limit) {
+                    var text;
+                    if (curr_file_size >= fr_max_dir_size) {
+                        text = 'Max file size exceeded! Current file size: ' + curr_file_size;
+                    } else if (time_passed >= time_limit) {
+                        text = 'Time limit exceeded!';
+                    }
                     break;
                 }
                 
@@ -1265,6 +1292,7 @@ module.exports = class Game {
             } else {
                 //TODO: only resources that the destroyed fleet was carrying will get added to the wreck_field, but the resources from the other fleet should be added as well (for now probably just the resources that couldn't fit due to possibly transporters getting destroyed, reducing the capacity of the fleet)
                 if (this.fleets[defeated_fleets_index[0]] == undefined) {
+                    //had an issue when sometimes, the fleet is undefined for unknown reasons. Unable to reproduce (reliably)
                     console.log(JSON.stringify(defeated_fleets_index));
                     console.log(JSON.stringify(this.fleets));
                 }
