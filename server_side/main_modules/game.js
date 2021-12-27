@@ -953,7 +953,7 @@ module.exports = class Game {
                                             if ((weapon_details[k].weapon_id != 4 || target_unit.shield > 0) && (weapon_details[k].weapon_id != 5 || target_unit.shield < 1)) {
                                                 if (units_distance <= weapon_details[k].range) {
                                                     //x and y do not change, only there to calculate the distance of the original position of the projectile and the target unit
-                                                    projectiles.push({projectile_id: curr_projectile_id, x: unit.x, y: unit.y, dist_travelled: 0, source: weapon_details[k], target_unit: target_unit});
+                                                    projectiles.push({projectile_id: curr_projectile_id, x: unit.x, y: unit.y, dist_travelled: weapon_details[k].velocity, source: weapon_details[k], target_unit: target_unit});
                                                     projectiles_generated.push(curr_projectile_id, z, unit, j);
                                                     curr_projectile_id++;
                                                     unit.weapons[k].curr_cds[charged_weapon_index] = weapon_details[k].cooldown + 1;
@@ -972,21 +972,17 @@ module.exports = class Game {
                             if (c_unit !== undefined) {
                                 unit.target_position = new Vector(c_unit);
                             }
-                        } else if (is_capture_loop) {
+                        } else if (is_capture_loop && unit.last_capture === undefined) {
                             //units get neutralized between capture loops. For this, their last position is saved in the capture array that's later written onto a file. However, if their "unit array" is missing in the unit capture array, then their last position can't be saved (the unit array which stores this info doesn't exist)
-                            if (unit.last_capture === undefined) {
-                                for (var j = 0; j < neutralized_unit_positions.length; j += 4) {
-                                    var fleet_index = neutralized_unit_positions[j];
-                                    var unit_index = neutralized_unit_positions[j + 1];
-                                    var x = neutralized_unit_positions[j + 2];
-                                    var y = neutralized_unit_positions[j + 3];
-                                    if (z == fleet_index && i == unit_index) {
-                                        unit_capture[fleet_index].push([unit, Math.floor(x), Math.floor(y)]);
-                                    }
+                            for (var j = 0; j < neutralized_unit_positions.length; j += 4) {
+                                var fleet_index = neutralized_unit_positions[j];
+                                var unit_index = neutralized_unit_positions[j + 1];
+                                if (z == fleet_index && i == unit_index) {
+                                    unit_capture[fleet_index].push([unit, Math.floor(unit.x), Math.floor(unit.y)]);
                                 }
-                                //an attribute signifying that the unit has been recorded in the unit_capture array despite it being neutralized (when unit coordinates are captured, the unit arrays are filled. However, this unit array does not need to be filled with coords, as it does no longer move (no new coordinates are calculated), hence it skips this array by increasing the index)
-                                unit.last_capture = true;
                             }
+                            //an attribute signifying that the unit has been recorded in the unit_capture array despite it being neutralized (when unit coordinates are captured, the unit arrays are filled. However, this unit array does not need to be filled with coords, as it does no longer move (no new coordinates are calculated), hence it skips this array by increasing the index)
+                            unit.last_capture = true;
                         }
                     }
                     fighting = has_functioning_units && fighting;
@@ -1143,7 +1139,7 @@ module.exports = class Game {
                                 }
                             } else {
                                 if (!is_capture_loop) {
-                                    neutralized_unit_positions.push(i, j, Math.floor(unit.x), Math.floor(unit.y))
+                                    neutralized_unit_positions.push(i, j)
                                 } else {
                                     //has been already captured during this capture loop
                                     unit.last_capture = false;
