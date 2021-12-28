@@ -1,7 +1,7 @@
 "use strict"
 
 class Canvas {
-    constructor(canvas, draw_func, init_zoom = 0.025, min_zoom = 0.00025, max_zoom = 24) {
+    constructor(canvas, draw_func, init_zoom = 0.025, min_zoom = 0.00025, max_zoom = 24, canvas_controls) {
         this.canvas = canvas;
         this.width;
         this.height;
@@ -17,6 +17,7 @@ class Canvas {
         this.draw = draw_func;
         this.ctx = this.canvas.getContext("2d");
         this.rect = this.canvas.getBoundingClientRect();
+        this.canvas_controls = canvas_controls;
         window.onresize = this.window_resize_handler();
 
         /*
@@ -50,6 +51,7 @@ class Canvas {
                     this.yOffset -= (this.yOffset - y) * zoomRatio;
                 }
             }
+            canvas_controls.update_canvas = true;
         });
 
         this.canvas.addEventListener('mouseup', e => {
@@ -84,6 +86,7 @@ class Canvas {
                 this.yOffset += e.movementY;
                 this.dist_travelled.x += Math.abs(e.movementX);
                 this.dist_travelled.y += Math.abs(e.movementY);
+                canvas_controls.update_canvas = true;
             }
         });
 

@@ -5,7 +5,6 @@ import { Utils } from '../misc_modules/utils.js';
 import { Vector } from '../misc_modules/vector.js';
 import { Base_Page } from './base_page.js';
 var utils = new Utils();
-var neutralized_units = 0;
 
 class Game extends Base_Page {
     constructor(socket) {
@@ -71,6 +70,7 @@ class Game extends Base_Page {
     }
 
     async load_report(p_report_details) {
+        let canvas_control_func_p;
         let report_details = JSON.parse(p_report_details);
         let dialog_id = 'report_container';
         let dialog_overlay_id = 'report_overlay';
@@ -102,7 +102,25 @@ class Game extends Base_Page {
                     _that.fr_canvas = document.createElement('canvas');
                     _that.fr_canvas.setAttribute('id', 'fr_canvas');
                     document.body.append(_that.fr_canvas);
-                    _that.display_fight_report(_that.fr_canvas, fr_data);
+                    let record_controls = {tick: 30, paused: false, pause_timestamp: Date.now(), update_canvas: false};
+                    _that.display_fight_report(_that.fr_canvas, fr_data, record_controls);
+                    let canvas_control_func = function(e) {
+                        switch (e.code) {
+                            case 'Space':
+                                record_controls.paused = record_controls.paused ? false : true;
+                                record_controls.pause_timestamp = Date.now();
+                                break;
+                            case 'ArrowRight':
+                                //TODO: Fix - Changing tick while it is being drawn on the canvas fucks with the interpolation values
+                                record_controls.tick -= record_controls.tick > 80 ? 50 : record_controls.tick - 30;
+                                break;
+                            case 'ArrowLeft':
+                                record_controls.tick += 50;
+                                break;
+                        }
+                    };
+                    canvas_control_func_p = canvas_control_func;
+                    document.addEventListener('keyup', canvas_control_func);
                 }).catch(err => {
                     console.log(err);
                     console.log('Error cause: ' + err.cause);
@@ -121,6 +139,7 @@ class Game extends Base_Page {
         report_overlay.addEventListener('click', async function() {
             if (this.fr_canvas !== undefined) {
                 await this.remove_fr_canvas();
+                document.removeEventListener('keyup', canvas_control_func_p);
             }
             clearInterval(this.fr_interval);
             report_container.remove();
@@ -139,8 +158,7 @@ class Game extends Base_Page {
         return response.json();
     }
 
-    async display_fight_report(canvas, fr_data) {
-        let tick = 30;
+    async display_fight_report(canvas, fr_data, record_controls) {
         let units = [[],[]];
         let projectiles = [];
         let unit_id;
@@ -199,28 +217,189 @@ class Game extends Base_Page {
         let _that = this;
         //TODO: The entire FE for loading fr needs to be updated since BE part has been updated
         let draw_func = async function() {
-            let timestamp = Date.now();
-            let tick_time_passed = timestamp - this.tick_timestamp;
-            let ctx = this.ctx;
-            let interpol_ratio = tick_time_passed/tick;
-            ctx.clearRect(0, 0, this.width, this.height);
-            ctx.save();
-            ctx.translate(this.xOffset, this.yOffset);
-            ctx.fillStyle = 'red';
-            //TODO: Need to add angle to projectiles
-            for (let i = projectiles.length - 1; i >= 0; i--) {
-                let weapon_details = await _that.get_unit_weapon_dts(1);
-                let projectile = projectiles[i];
-                let move_by = await (await projectile.future_pos.subtract(projectile.pos)).multiply(interpol_ratio);
-                let x = projectile.pos.x + move_by.x;
-                let y = projectile.pos.y + move_by.y;
-                //TODO: Make sure this is the correct calculation of the current projectile height under the set angle
-                //let y_hit_calc_adj = move_by.y < 0 ? -projectile_height * Math.abs(projectile.angle / Math.PI) : 0;
-                //has to be only less than one, else a projectile might get deleted earlier than intended
-                if (interpol_ratio < 1 && projectile.delete) {
-                    if (projectile.hit) {
-                        //TODO: instead of splicing the projectile once it reaches it's target, make it appear as if it was slowly disappearing while hitting the ship? Make the height of the projectile smaller by the amount of distance passed by the target position, until the height reaches 0 or < 0, deleting it
-                        if (projectile.travelled + weapon_details.velocity * 100 * interpol_ratio >= projectile.init_target_dist) {
+            if (!record_controls.paused || record_controls.update_canvas) {
+                let timestamp = record_controls.paused ? record_controls.pause_timestamp : Date.now();
+                let tick_time_passed = timestamp - this.tick_timestamp;
+                let ctx = this.ctx;
+                let interpol_ratio = tick_time_passed/record_controls.tick;
+                if (this.tick_timestamp == 0) interpol_ratio = 1;
+                ctx.clearRect(0, 0, this.width, this.height);
+                ctx.save();
+                ctx.translate(this.xOffset, this.yOffset);
+                ctx.fillStyle = 'red';
+                //TODO: Need to add angle to projectiles
+                for (let i = projectiles.length - 1; i >= 0; i--) {
+                    let weapon_details = await _that.get_unit_weapon_dts(1);
+                    let projectile = projectiles[i];
+                    let move_by = await (await projectile.future_pos.subtract(projectile.pos)).multiply(interpol_ratio);
+                    let x = projectile.pos.x + move_by.x;
+                    let y = projectile.pos.y + move_by.y;
+                    //TODO: Make sure this is the correct calculation of the current projectile height under the set angle
+                    //let y_hit_calc_adj = move_by.y < 0 ? -projectile_height * Math.abs(projectile.angle / Math.PI) : 0;
+                    //has to be only less than one, else a projectile might get deleted earlier than intended
+                    if (interpol_ratio < 1 && projectile.delete) {
+                        if (projectile.hit) {
+                            //TODO: instead of splicing the projectile once it reaches it's target, make it appear as if it was slowly disappearing while hitting the ship? Make the height of the projectile smaller by the amount of distance passed by the target position, until the height reaches 0 or < 0, deleting it
+                            if (projectile.travelled + weapon_details.velocity * 100 * interpol_ratio >= projectile.init_target_dist) {
+                                let target_unit = projectile.target_unit;
+                                switch (projectile.target_status) {
+                                    case 3:
+                                        target_unit.neutralized = true;
+                                        target_unit.disabled = true;
+                                    break;
+                                    case 4:
+                                        target_unit.neutralized = true;
+                                        //was disabled, but additional shot fired, before it got disabled, which destroyed it
+                                        if (target_unit.disabled == true) {
+                                            target_unit.disabled = false;
+                                        }
+                                    break;
+                                }
+                                projectiles.splice(i,1);
+                                continue;
+                            }
+                        } else {
+                            if (projectile.travelled + weapon_details.velocity * 100 * interpol_ratio >= weapon_details.range) {
+                                projectiles.splice(i,1);
+                                continue;
+                            }
+                        }
+                    }
+                    x = (x - projectile_width/2) * this.zoom;
+                    y = y * this.zoom;
+                    ctx.save();
+                    ctx.translate(x, y);
+                    ctx.rotate(projectile.angle + 0.5 * Math.PI);
+                    ctx.translate(-x, -y);
+                    ctx.fillStyle = 'red';
+                    ctx.beginPath();
+                    ctx.rect(x, y, projectile_width * this.zoom, projectile_height * this.zoom);
+                    ctx.fill();
+                    ctx.restore();
+
+                    ctx.fillStyle = 'green';
+                    ctx.beginPath();
+                    ctx.arc(projectile.target_position.x * this.zoom, projectile.target_position.y * this.zoom, 5 * this.zoom, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+                var width = 0;
+                var height = 0;
+                for (var i = 0; i < units.length; i++) {
+                    for (var j = 0; j < units[i].length; j++) {
+                        var unit = units[i][j];
+                        if (unit.color !== undefined) {
+                            ctx.fillStyle = unit.color;
+                        }
+                        if (unit.width !== undefined) {
+                            width = unit.width;
+                        }
+                        if (unit.height !== undefined) {
+                            height = unit.height;
+                        }
+                        if (unit.neutralized === undefined) {
+                            ctx.beginPath();
+                            ctx.rect((unit.x + (unit.next_x - unit.x) * interpol_ratio - width/2) * this.zoom, (unit.y + (unit.next_y - unit.y) * interpol_ratio - height/2) * this.zoom, width * this.zoom, height * this.zoom);
+                            ctx.fill();
+                        }
+                    }
+                }
+                ctx.fillStyle = "rgb(211,211,211)";
+                width = 20;
+                height = 20;
+                for (var i = 0; i < units.length; i++) {
+                    for (var j = 0; j < units[i].length; j++) {
+                        var unit = units[i][j];
+                        if (unit.disabled) {
+                            ctx.beginPath();
+                            ctx.rect((unit.x - width/2) * this.zoom, (unit.y - height/2) * this.zoom, width * this.zoom, height * this.zoom);
+                            ctx.fill();
+                        }
+                    }
+                }
+                ctx.restore();
+                if (record_controls.update_canvas) {
+                    record_controls.update_canvas = false;
+                }
+            }
+            if (_that.fr_canvas !== undefined) {
+                window.requestAnimationFrame(this.draw.bind(this));
+            }
+        }
+        this.fight_record_canvas = new Canvas(canvas, draw_func, undefined, undefined, undefined, record_controls);
+        let tick_time_left;
+        let next_tick_prep = async function(tick) {
+            await new Promise((resolve, reject) => setTimeout(resolve, tick));
+            this.fight_record_canvas.tick_timestamp = Date.now();
+            if (tick_time_left !== undefined) {
+                this.fight_record_canvas.tick_timestamp = Date.now() - tick_time_left;
+                tick_time_left = undefined;
+            }
+        }.bind(this);
+        for (let i = 2; i < fr_data.length; i++) {
+            if (!record_controls.paused) {
+                for (let j = 0; j < fr_data[i].length - 1; j++) {
+                    let func_units_count = 0;
+                    let u_index = 0;
+                    for (let k = 0; k < fr_data[i][j].length; k++) {
+                        for (let m = u_index; m < units[j].length; m++) {
+                            if (units[j][m].neutralized === undefined) {
+                                if (func_units_count == k) {
+                                    u_index = m;
+                                    break;
+                                }
+                                func_units_count++;
+                            }
+                        }
+                        let unit = units[j][u_index];
+                        unit.x = unit.next_x;
+                        unit.y = unit.next_y;
+                        let unit_data = fr_data[i][j][k];
+                        unit.next_x = unit_data[0];
+                        unit.next_y = unit_data[1];
+                        for (let l = 2; l < unit_data.length; l += 2) {
+                            let oppf_index = j == 0 ? 1 : 0;
+                            let projectile_id = fr_data[i][j][k][l];
+                            //l + 1 = index of the target unit in units array
+                            let target_unit = units[oppf_index][unit_data[l + 1]];
+                            //originally was also + or - height/2, but on the BE the projectile is generated on the x and y of the ship (which is drawn as the middle). If the projectile was drawn starting from the edge of the ship, it would take less time to reach the target, which could cause it to arrive a tick earlier than planned, causing issues
+                            let y_adj = (target_unit.next_y > unit.y ? 0 : -projectile_height);
+                            projectiles.push({projectile_id: projectile_id, pos: new Vector(unit.x, unit.y + y_adj)});
+                            for (var m = i; m < fr_data.length; m++) {
+                                for (var n = 0; n < fr_data[m][2].length; n += 3) {
+                                    if (fr_data[m][2][n] == projectile_id) {
+                                        let unit_index = fr_data[i][j][k][l + 1];
+                                        let target_unit_data = fr_data[i][oppf_index][unit_index];
+                                        let x;
+                                        let y;
+                                        if (target_unit_data === undefined) {
+                                            x = units[oppf_index][unit_index].next_x;
+                                            y = units[oppf_index][unit_index].next_y;
+                                        } else {
+                                            x = target_unit_data[0];
+                                            y = target_unit_data[1];
+                                        }
+                                        let projectile = projectiles[projectiles.length - 1];
+                                        projectile.target_unit = target_unit;
+                                        projectile.target_status = fr_data[m][2][n + 1];
+                                        projectile.hit = projectile.target_status > 1;
+                                        let unit_prev_index = fr_data[m][2][n + 2];
+                                        if (unit_prev_index != -1) {
+                                            let unit_prev_data = fr_data[m][oppf_index][unit_prev_index];
+                                            projectile.target_position = new Vector(unit_prev_data[0], unit_prev_data[1]);
+                                        } else {
+                                            projectile.target_position = new Vector(x,y);
+                                        }
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                for (let j = projectiles.length - 1; j >= 0; j--) {
+                    let projectile = projectiles[j];
+                    if (projectile.delete) {
+                        if (projectile.hit) {
                             let target_unit = projectile.target_unit;
                             switch (projectile.target_status) {
                                 case 3:
@@ -235,199 +414,81 @@ class Game extends Base_Page {
                                     }
                                 break;
                             }
-                            neutralized_units++;
-                            projectiles.splice(i,1);
-                            continue;
                         }
-                    } else {
-                        if (projectile.travelled + weapon_details.velocity * 100 * interpol_ratio >= weapon_details.range) {
-                            projectiles.splice(i,1);
-                            continue;
+                        projectiles.splice(j, 1);
+                        continue;
+                    }
+                    let to_target_vector = new Vector(projectile.pos, projectile.target_position);
+                    let weapon_details = await _that.get_unit_weapon_dts(1);
+                    if (projectile.velocity_vector === undefined) {
+                        projectile.velocity_vector = await to_target_vector.normalize();
+                        projectile.angle = await projectile.velocity_vector.angle();
+                        projectile.travelled = -weapon_details.velocity * 100;
+                        if (projectile.hit) {
+                            projectile.init_target_dist = await to_target_vector.length();
                         }
+                        projectile.future_pos = projectile.pos;
                     }
-                }
-                x = (x - projectile_width/2) * this.zoom;
-                y = y * this.zoom;
-                ctx.save();
-                ctx.translate(x, y);
-                ctx.rotate(projectile.angle + 0.5 * Math.PI);
-                ctx.translate(-x, -y);
-                ctx.fillStyle = 'red';
-                ctx.beginPath();
-                ctx.rect(x, y, projectile_width * this.zoom, projectile_height * this.zoom);
-                ctx.fill();
-                ctx.restore();
-
-                ctx.fillStyle = 'green';
-                ctx.beginPath();
-                ctx.arc(projectile.target_position.x * this.zoom, projectile.target_position.y * this.zoom, 5 * this.zoom, 0, 2 * Math.PI);
-                ctx.fill();
-            }
-            var width = 0;
-            var height = 0;
-            for (var i = 0; i < units.length; i++) {
-                for (var j = 0; j < units[i].length; j++) {
-                    var unit = units[i][j];
-                    if (unit.color !== undefined) {
-                        ctx.fillStyle = unit.color;
-                    }
-                    if (unit.width !== undefined) {
-                        width = unit.width;
-                    }
-                    if (unit.height !== undefined) {
-                        height = unit.height;
-                    }
-                    if (unit.neutralized === undefined) {
-                        ctx.beginPath();
-                        ctx.rect((unit.x + (unit.next_x - unit.x) * interpol_ratio - width/2) * this.zoom, (unit.y + (unit.next_y - unit.y) * interpol_ratio - height/2) * this.zoom, width * this.zoom, height * this.zoom);
-                        ctx.fill();
-                    }
-                }
-            }
-            ctx.fillStyle = "rgb(211,211,211)";
-            width = 20;
-            height = 20;
-            for (var i = 0; i < units.length; i++) {
-                for (var j = 0; j < units[i].length; j++) {
-                    var unit = units[i][j];
-                    if (unit.disabled) {
-                        ctx.beginPath();
-                        ctx.rect((unit.x - width/2) * this.zoom, (unit.y - height/2) * this.zoom, width * this.zoom, height * this.zoom);
-                        ctx.fill();
-                    }
-                }
-            }
-            ctx.restore();
-            if (_that.fr_canvas !== undefined) {
-                window.requestAnimationFrame(this.draw.bind(this));
-            }
-        }
-        this.fight_record_canvas = new Canvas(canvas, draw_func);
-        for (let i = 2; i < fr_data.length; i++) {
-            if (neutralized_units == 2) {
-                tick = 8000;
-            }
-            for (let j = 0; j < fr_data[i].length - 1; j++) {
-                let func_units_count = 0;
-                let u_index = 0;
-                for (let k = 0; k < fr_data[i][j].length; k++) {
-                    for (let m = u_index; m < units[j].length; m++) {
-                        if (units[j][m].neutralized === undefined) {
-                            if (func_units_count == k) {
-                                u_index = m;
-                                break;
-                            }
-                            func_units_count++;
-                        }
-                    }
-                    let unit = units[j][u_index];
-                    unit.x = unit.next_x;
-                    unit.y = unit.next_y;
-                    let unit_data = fr_data[i][j][k];
-                    unit.next_x = unit_data[0];
-                    unit.next_y = unit_data[1];
-                    for (let l = 2; l < unit_data.length; l += 2) {
-                        let oppf_index = j == 0 ? 1 : 0;
-                        let projectile_id = fr_data[i][j][k][l];
-                        //l + 1 = index of the target unit in units array
-                        let target_unit = units[oppf_index][unit_data[l + 1]];
-                        //originally was also + or - height/2, but on the BE the projectile is generated on the x and y of the ship (which is drawn as the middle). If the projectile was drawn starting from the edge of the ship, it would take less time to reach the target, which could cause it to arrive a tick earlier than planned, causing issues
-                        let y_adj = (target_unit.next_y > unit.y ? 0 : -projectile_height);
-                        projectiles.push({projectile_id: projectile_id, pos: new Vector(unit.x, unit.y + y_adj)});
-                        for (var m = i; m < fr_data.length; m++) {
-                            for (var n = 0; n < fr_data[m][2].length; n += 3) {
-                                if (fr_data[m][2][n] == projectile_id) {
-                                    let unit_index = fr_data[i][j][k][l + 1];
-                                    let target_unit_data = fr_data[i][oppf_index][unit_index];
-                                    let x;
-                                    let y;
-                                    if (target_unit_data === undefined) {
-                                        x = units[oppf_index][unit_index].next_x;
-                                        y = units[oppf_index][unit_index].next_y;
-                                    } else {
-                                        x = target_unit_data[0];
-                                        y = target_unit_data[1];
-                                    }
-                                    let projectile = projectiles[projectiles.length - 1];
-                                    projectile.target_unit = target_unit;
-                                    projectile.target_status = fr_data[m][2][n + 1];
-                                    projectile.hit = projectile.target_status > 1;
-                                    let unit_prev_index = fr_data[m][2][n + 2];
-                                    if (unit_prev_index != -1) {
-                                        let unit_prev_data = fr_data[m][oppf_index][unit_prev_index];
-                                        projectile.target_position = new Vector(unit_prev_data[0], unit_prev_data[1]);
-                                    } else {
-                                        projectile.target_position = new Vector(x,y);
-                                    }
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            for (let j = projectiles.length - 1; j >= 0; j--) {
-                let projectile = projectiles[j];
-                if (projectile.delete) {
-                    if (projectile.hit) {
-                        let target_unit = projectile.target_unit;
-                        switch (projectile.target_status) {
-                            case 3:
-                                target_unit.neutralized = true;
-                                target_unit.disabled = true;
-                            break;
-                            case 4:
-                                target_unit.neutralized = true;
-                                //was disabled, but additional shot fired, before it got disabled, which destroyed it
-                                if (target_unit.disabled == true) {
-                                    target_unit.disabled = false;
-                                }
+                    let found = false;
+                    for (let j = 0; j < fr_data[i][2].length; j += 3) {
+                        if (fr_data[i][2][j] == projectile.projectile_id) {
+                            found = true;
                             break;
                         }
                     }
-                    projectiles.splice(j, 1);
-                    continue;
-                }
-                let to_target_vector = new Vector(projectile.pos, projectile.target_position);
-                let weapon_details = await _that.get_unit_weapon_dts(1);
-                if (projectile.velocity_vector === undefined) {
-                    projectile.velocity_vector = await to_target_vector.normalize();
-                    projectile.angle = await projectile.velocity_vector.angle();
-                    projectile.travelled = -weapon_details.velocity * 100;
+                    projectile.travelled += weapon_details.velocity * 100;
                     if (projectile.hit) {
-                        projectile.init_target_dist = await to_target_vector.length();
-                    }
-                    projectile.future_pos = projectile.pos;
-                }
-                let found = false;
-                for (let j = 0; j < fr_data[i][2].length; j += 3) {
-                    if (fr_data[i][2][j] == projectile.projectile_id) {
-                        found = true;
-                        break;
-                    }
-                }
-                projectile.travelled += weapon_details.velocity * 100;
-                if (projectile.hit) {
-                    //the draw function should delete the projectile once it reaches the destination, however, the interpol doesn't usually reach the value of 1, so if the hit happened right at the end of a tick, it won't get drawn and therefore deleted -> checked in the next tick if it was supposed to get deleted and deletes. Another issue, why (projectile.travelled + weapon_details.velocity * 100 >= distance) check was removed is because of rounding errors (a projectile would reach target position (e.g. x = 185), which should've been reached the next tick (the actual x coordinate reached is e.g. 185.1 and the actual target x coordinate is 185.5, but due to usage of Math.floor to save space, this results in a rounding error, causing the unit to get neutralized a tick too early, which completely messes up other units coordinates, since the next coordinates for the neutralized unit are now applied to the unit after it in the array, it's coordinates to the one after, etc.)
-                    if (found) {
+                        //the draw function should delete the projectile once it reaches the destination, however, the interpol doesn't usually reach the value of 1, so if the hit happened right at the end of a tick, it won't get drawn and therefore deleted -> checked in the next tick if it was supposed to get deleted and deletes. Another issue, why (projectile.travelled + weapon_details.velocity * 100 >= distance) check was removed is because of rounding errors (a projectile would reach target position (e.g. x = 185), which should've been reached the next tick (the actual x coordinate reached is e.g. 185.1 and the actual target x coordinate is 185.5, but due to usage of Math.floor to save space, this results in a rounding error, causing the unit to get neutralized a tick too early, which completely messes up other units coordinates, since the next coordinates for the neutralized unit are now applied to the unit after it in the array, it's coordinates to the one after, etc.)
+                        if (found) {
+                            projectile.delete = true;
+                        }
+                    } else if (projectile.travelled + weapon_details.velocity * 100 >= weapon_details.range) {
                         projectile.delete = true;
                     }
-                } else if (projectile.travelled + weapon_details.velocity * 100 >= weapon_details.range) {
-                    projectile.delete = true;
+                    projectile.pos = projectile.future_pos;
+                    let p_move_vector = await projectile.velocity_vector.multiply(weapon_details.velocity * 100);
+                    projectile.future_pos = await p_move_vector.add(projectile.pos);
                 }
-                projectile.pos = projectile.future_pos;
-                let p_move_vector = await projectile.velocity_vector.multiply(weapon_details.velocity * 100);
-                projectile.future_pos = await p_move_vector.add(projectile.pos);
+                if (record_controls.paused) {
+                    if (tick_time_left === undefined) {
+                        tick_time_left = Date.now() - record_controls.pause_timestamp;
+                    }
+                    await new Promise((resolve, reject) => {
+                        let pause_interval = setInterval(async function() {
+                            console.log('test1');
+                            if (!record_controls.paused) {
+                                clearInterval(pause_interval);
+                                await next_tick_prep(tick_time_left);
+                                resolve();
+                            }
+                        },20);
+                    });
+                } else {
+                    await next_tick_prep(record_controls.tick);
+                }
+                if (this.fr_canvas === undefined) {
+                    return;
+                }
+            } else {
+                if (tick_time_left === undefined) {
+                    tick_time_left = Date.now() - record_controls.pause_timestamp;
+                }
+                await new Promise((resolve, reject) => {
+                    let pause_interval = setInterval(async function() {
+                        console.log('test2');
+                        if (!record_controls.paused) {
+                            clearInterval(pause_interval);
+                            await next_tick_prep(tick_time_left);
+                            resolve();
+                        }
+                    },20);
+                });
             }
-            await new Promise((resolve, reject) => setTimeout(resolve, tick));
-            this.fight_record_canvas.tick_timestamp = Date.now();
             if (this.fr_canvas === undefined) {
                 return;
             }
         }
-        if (this.fr_canvas === undefined) {
-            return;
-        }
+        this.fight_record_canvas.tick_timestamp = 0;
     }
 
     async update_fr_timer() {
