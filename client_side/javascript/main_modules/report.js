@@ -16,7 +16,7 @@ class Game extends Base_Page {
 
     async display_reports() {
         if (this.received_reports) {
-            console.log(this.report_datapack)
+            console.log(this.report_datapack);
             var reports = this.report_datapack.reports;
             var report_table = document.getElementById('report_table');
             for (var i = 0; i < reports.length; i++) {
@@ -102,13 +102,22 @@ class Game extends Base_Page {
                     _that.fr_canvas = document.createElement('canvas');
                     _that.fr_canvas.setAttribute('id', 'fr_canvas');
                     document.body.append(_that.fr_canvas);
-                    let record_controls = {tick: 30, paused: false, pause_timestamp: Date.now(), update_canvas: false};
+                    let record_controls = {tick: 30, paused: false, pause_timestamp: Date.now(), update_canvas: false, pause_records: []};
                     _that.display_fight_report(_that.fr_canvas, fr_data, record_controls);
                     let canvas_control_func = function(e) {
                         switch (e.code) {
                             case 'Space':
                                 record_controls.paused = record_controls.paused ? false : true;
-                                record_controls.pause_timestamp = Date.now();
+                                if (record_controls.paused) {
+                                    record_controls.pause_timestamp = Date.now();
+                                    record_controls.pause_records.push({start: record_controls.pause_timestamp});
+                                } else {
+                                    record_controls.pause_records[record_controls.pause_records.length - 1].end = Date.now();
+                                    if (record_controls.unpause_func !== undefined) {
+                                        record_controls.unpause_func();
+                                        record_controls.unpause_func = undefined;
+                                    }
+                                }
                                 break;
                             case 'ArrowRight':
                                 //TODO: Fix - Changing tick while it is being drawn on the canvas fucks with the interpolation values
@@ -214,6 +223,7 @@ class Game extends Base_Page {
         }
         const projectile_width = 4;
         const projectile_height = 14;
+        let replay_finished = false;
         let _that = this;
         //TODO: The entire FE for loading fr needs to be updated since BE part has been updated
         let draw_func = async function() {
@@ -222,7 +232,7 @@ class Game extends Base_Page {
                 let tick_time_passed = timestamp - this.tick_timestamp;
                 let ctx = this.ctx;
                 let interpol_ratio = tick_time_passed/record_controls.tick;
-                if (this.tick_timestamp == 0) interpol_ratio = 1;
+                if (replay_finished && interpol_ratio > 1) interpol_ratio = 1;
                 ctx.clearRect(0, 0, this.width, this.height);
                 ctx.save();
                 ctx.translate(this.xOffset, this.yOffset);
@@ -326,169 +336,162 @@ class Game extends Base_Page {
             }
         }
         this.fight_record_canvas = new Canvas(canvas, draw_func, undefined, undefined, undefined, record_controls);
-        let tick_time_left;
-        let next_tick_prep = async function(tick) {
-            await new Promise((resolve, reject) => setTimeout(resolve, tick));
-            this.fight_record_canvas.tick_timestamp = Date.now();
-            if (tick_time_left !== undefined) {
-                this.fight_record_canvas.tick_timestamp = Date.now() - tick_time_left;
-                tick_time_left = undefined;
-            }
-        }.bind(this);
         for (let i = 2; i < fr_data.length; i++) {
-            if (!record_controls.paused) {
-                for (let j = 0; j < fr_data[i].length - 1; j++) {
-                    let func_units_count = 0;
-                    let u_index = 0;
-                    for (let k = 0; k < fr_data[i][j].length; k++) {
-                        for (let m = u_index; m < units[j].length; m++) {
-                            if (units[j][m].neutralized === undefined) {
-                                if (func_units_count == k) {
-                                    u_index = m;
-                                    break;
+            for (let j = projectiles.length - 1; j >= 0; j--) {
+                let projectile = projectiles[j];
+                if (projectile.delete) {
+                    if (projectile.hit) {
+                        let target_unit = projectile.target_unit;
+                        switch (projectile.target_status) {
+                            case 3:
+                                target_unit.neutralized = true;
+                                target_unit.disabled = true;
+                            break;
+                            case 4:
+                                target_unit.neutralized = true;
+                                //was disabled, but additional shot fired, before it got disabled, which destroyed it
+                                if (target_unit.disabled == true) {
+                                    target_unit.disabled = false;
                                 }
-                                func_units_count++;
-                            }
-                        }
-                        let unit = units[j][u_index];
-                        unit.x = unit.next_x;
-                        unit.y = unit.next_y;
-                        let unit_data = fr_data[i][j][k];
-                        unit.next_x = unit_data[0];
-                        unit.next_y = unit_data[1];
-                        for (let l = 2; l < unit_data.length; l += 2) {
-                            let oppf_index = j == 0 ? 1 : 0;
-                            let projectile_id = fr_data[i][j][k][l];
-                            //l + 1 = index of the target unit in units array
-                            let target_unit = units[oppf_index][unit_data[l + 1]];
-                            //originally was also + or - height/2, but on the BE the projectile is generated on the x and y of the ship (which is drawn as the middle). If the projectile was drawn starting from the edge of the ship, it would take less time to reach the target, which could cause it to arrive a tick earlier than planned, causing issues
-                            let y_adj = (target_unit.next_y > unit.y ? 0 : -projectile_height);
-                            projectiles.push({projectile_id: projectile_id, pos: new Vector(unit.x, unit.y + y_adj)});
-                            for (var m = i; m < fr_data.length; m++) {
-                                for (var n = 0; n < fr_data[m][2].length; n += 3) {
-                                    if (fr_data[m][2][n] == projectile_id) {
-                                        let unit_index = fr_data[i][j][k][l + 1];
-                                        let target_unit_data = fr_data[i][oppf_index][unit_index];
-                                        let x;
-                                        let y;
-                                        if (target_unit_data === undefined) {
-                                            x = units[oppf_index][unit_index].next_x;
-                                            y = units[oppf_index][unit_index].next_y;
-                                        } else {
-                                            x = target_unit_data[0];
-                                            y = target_unit_data[1];
-                                        }
-                                        let projectile = projectiles[projectiles.length - 1];
-                                        projectile.target_unit = target_unit;
-                                        projectile.target_status = fr_data[m][2][n + 1];
-                                        projectile.hit = projectile.target_status > 1;
-                                        let unit_prev_index = fr_data[m][2][n + 2];
-                                        if (unit_prev_index != -1) {
-                                            let unit_prev_data = fr_data[m][oppf_index][unit_prev_index];
-                                            projectile.target_position = new Vector(unit_prev_data[0], unit_prev_data[1]);
-                                        } else {
-                                            projectile.target_position = new Vector(x,y);
-                                        }
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                for (let j = projectiles.length - 1; j >= 0; j--) {
-                    let projectile = projectiles[j];
-                    if (projectile.delete) {
-                        if (projectile.hit) {
-                            let target_unit = projectile.target_unit;
-                            switch (projectile.target_status) {
-                                case 3:
-                                    target_unit.neutralized = true;
-                                    target_unit.disabled = true;
-                                break;
-                                case 4:
-                                    target_unit.neutralized = true;
-                                    //was disabled, but additional shot fired, before it got disabled, which destroyed it
-                                    if (target_unit.disabled == true) {
-                                        target_unit.disabled = false;
-                                    }
-                                break;
-                            }
-                        }
-                        projectiles.splice(j, 1);
-                        continue;
-                    }
-                    let to_target_vector = new Vector(projectile.pos, projectile.target_position);
-                    let weapon_details = await _that.get_unit_weapon_dts(1);
-                    if (projectile.velocity_vector === undefined) {
-                        projectile.velocity_vector = await to_target_vector.normalize();
-                        projectile.angle = await projectile.velocity_vector.angle();
-                        projectile.travelled = -weapon_details.velocity * 100;
-                        if (projectile.hit) {
-                            projectile.init_target_dist = await to_target_vector.length();
-                        }
-                        projectile.future_pos = projectile.pos;
-                    }
-                    let found = false;
-                    for (let j = 0; j < fr_data[i][2].length; j += 3) {
-                        if (fr_data[i][2][j] == projectile.projectile_id) {
-                            found = true;
                             break;
                         }
                     }
-                    projectile.travelled += weapon_details.velocity * 100;
-                    if (projectile.hit) {
-                        //the draw function should delete the projectile once it reaches the destination, however, the interpol doesn't usually reach the value of 1, so if the hit happened right at the end of a tick, it won't get drawn and therefore deleted -> checked in the next tick if it was supposed to get deleted and deletes. Another issue, why (projectile.travelled + weapon_details.velocity * 100 >= distance) check was removed is because of rounding errors (a projectile would reach target position (e.g. x = 185), which should've been reached the next tick (the actual x coordinate reached is e.g. 185.1 and the actual target x coordinate is 185.5, but due to usage of Math.floor to save space, this results in a rounding error, causing the unit to get neutralized a tick too early, which completely messes up other units coordinates, since the next coordinates for the neutralized unit are now applied to the unit after it in the array, it's coordinates to the one after, etc.)
-                        if (found) {
-                            projectile.delete = true;
+                    projectiles.splice(j, 1);
+                    continue;
+                }
+            }
+            for (let j = 0; j < fr_data[i].length - 1; j++) {
+                let func_units_count = 0;
+                let u_index = 0;
+                for (let k = 0; k < fr_data[i][j].length; k++) {
+                    for (let m = u_index; m < units[j].length; m++) {
+                        if (units[j][m].neutralized === undefined) {
+                            if (func_units_count == k) {
+                                u_index = m;
+                                break;
+                            }
+                            func_units_count++;
                         }
-                    } else if (projectile.travelled + weapon_details.velocity * 100 >= weapon_details.range) {
+                    }
+                    let unit = units[j][u_index];
+                    unit.x = unit.next_x;
+                    unit.y = unit.next_y;
+                    let unit_data = fr_data[i][j][k];
+                    unit.next_x = unit_data[0];
+                    unit.next_y = unit_data[1];
+                    for (let l = 2; l < unit_data.length; l += 2) {
+                        let oppf_index = j == 0 ? 1 : 0;
+                        let projectile_id = fr_data[i][j][k][l];
+                        //l + 1 = index of the target unit in units array
+                        let target_unit = units[oppf_index][unit_data[l + 1]];
+                        //originally was also + or - height/2, but on the BE the projectile is generated on the x and y of the ship (which is drawn as the middle). If the projectile was drawn starting from the edge of the ship, it would take less time to reach the target, which could cause it to arrive a tick earlier than planned, causing issues
+                        let y_adj = (target_unit.next_y > unit.y ? 0 : -projectile_height);
+                        projectiles.push({projectile_id: projectile_id, pos: new Vector(unit.x, unit.y + y_adj)});
+                        for (var m = i; m < fr_data.length; m++) {
+                            for (var n = 0; n < fr_data[m][2].length; n += 3) {
+                                if (fr_data[m][2][n] == projectile_id) {
+                                    let unit_index = fr_data[i][j][k][l + 1];
+                                    let target_unit_data = fr_data[i][oppf_index][unit_index];
+                                    let x;
+                                    let y;
+                                    if (target_unit_data === undefined) {
+                                        x = units[oppf_index][unit_index].next_x;
+                                        y = units[oppf_index][unit_index].next_y;
+                                    } else {
+                                        x = target_unit_data[0];
+                                        y = target_unit_data[1];
+                                    }
+                                    let projectile = projectiles[projectiles.length - 1];
+                                    projectile.target_unit = target_unit;
+                                    projectile.target_status = fr_data[m][2][n + 1];
+                                    projectile.hit = projectile.target_status > 1;
+                                    let unit_prev_index = fr_data[m][2][n + 2];
+                                    if (unit_prev_index != -1) {
+                                        let unit_prev_data = fr_data[m][oppf_index][unit_prev_index];
+                                        projectile.target_position = new Vector(unit_prev_data[0], unit_prev_data[1]);
+                                    } else {
+                                        projectile.target_position = new Vector(x,y);
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            for (let j = projectiles.length - 1; j >= 0; j--) {
+                let projectile = projectiles[j];
+                let to_target_vector = new Vector(projectile.pos, projectile.target_position);
+                let weapon_details = await _that.get_unit_weapon_dts(1);
+                if (projectile.velocity_vector === undefined) {
+                    projectile.velocity_vector = await to_target_vector.normalize();
+                    projectile.angle = await projectile.velocity_vector.angle();
+                    projectile.travelled = -weapon_details.velocity * 100;
+                    if (projectile.hit) {
+                        projectile.init_target_dist = await to_target_vector.length();
+                    }
+                    projectile.future_pos = projectile.pos;
+                }
+                let found = false;
+                for (let j = 0; j < fr_data[i][2].length; j += 3) {
+                    if (fr_data[i][2][j] == projectile.projectile_id) {
+                        found = true;
+                        break;
+                    }
+                }
+                projectile.travelled += weapon_details.velocity * 100;
+                if (projectile.hit) {
+                    //the draw function should delete the projectile once it reaches the destination, however, the interpol doesn't usually reach the value of 1, so if the hit happened right at the end of a tick, it won't get drawn and therefore deleted -> checked in the next tick if it was supposed to get deleted and deletes. Another issue, why (projectile.travelled + weapon_details.velocity * 100 >= distance) check was removed is because of rounding errors (a projectile would reach target position (e.g. x = 185), which should've been reached the next tick (the actual x coordinate reached is e.g. 185.1 and the actual target x coordinate is 185.5, but due to usage of Math.floor to save space, this results in a rounding error, causing the unit to get neutralized a tick too early, which completely messes up other units coordinates, since the next coordinates for the neutralized unit are now applied to the unit after it in the array, it's coordinates to the one after, etc.)
+                    if (found) {
                         projectile.delete = true;
                     }
-                    projectile.pos = projectile.future_pos;
-                    let p_move_vector = await projectile.velocity_vector.multiply(weapon_details.velocity * 100);
-                    projectile.future_pos = await p_move_vector.add(projectile.pos);
+                } else if (projectile.travelled + weapon_details.velocity * 100 >= weapon_details.range) {
+                    projectile.delete = true;
                 }
-                if (record_controls.paused) {
-                    if (tick_time_left === undefined) {
-                        tick_time_left = Date.now() - record_controls.pause_timestamp;
+                projectile.pos = projectile.future_pos;
+                let p_move_vector = await projectile.velocity_vector.multiply(weapon_details.velocity * 100);
+                projectile.future_pos = await p_move_vector.add(projectile.pos);
+            }
+            if (this.fr_canvas === undefined) {
+                return;
+            }
+            //right now, all of the code expects the "logic loop" to be done instaneously. If not, some inconsistencies could arise (e.g. a pause is always expected to be caught after the await "tick promise"), but this is unlikely as of rn at the very least
+            //let tick_time_left = 0;
+            //end can also be undefined -> fix to expect this (same in the for loop below this one)
+            /*for (let j = record_controls.pause_records.length - 1; j >= 0; j--) {
+                let pr = record_controls.pause_records[j];
+                tick_time_left += pr.end - pr.start;
+                record_controls.pause_records.splice(j,1);
+            }
+            this.fight_record_canvas.tick_timestamp = Date.now() - tick_time_left;
+            */
+            this.fight_record_canvas.tick_timestamp = Date.now();
+            await new Promise((resolve, reject) => setTimeout(resolve, record_controls.tick));// + tick_time_left));
+            let previous_dpt = record_controls.tick;
+            while (record_controls.pause_records.length != 0) {
+                let draw_time = 0;
+                let previous_pr = {end: this.fight_record_canvas.tick_timestamp};
+                for (let j = record_controls.pause_records.length - 1; j >= 0; j--) {
+                    let pr = record_controls.pause_records[j];
+                    if (pr.end === undefined) {
+                        await new Promise((resolve, reject) => {record_controls.unpause_func = resolve});
                     }
-                    await new Promise((resolve, reject) => {
-                        let pause_interval = setInterval(async function() {
-                            console.log('test1');
-                            if (!record_controls.paused) {
-                                clearInterval(pause_interval);
-                                await next_tick_prep(tick_time_left);
-                                resolve();
-                            }
-                        },20);
-                    });
-                } else {
-                    await next_tick_prep(record_controls.tick);
+                    draw_time += pr.start - previous_pr.end;
+                    previous_pr = pr;
+                    record_controls.pause_records.splice(j,1);
                 }
-                if (this.fr_canvas === undefined) {
-                    return;
+                let draw_pause_time = previous_dpt - draw_time;
+                previous_dpt = draw_pause_time;
+                if (draw_pause_time > 0) {
+                    this.fight_record_canvas.tick_timestamp = Date.now() - draw_time;
+                    await new Promise((resolve, reject) => setTimeout(resolve, draw_pause_time));
                 }
-            } else {
-                if (tick_time_left === undefined) {
-                    tick_time_left = Date.now() - record_controls.pause_timestamp;
-                }
-                await new Promise((resolve, reject) => {
-                    let pause_interval = setInterval(async function() {
-                        console.log('test2');
-                        if (!record_controls.paused) {
-                            clearInterval(pause_interval);
-                            await next_tick_prep(tick_time_left);
-                            resolve();
-                        }
-                    },20);
-                });
             }
             if (this.fr_canvas === undefined) {
                 return;
             }
         }
-        this.fight_record_canvas.tick_timestamp = 0;
+        replay_finished = true;
     }
 
     async update_fr_timer() {

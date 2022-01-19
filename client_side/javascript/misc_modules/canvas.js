@@ -110,7 +110,6 @@ class Canvas {
         this.yOffset = height/2;
         this.canvas.setAttribute('height', this.height);
         this.canvas.setAttribute('width', this.width);
-        window.requestAnimationFrame(this.draw.bind(this));
         return this.window_resize_handler.bind(this);
     }
 }
