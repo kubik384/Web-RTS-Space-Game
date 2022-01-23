@@ -170,15 +170,10 @@ class Game extends Base_Page {
     async display_fight_report(canvas, fr_data, record_controls) {
         let units = [[],[]];
         let projectiles = [];
-        let unit_id;
         for (let i = 0; i < units.length; i++) {
             for (let j = 0; j < fr_data[i].length; j++) {
-                if (j == 0 && unit_id !== undefined) {
-                    fr_data[i].unshift([unit_id]);
-                }
                 if (Array.isArray(fr_data[i][j])) {
-                    unit_id = fr_data[i][j][0];
-                    let color = 'white';
+                    let color = 'deeppink';
                     switch (fr_data[i][j][0]) {
                         case 1:
                             color = 'red';
@@ -221,8 +216,17 @@ class Game extends Base_Page {
                 }
             }
         }
-        const projectile_width = 4;
-        const projectile_height = 14;
+        class projectile_size {
+            constructor(weapon_id) {
+                if (weapon_id == 4 || weapon_id == 5) {
+                    this.width = 2;
+                    this.height = 0;
+                } else {
+                    this.width = 4;
+                    this.height = 14;
+                }
+            }
+        }
         let replay_finished = false;
         let _that = this;
         //TODO: The entire FE for loading fr needs to be updated since BE part has been updated
@@ -239,15 +243,16 @@ class Game extends Base_Page {
                 ctx.fillStyle = 'red';
                 //TODO: Need to add angle to projectiles
                 for (let i = projectiles.length - 1; i >= 0; i--) {
-                    let weapon_details = await _that.get_unit_weapon_dts(1);
                     let projectile = projectiles[i];
+                    let weapon_details = await _that.get_unit_weapon_dts(projectile.weapon_id);
+                    let proj_size = new projectile_size(projectile.weapon_id);
                     let move_by = await (await projectile.future_pos.subtract(projectile.pos)).multiply(interpol_ratio);
                     let x = projectile.pos.x + move_by.x;
                     let y = projectile.pos.y + move_by.y;
                     //TODO: Make sure this is the correct calculation of the current projectile height under the set angle
                     //let y_hit_calc_adj = move_by.y < 0 ? -projectile_height * Math.abs(projectile.angle / Math.PI) : 0;
                     //has to be only less than one, else a projectile might get deleted earlier than intended
-                    if (interpol_ratio < 1 && projectile.delete) {
+                    if ((interpol_ratio < 1 && projectile.delete) && (projectile.weapon_id != 4 || projectile.weapon_id != 5)) {
                         if (projectile.hit) {
                             //TODO: instead of splicing the projectile once it reaches it's target, make it appear as if it was slowly disappearing while hitting the ship? Make the height of the projectile smaller by the amount of distance passed by the target position, until the height reaches 0 or < 0, deleting it
                             if (projectile.travelled + weapon_details.velocity * 100 * interpol_ratio >= projectile.init_target_dist) {
@@ -275,25 +280,43 @@ class Game extends Base_Page {
                             }
                         }
                     }
-                    x = (x - projectile_width/2) * this.zoom;
+                    x = (x - proj_size.width/2) * this.zoom;
                     y = y * this.zoom;
-                    ctx.save();
-                    ctx.translate(x, y);
-                    ctx.rotate(projectile.angle + 0.5 * Math.PI);
-                    ctx.translate(-x, -y);
-                    ctx.fillStyle = 'red';
+                    if (projectile.weapon_id != 4 && projectile.weapon_id != 5) {
+                        ctx.save();
+                        ctx.translate(x, y);
+                        ctx.rotate(projectile.angle + 0.5 * Math.PI);
+                        ctx.translate(-x, -y);
+                    }
+                    let color = 'red';
+                    if (projectile.weapon_id == 4) {
+                        color = 'lightskyblue';                    
+                    }
+                    ctx.strokeStyle = color;
+                    ctx.fillStyle = color;
                     ctx.beginPath();
-                    ctx.rect(x, y, projectile_width * this.zoom, projectile_height * this.zoom);
-                    ctx.fill();
-                    ctx.restore();
+                    if (projectile.weapon_id == 4 || projectile.weapon_id == 5) {
+                        ctx.lineWidth = proj_size.width * this.zoom;
+                        ctx.moveTo((projectile.source_unit.x + (projectile.source_unit.next_x - projectile.source_unit.x) * interpol_ratio) * this.zoom, (projectile.source_unit.y + (projectile.source_unit.next_y - projectile.source_unit.y) * interpol_ratio) * this.zoom);
+                        ctx.lineTo((projectile.target_unit.x + (projectile.target_unit.next_x - projectile.target_unit.x) * interpol_ratio) * this.zoom, (projectile.target_unit.y + (projectile.target_unit.next_y - projectile.target_unit.y) * interpol_ratio) * this.zoom);
+                        ctx.stroke();
+                    } else {
+                        ctx.lineWidth = 1;
+                        ctx.rect(x, y, proj_size.width * this.zoom, proj_size.height * this.zoom);
+                        ctx.fill();
+                    }
+                    if (projectile.weapon_id != 4 && projectile.weapon_id != 5) {
+                        ctx.restore();
+                    }
 
                     ctx.fillStyle = 'green';
                     ctx.beginPath();
                     ctx.arc(projectile.target_position.x * this.zoom, projectile.target_position.y * this.zoom, 5 * this.zoom, 0, 2 * Math.PI);
                     ctx.fill();
                 }
-                var width = 0;
-                var height = 0;
+                ctx.lineWidth = 1;
+                let width = 0;
+                let height = 0;
                 for (var i = 0; i < units.length; i++) {
                     for (var j = 0; j < units[i].length; j++) {
                         var unit = units[i][j];
@@ -379,14 +402,20 @@ class Game extends Base_Page {
                     let unit_data = fr_data[i][j][k];
                     unit.next_x = unit_data[0];
                     unit.next_y = unit_data[1];
-                    for (let l = 2; l < unit_data.length; l += 2) {
+                    for (let l = 2; l < unit_data.length; l += 3) {
                         let oppf_index = j == 0 ? 1 : 0;
                         let projectile_id = fr_data[i][j][k][l];
                         //l + 1 = index of the target unit in units array
                         let target_unit = units[oppf_index][unit_data[l + 1]];
+                        let weapon_id = fr_data[i][j][k][l + 2];
                         //originally was also + or - height/2, but on the BE the projectile is generated on the x and y of the ship (which is drawn as the middle). If the projectile was drawn starting from the edge of the ship, it would take less time to reach the target, which could cause it to arrive a tick earlier than planned, causing issues
-                        let y_adj = (target_unit.next_y > unit.y ? 0 : -projectile_height);
-                        projectiles.push({projectile_id: projectile_id, pos: new Vector(unit.x, unit.y + y_adj)});
+                        let proj_size = new projectile_size(weapon_id);
+                        let y_adj = (target_unit.next_y > unit.y ? 0 : -proj_size.height);
+                        projectiles.push({projectile_id: projectile_id, pos: new Vector(unit.x, unit.y + y_adj), weapon_id: weapon_id});
+                        if (weapon_id == 4 || weapon_id == 5) {
+                            projectiles[projectiles.length - 1].source_unit = unit;
+                            projectiles[projectiles.length - 1].duration = 2;
+                        }
                         for (var m = i; m < fr_data.length; m++) {
                             for (var n = 0; n < fr_data[m][2].length; n += 3) {
                                 if (fr_data[m][2][n] == projectile_id) {
@@ -422,7 +451,7 @@ class Game extends Base_Page {
             for (let j = projectiles.length - 1; j >= 0; j--) {
                 let projectile = projectiles[j];
                 let to_target_vector = new Vector(projectile.pos, projectile.target_position);
-                let weapon_details = await _that.get_unit_weapon_dts(1);
+                let weapon_details = await _that.get_unit_weapon_dts(projectile.weapon_id);
                 if (projectile.velocity_vector === undefined) {
                     projectile.velocity_vector = await to_target_vector.normalize();
                     projectile.angle = await projectile.velocity_vector.angle();
@@ -440,12 +469,22 @@ class Game extends Base_Page {
                     }
                 }
                 projectile.travelled += weapon_details.velocity * 100;
+                if (projectile.duration !== undefined) {
+                    projectile.duration--;
+                }
                 if (projectile.hit) {
                     //the draw function should delete the projectile once it reaches the destination, however, the interpol doesn't usually reach the value of 1, so if the hit happened right at the end of a tick, it won't get drawn and therefore deleted -> checked in the next tick if it was supposed to get deleted and deletes. Another issue, why (projectile.travelled + weapon_details.velocity * 100 >= distance) check was removed is because of rounding errors (a projectile would reach target position (e.g. x = 185), which should've been reached the next tick (the actual x coordinate reached is e.g. 185.1 and the actual target x coordinate is 185.5, but due to usage of Math.floor to save space, this results in a rounding error, causing the unit to get neutralized a tick too early, which completely messes up other units coordinates, since the next coordinates for the neutralized unit are now applied to the unit after it in the array, it's coordinates to the one after, etc.)
-                    if (found) {
+                    //Also, now beam weapons are being drawn for the entire tick, only being deleted in the next tick
+                    if (projectile.duration === undefined) {
+                        if (found) {
+                            projectile.delete = true;
+                        }
+                    } else if (projectile.duration < 1) {
                         projectile.delete = true;
                     }
-                } else if (projectile.travelled + weapon_details.velocity * 100 >= weapon_details.range) {
+                } else if (projectile.duration === undefined && projectile.travelled + weapon_details.velocity * 100 >= weapon_details.range) {
+                    projectile.delete = true;
+                } else if (projectile.duration !== undefined && projectile.duration < 1) {
                     projectile.delete = true;
                 }
                 projectile.pos = projectile.future_pos;

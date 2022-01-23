@@ -26,9 +26,9 @@
     {
         "weapon_id": 4,
         "name": "Ion cannon",
-        "shield-damage": 85,
+        "shield_damage": 85,
         "range": 630,
-        "velocity": 3.82,
+        "velocity": 426,
         "cooldown": 600
     },
     {
@@ -36,7 +36,7 @@
         "name": "Beam cannon",
         "damage": 85,
         "range": 670,
-        "velocity": 4.26,
+        "velocity": 382,
         "cooldown": 1200
     },
     {
