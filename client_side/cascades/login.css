@@ -90,6 +90,6 @@ span.reg {
 }
 
 #repeatPassword {
-    transition: all .45s ease-out;
+    /*transition: all .45s ease-out;*/
     overflow: hidden;
 }

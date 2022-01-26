@@ -14,7 +14,7 @@
 	<body>
 		<form action = "/login", method = "POST">
 			<div id='containerTitle'>
-				<img id='backArrow' src='/client_side/images/backArrow.png' style='display:none' onclick = toggleLog();></img>
+				<!-- <img id='backArrow' src='/client_side/images/backArrow.png' style='display:none' onclick = toggleLog();></img> -->
 				<h2 id='formTitle'>Log in</h2>
 			</div>
 			<div class="container">
@@ -52,7 +52,7 @@
 			document.getElementById('formTitle').innerHTML = regTitle;
 			document.getElementById('toggleText').innerHTML = regText;
 			document.getElementById('submitBtn').innerHTML = regBtnText;
-			document.getElementById('backArrow').style.display = 'inline-block';
+			//document.getElementById('backArrow').style.display = 'inline-block';
 			document.getElementById('repeatPassword').style = 'width: 100%; height: 81px';
 			document.getElementById('rptPsw').required = true;
 			document.forms[0].action = "/register";
@@ -63,7 +63,7 @@
 			document.getElementById('formTitle').innerHTML = logTitle;
 			document.getElementById('toggleText').innerHTML = logText;
 			document.getElementById('submitBtn').innerHTML = logBtnText;
-			document.getElementById('backArrow').style.display = 'none';
+			//document.getElementById('backArrow').style.display = 'none';
 			document.getElementById('repeatPassword').style = 'width: 0; height: 0';
 			document.getElementById('rptPsw').required = false;
 			document.forms[0].action = logFormAction;
