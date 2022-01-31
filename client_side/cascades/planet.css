@@ -2,10 +2,16 @@
 	margin: 0;
 	padding: 0;
 	border-spacing: 0;
+	font-size: 24px;
 }
 
-button, html, input {
-	font-size: 24px;
+
+h1, h2, h3, h4, h5 {
+	font-size: revert;
+}
+
+div {
+	font-size: 0px;
 }
 
 .upgrade_btn {
@@ -20,11 +26,17 @@ button, html, input {
 }
 
 #button_menu {
-	float: left;
+	display: flex;
 }
 
 #button_menu > div {
-	padding-bottom: 10px;
+	margin-right: 20px;
+	border: 2px solid black;
+	text-align: center;
+}
+
+#button_menu > div > img:hover {
+	cursor: pointer;
 }
 
 .button_image {
@@ -128,3 +140,98 @@ button, html, input {
 	height: 100%;
 }
 */
+
+#error_message {
+	color: red;
+	text-align: center;
+	padding-bottom: 10px;
+	font-weight: 700;
+}
+
+#dialog_div {
+	display: flex;
+	flex-wrap: wrap;
+	position: absolute;
+	font-size: 22px;
+	text-align: center;
+	transform: translateX(-50%);
+	top: 8%;
+	left: 50%;
+	right: 0;
+	background-color: rgb(155, 155, 155);
+	z-index: 3;
+	padding: 10px;
+	max-width: 25%;
+	min-width: 350px;
+	max-height: 80%;
+	border: 2px solid black;
+	box-shadow: 2px 2px 10px black;
+	gap: 10px 0;
+}
+
+#dialog_div > * {
+	width: 100%;
+}
+
+#dialog_div > button {
+	font-size: 20px;
+	margin-top: 10px;
+	padding: 6px 12px;
+	margin-top: 20px;
+	background-color: rgba(255, 255, 255, 1);
+}
+
+#dialog_div > div:first-of-type {
+	font-weight: bold;
+}
+
+#dialog_overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	z-index: 2;
+	background-color: rgba(255, 255, 255, 0);
+}
+
+#building_description {
+	text-align: left;
+	font-size: 24px;
+}
+
+#upgrade_cost, #building_requirements {
+	display: flex;
+	flex-wrap: wrap;
+	font-size: 24px;
+	gap: 4px 10px;
+}
+
+#upgrade_cost > h4, #building_requirements > h4 {
+	width: 100%;
+	text-align: left;
+}
+
+#upgrade_cost img, #building_requirements img {
+	width: 40px;
+}
+
+#building_dialog_buttons {
+	display: flex;
+	gap: 0 10%;
+	padding: 0 25%;
+}
+
+#building_dialog_buttons > button {
+	height: 48px
+}
+
+#building_dialog_buttons > button:first-child {
+	flex-basis: auto;
+	flex-grow: 6;
+}
+
+#building_dialog_buttons > button {
+	flex-basis: auto;
+	flex-grow: 1;
+}

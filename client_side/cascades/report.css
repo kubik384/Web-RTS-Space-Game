@@ -1,6 +1,11 @@
 * {
-    margin:0px;
-    padding:0px;
+    margin: 0px;
+    padding: 0px;
+	font-size: 18px;
+}
+
+div {
+	font-size: 0px;
 }
 
 #report_table_container {

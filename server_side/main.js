@@ -232,20 +232,21 @@ io.on('connection', socket => {
 		dbManager.get_planet_datapack(socket.username).then(datapack => { socket.emit('starter_datapack', JSON.stringify(datapack)); });
 	});
 
-	socket.on('upgrade_building', building => {
-		dbManager.upgrade_building(socket.username, building).catch(e => {
-			if (e != 'Not enough resources to upgrade building') {
-				throw e;
-			}
-		});
+	socket.on('update_building', (building_id, downgrade) => {
+		if (downgrade == 0) {
+			dbManager.downgrade_building(socket.username, building_id);
+		} else {
+			dbManager.upgrade_building(socket.username, building_id).catch(e => {
+				if (e != 'Not enough resources to upgrade building') {
+					throw e;
+				}
+			});
+		}
 	});
+
 
 	socket.on('cancel_building_update', building => {
 		dbManager.cancel_building_update(socket.username, building);
-	});
-
-	socket.on('downgrade_building', building => {
-		dbManager.downgrade_building(socket.username, building);
 	});
 
 	socket.on('map_datapack_request', (layout) => {

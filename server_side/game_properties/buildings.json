@@ -2,6 +2,7 @@
     {
         "building_id": 1,
         "name": "Administration Building",
+        "description": "Description",
         "level_details": [
             {
                 "level": 0,
@@ -14,7 +15,7 @@
             {
                 "level": 1,
                 "upgrade_cost": {
-                    "metal": 1,
+                    "metal": 2,
                     "pop": 1
                 },
                 "upgrade_time": 10
@@ -22,7 +23,7 @@
             {
                 "level": 2,
                 "upgrade_cost": {
-                    "metal": 1,
+                    "metal": 4,
                     "pop": 1
                 },
                 "upgrade_time": 10
@@ -30,7 +31,7 @@
             {
                 "level": 3,
                 "upgrade_cost": {
-                    "metal": 1,
+                    "metal": 6,
                     "pop": 1
                 },
                 "upgrade_time": -1
@@ -40,6 +41,7 @@
     {
         "building_id": 2,
         "name": "Mines",
+        "description": "Description",
         "level_details": [
             {
                 "level": 0,
@@ -54,7 +56,7 @@
             {
                 "level": 1,
                 "upgrade_cost": {
-                    "metal": 1,
+                    "metal": 2,
                     "pop": 1
                 },
                 "upgrade_time": 10,
@@ -64,7 +66,7 @@
             {
                 "level": 2,
                 "upgrade_cost": {
-                    "metal": 1,
+                    "metal": 3,
                     "pop": 1
                 },
                 "upgrade_time": 10,
@@ -74,7 +76,7 @@
             {
                 "level": 3,
                 "upgrade_cost": {
-                    "metal": 1,
+                    "metal": 4,
                     "pop": 1
                 },
                 "upgrade_time": -1,
@@ -85,6 +87,7 @@
     {
         "building_id": 3,
         "name": "Space Dock",
+        "description": "Description",
         "level_details": [
             {
                 "level": 0,
@@ -99,7 +102,7 @@
             {
                 "level": 1,
                 "upgrade_cost": {
-                    "metal": 2,
+                    "metal": 4,
                     "pop": 1
                 },
                 "upgrade_time": 10,
@@ -109,7 +112,7 @@
             {
                 "level": 2,
                 "upgrade_cost": {
-                    "metal": 2,
+                    "metal": 8,
                     "pop": 1
                 },
                 "upgrade_time": -1,
@@ -120,6 +123,7 @@
     {
         "building_id": 4,
         "name": "Resource Storage",
+        "description": "Description",
         "level_details": [
             {
                 "level": 0,
@@ -133,7 +137,7 @@
             {
                 "level": 1,
                 "upgrade_cost": {
-                    "metal": 1
+                    "metal": 2
                 },
                 "upgrade_time": 10,
                 "storage": {"metal": 200, "kerosene": 100, "hydrogen": 0, "uranium": 0},
@@ -142,7 +146,7 @@
             {
                 "level": 2,
                 "upgrade_cost": {
-                    "metal": 1
+                    "metal": 3
                 },
                 "upgrade_time": 10,
                 "storage": {"metal": 500, "kerosene": 200, "hydrogen": 0, "uranium": 0},
@@ -151,7 +155,7 @@
             {
                 "level": 3,
                 "upgrade_cost": {
-                    "metal": 1
+                    "metal": 4
                 },
                 "upgrade_time": -1,
                 "storage": {"metal": 1000, "kerosene": 300, "hydrogen": 0, "uranium": 0}
@@ -161,6 +165,7 @@
     {
         "building_id": 5,
         "name": "Apartments",
+        "description": "Description",
         "level_details": [
             {
                 "level": 0,
@@ -174,7 +179,7 @@
             {
                 "level": 1,
                 "upgrade_cost": {
-                    "metal": 1
+                    "metal": 2
                 },
                 "upgrade_time": 10,
                 "production": {"pop": 200},
@@ -183,7 +188,7 @@
             {
                 "level": 2,
                 "upgrade_cost": {
-                    "metal": 1
+                    "metal": 3
                 },
                 "upgrade_time": 10,
                 "production": {"pop": 500},
@@ -192,7 +197,7 @@
             {
                 "level": 3,
                 "upgrade_cost": {
-                    "metal": 1
+                    "metal": 4
                 },
                 "upgrade_time": -1,
                 "production": {"pop": 1000}
@@ -202,6 +207,7 @@
     {
         "building_id": 6,
         "name": "Farms",
+        "description": "Description",
         "level_details": [
             {
                 "level": 0,
@@ -215,7 +221,7 @@
             {
                 "level": 1,
                 "upgrade_cost": {
-                    "metal": 1,
+                    "metal": 2,
                     "pop": 1
                 },
                 "upgrade_time": 10,
@@ -224,7 +230,7 @@
             {
                 "level": 2,
                 "upgrade_cost": {
-                    "metal": 1,
+                    "metal": 3,
                     "pop": 1
                 },
                 "upgrade_time": 10,
@@ -233,7 +239,7 @@
             {
                 "level": 3,
                 "upgrade_cost": {
-                    "metal": 1,
+                    "metal": 4,
                     "pop": 1
                 },
                 "upgrade_time": -1
