@@ -119,7 +119,6 @@ class Game extends Base_Page {
             </tr>`;
         }
         
-        //let button_menu_html = "<p id='error_message'></p>";
         this.buildings = datapack.buildings.sort((a,b) => a.building_id - b.building_id);
         for (let i = 0; i < this.buildings.length; i++) {
             let building = this.buildings[i];
@@ -127,34 +126,28 @@ class Game extends Base_Page {
             let building_el = document.createElement('div');
             let building_img = document.createElement('img');
             let building_lvl = document.createElement('p');
+            let bld_arrowUp_img = document.createElement('img');
+            let bld_arrowDown_img = document.createElement('img');
+            let building_timer_container = document.createElement('div');
+            let building_timer = document.createElement('p');
+            let building_cancel_img = document.createElement('img');
             building_el.setAttribute('id', `building_${building_details.building_id}`);
             building_img.setAttribute('src', `/client_side/images/buildings/${building_details.name}.png`);
             building_img.addEventListener('click', function (event) { this.open_building_dialog(event.target.parentNode.id.split('_')[1]); }.bind(this));
             building_lvl.append(building.level);
-            building_el.append(building_img);
-            building_el.append(building_lvl);
+            building_timer_container.style.display = 'none';
+            building_cancel_img.classList.add('cancel');
+            building_cancel_img.dataset.building_id = building_details.building_id;
+            building_cancel_img.setAttribute('src', '/client_side/images/ui/red_cross.png');
+            bld_arrowUp_img.setAttribute('src', '/client_side/images/ui/arrow_up.png');
+            bld_arrowDown_img.setAttribute('src', '/client_side/images/ui/arrow_down.png');
+            building_timer_container.classList.add('building_timer_container');
+            building_timer_container.append(building_timer, building_cancel_img);
+            building_el.append(building_img, building_lvl, building_timer_container);
             document.getElementById('button_menu').append(building_el);
-            resource_building_ui_html += `
-            <tr>
-                <td>
-                    <img src="/client_side/images/buildings/${building_details.name}.png" height="20px"></img>
-                </td>
-                <td id='${building_details.name}' class='building_cell'>
-                    <span></span><img src="/client_side/images/ui/red_cross.png" class="cancel" data-building='${building_details.building_id}' style='display:none;'></img>
-                </td>
-            </tr>`;
-            
-            /*
-            button_menu_html += `
-            <div class = 'building_update_button_wrapper'>
-                <button id='upgrade-${building_details.building_id}' class='upgrade_btn btn'>Upgrade ${building_details.name} <br />()</button>
-                <button id='downgrade-${building_details.building_id}' class='downgrade_btn btn'><img src="/client_side/images/ui/downgrade_building.png" height="20px"></button>
-            </div>`;
-            */
         }
         resource_building_ui_html += '</tbody></table>';
         document.getElementById('resource_building_ui').innerHTML = resource_building_ui_html;
-        //document.getElementById('button_menu').innerHTML = button_menu_html;
 
         this.units = datapack.units;
         let units_building = await this.get_building(3);
@@ -262,7 +255,7 @@ class Game extends Base_Page {
 
         let buttons = document.getElementsByClassName('cancel');
         for(let i = 0; i < buttons.length; i++) {
-            buttons[i].addEventListener('click', event => { this.cancel_building_update(event.currentTarget.dataset.building) });
+            buttons[i].addEventListener('click', event => { this.cancel_building_update(event.currentTarget.dataset.building_id) });
         }
 
         let prod_building = await this.get_building(2);
@@ -345,7 +338,7 @@ class Game extends Base_Page {
                     }
                 }
                 if (upgrade_building && lvl_details.upgrade_time >= 0) {
-                    this.socket.emit('upgrade_building', p_building);
+                    this.socket.emit('update_building', p_building, downgrade);
                     for (let changed_resource in changed_resources) {
                         this.resources[changed_resource] = changed_resources[changed_resource];
                     }
@@ -371,7 +364,7 @@ class Game extends Base_Page {
                     }
                 }
                 if (downgrade_building) {
-                    this.socket.emit('downgrade_building', p_building);
+                    this.socket.emit('update_building', p_building, downgrade);
                     building.update_start = await utils.get_timestamp();
                     building.downgrade = 1;
                     this.update_building_ui(b_index);
@@ -524,7 +517,6 @@ class Game extends Base_Page {
     async update_building_ui(b_index) {
         let building = this.buildings[b_index];
         let building_details = await this.get_bld_details(building.building_id);
-        let name = building_details.name;
         let level = building.level;
         let update_start = building.update_start;
         let downgrade = building.downgrade;
@@ -534,38 +526,24 @@ class Game extends Base_Page {
         if (update_start !== null && !downgrade) {
             lvl_details = (await this.get_bld_lvl_dts(await this.get_bld_details(building.building_id), building.level + 1));
         }
-        let upgrade_cost = lvl_details.upgrade_cost;
-        
-        //ui part
-        let building_ui_element = document.getElementById(name);
-        let textContent = level;
+        let building_container = document.getElementById(`building_${building.building_id}`);
+        let building_timer_container = building_container.getElementsByTagName('div')[0];
+        let building_timer_els = building_container.querySelectorAll('p');
+        let building_level = building_timer_els[0];
+        let building_timer = building_timer_els[1];
         if (update_start !== null) {
+            building_level.textContent = `${level} (${level - (downgrade == 0 ? -1 : 1)})`;
             let building_time = update_start + upgrade_time - await utils.get_timestamp();
-            textContent += downgrade ? ', Downgrading: ' : ', Upgrading: ';
-            textContent += (building_time < 0 ? 0 : building_time) + 's';
-            building_ui_element.getElementsByClassName("cancel")[0].style.display = 'block';
+            building_timer.textContent = await utils.seconds_to_time(building_time);
+            building_timer_container.style.display = 'flex';
         } else {
-            building_ui_element.getElementsByClassName("cancel")[0].style.display = 'none';
+            building_level.textContent = level;
+            building_timer_container.style.display = 'none';
         }
-        building_ui_element.getElementsByTagName("span")[0].textContent = textContent;
         
         if (update_start !== null) {
             upgrade_time = lvl_details.upgrade_time;
         }
-        
-        //button part
-        //upgrade time 0 = maxed out building
-        /*
-        if (upgrade_time >= 0) {
-            let innerHTML = document.getElementById('upgrade-' + building.building_id).innerHTML.split('(')[0] + '(';
-            for (let resource in upgrade_cost) {
-                innerHTML += upgrade_cost[resource] + `<img src="/client_side/images/resources/${resource}.png" height="16px" class='button_image'></img>`;
-            }
-            document.getElementById('upgrade-' + building.building_id).innerHTML = innerHTML + upgrade_time + 's)';
-        } else {
-            document.getElementById('upgrade-' + building.building_id).textContent = document.getElementById('upgrade-' + building.building_id).textContent.split('(')[0] + '(MAXED OUT)';
-        }
-        */
         await this.update_building_dialog();
     }
 
@@ -653,7 +631,7 @@ class Game extends Base_Page {
                 if (previously_allowed_unit_ids.length == 0) {
                     create_units_table.style.display = 'table';
                 }
-                for (let i = 0; i < changed_unit_ids.length; i++) {unit_details
+                for (let i = 0; i < changed_unit_ids.length; i++) {
                     let unit_details = await this.get_unit_dts(changed_unit_ids[i]);
                     let create_unit_row = create_units_table.insertRow(create_units_table.rows.length - 1);
                     let create_unit_row_html = `
@@ -803,87 +781,42 @@ class Game extends Base_Page {
         let building_img = document.createElement('img');
         building_img.setAttribute('src', `/client_side/images/buildings/${building_details.name}.png`);
         let building_img_container = document.createElement('div');
-        building_img_container.append(building_img);
-        let building_index = this.buildings.findIndex(building => building.building_id == building_id);
-        if (building_index === undefined) {
-            building_index = {level: 0};
+        building_img_container.setAttribute('id', 'building_img_container');
+        let building = this.buildings.find(building => building.building_id == building_id);
+        if (building === undefined) {
+            building = {level: 0};
         }
         let building_level = document.createElement('p');
-        building_level.append(this.buildings[building_index].level);
+        building_level.append(building.level);
+        building_img_container.append(building_img);
         building_img_container.append(building_level);
         let building_description_title = document.createElement('h4');
         building_description_title.append('Description');
         let building_description = document.createElement('p');
         building_description.append(building_details.description);
-        let building_description_container = document.createElement('div');
-        building_description_container.setAttribute('id', 'building_description');
-        building_description_container.append(building_description_title, building_description);
+        let building_desc_container = document.createElement('div');
+        building_desc_container.setAttribute('id', 'building_description');
+        building_desc_container.append(building_description_title, building_description);
         let upgrade_cost = document.createElement('div');
         upgrade_cost.setAttribute('id', 'upgrade_cost');
         let resource_title = document.createElement('h4');
         resource_title.append('Resource cost: ');
         upgrade_cost.append(resource_title);
-        let level_index = building_details.level_details.findIndex(lvl_detail => lvl_detail.level == this.buildings[building_index].level + 1);
-        for (let resource in building_details.level_details[level_index].upgrade_cost) {
-            let resource_div = document.createElement('div');
-            let resource_img = document.createElement('img');
-            resource_img.setAttribute('src', `/client_side/images/resources/${resource}.png`);
-            resource_img.setAttribute('title', resource);
-            let resource_cost_el = document.createElement('p');
-            let resource_cost = building_details.level_details[level_index].upgrade_cost[resource];
-            if (resource_cost != 0) {
-                if (resource == 'pop') {
-                    let pop_building = this.buildings.find(building => building.building_id == 5);
-                    let available_pop = (await this.get_bld_lvl_dts(await this.get_bld_details(pop_building.building_id), pop_building.level)).production['pop'];
-                    let res_type = 'reserved_' + resource;
-                    if (this.resources[res_type] + resource_cost > available_pop) {
-                        resource_cost_el.style.color = 'red';
-                        disable_upgrade = true;
-                    }
-                } else if (resource_cost > this.resources[resource]) {
-                    resource_cost_el.style.color = 'red';
-                    disable_upgrade = true;
-                }
-                resource_cost_el.append(building_details.level_details[level_index].upgrade_cost[resource]);
-                resource_div.append(resource_img, resource_cost_el);
-                upgrade_cost.append(resource_div);
-            }
-        }
-        let building_requirements = document.createElement('div');
-        building_requirements.setAttribute('id', 'building_requirements');
-        if (building_details.level_details[level_index].req_buildings !== undefined) {
-            let building_req_title = document.createElement('h4');
-            building_req_title.append('Building requirements: ');
-            building_requirements.append(building_req_title);
-            for (let i = 0; i < building_details.level_details[level_index].req_buildings.length; i++) {
-                let req_bld = building_details.level_details[level_index].req_buildings[i];
-                let req_building_div = document.createElement('div');
-                let req_building_img = document.createElement('img');
-                let req_bld_details = await this.get_bld_details(req_bld.building_id);
-                req_building_img.setAttribute('src', `/client_side/images/buildings/${req_bld_details.name}.png`);
-                req_building_img.setAttribute('title', req_bld_details.name);
-                let req_building_lvl = document.createElement('p');
-                let building = this.buildings.find(building => building.building_id == req_bld.building_id);
-                if (building === undefined) {
-                    building = {level: 0};
-                }
-                if (building.level < req_bld.level) {
-                    req_building_lvl.style.color = 'red';
-                    disable_upgrade = true;
-                }
-                req_building_lvl.append(req_bld.level);
-                req_building_div.append(req_building_img, req_building_lvl);
-                building_requirements.append(req_building_div);
-            }
-        }
+        let level_index = building_details.level_details.findIndex(lvl_detail => lvl_detail.level == building.level);
+        let building_req_container = document.createElement('div');
+        building_req_container.setAttribute('id', 'building_requirements');
+        let building_req_title = document.createElement('h4');
+        building_req_title.append('Building requirements: ');
+        building_req_container.append(building_req_title);
         let button_container = document.createElement('div');
         button_container.setAttribute('id', 'building_dialog_buttons');
         let upgrade_button = document.createElement('button');
-        upgrade_button.append('Upgrade');
+        //upgrade time -1 = building is maxed out
+        upgrade_button.append(building_details.level_details[level_index].upgrade_time >= 0 ? 'Upgrade' : 'MAXED OUT');
         upgrade_button.addEventListener('click', function() {
             this.update_building(building_id);
         }.bind(this));
-        if (disable_upgrade) {
+        if (disable_upgrade || building_details.level_details[level_index].upgrade_time < 0) {
             upgrade_button.disabled = true;
         }
         let downgrade_button = document.createElement('button');
@@ -891,46 +824,53 @@ class Game extends Base_Page {
         downgrade_button.addEventListener('click', function() {
             this.update_building(building_id, 1);
         }.bind(this));
+        if (building.level == 0) {
+            downgrade_button.disabled = true;
+        }
         button_container.append(upgrade_button, downgrade_button);
-        dialog.append(building_name, building_img_container, building_description_container, upgrade_cost, building_requirements, button_container);
+        dialog.append(building_name, building_img_container, building_desc_container, upgrade_cost, building_req_container, button_container);
         document.body.append(dialog, dialog_overlay);
+        await this.update_building_dialog();
     }
 
     async update_building_dialog() {
-        //if the building is max level, need to write max level
-        //if the building cannot be downgraded, need to update the downgrade button too
-        //update the building lvl if the building finishes downgrading/upgrading
-        //update the requirements/costs when the upgrading/downgrading is done
+        //rename button to cancel upgrade/downgrade, if clicked -> cancel update?
+        //update the buttons when the upgrading/downgrading is done
         //add timer into the buttons and disable? Also show the next/previous level requirements when upgrading/downgrading?
         let dialog = document.getElementById(dialog_id);
         if (dialog !== null) {
             let disable_upgrade = false;
             let building_id = document.getElementsByTagName('h1')[0].dataset.building_id;
-            let building_details = this.get_bld_details(building_id);
+            let building_details = await this.get_bld_details(building_id);
             let building = this.buildings.find(building => building.building_id == building_id);
             if (building === undefined) {
                 building = {level: 0};
             }
+            document.querySelector('#building_img_container > p').textContent = building.level;
             let level_index = building_details.level_details.findIndex(lvl_detail => lvl_detail.level == building.level);
-            let cost_elements = document.querySelectorAll('#upgrade_cost > div > p');
-            let i = 0;
+            let resource_containers = document.querySelectorAll('#upgrade_cost > div');
             for (let resource in building_details.level_details[level_index].upgrade_cost) {
-                let resource_cost_el = cost_elements[i++];
+                let resource_container = document.getElementById(`bld_${resource}_cost`);
                 let resource_cost = building_details.level_details[level_index].upgrade_cost[resource];
-                if (resource_cost != 0) {
-                    if (resource == 'pop') {
-                        let pop_building = this.buildings.find(building => building.building_id == 5);
-                        let available_pop = (await this.get_bld_lvl_dts(await this.get_bld_details(pop_building.building_id), pop_building.level)).production['pop'];
-                        let res_type = 'reserved_' + resource;
-                        if (this.resources[res_type] + resource_cost > available_pop) {
-                            if (resource_cost_el.style.color == '') {
-                                resource_cost_el.style.color = 'red';
-                            }
-                            disable_upgrade = true;
-                        } else if (resource_cost_el.style.color != '') {
-                            resource_cost_el.style.color = '';
-                        }
-                    } else if (resource_cost > this.resources[resource]) {
+                let resource_cost_el;
+                if (resource_container === null) {
+                    resource_container = document.createElement('div');
+                    resource_container.setAttribute('id', `bld_${resource}_cost`);
+                    let resource_img = document.createElement('img');
+                    resource_img.setAttribute('src', `/client_side/images/resources/${resource}.png`);
+                    resource_img.setAttribute('title', resource);
+                    resource_cost_el = document.createElement('p');
+                    resource_cost_el.append(building_details.level_details[level_index].upgrade_cost[resource]);
+                    resource_container.append(resource_img, resource_cost_el);
+                    upgrade_cost.append(resource_container);
+                } else {
+                    resource_cost_el = resource_container.getElementsByTagName('p')[0];
+                }
+                if (resource == 'pop') {
+                    let pop_building = this.buildings.find(building => building.building_id == 5);
+                    let available_pop = (await this.get_bld_lvl_dts(await this.get_bld_details(pop_building.building_id), pop_building.level)).production['pop'];
+                    let res_type = 'reserved_' + resource;
+                    if (this.resources[res_type] + resource_cost > available_pop) {
                         if (resource_cost_el.style.color == '') {
                             resource_cost_el.style.color = 'red';
                         }
@@ -938,26 +878,81 @@ class Game extends Base_Page {
                     } else if (resource_cost_el.style.color != '') {
                         resource_cost_el.style.color = '';
                     }
+                } else if (resource_cost > this.resources[resource]) {
+                    if (resource_cost_el.style.color == '') {
+                        resource_cost_el.style.color = 'red';
+                    }
+                    disable_upgrade = true;
+                } else if (resource_cost_el.style.color != '') {
+                    resource_cost_el.style.color = '';
                 }
-            }
-            if (building_details.level_details[level_index].req_buildings !== undefined) {
-                let required_level_elements = document.querySelectorAll('#building_requirements > div > p');
-                for (let i = 0; i < building_details.level_details[level_index].req_buildings.length; i++) {
-                    let req_bld = building_details.level_details[level_index].req_buildings[i];
-                    let req_building_lvl = required_level_elements[i];
-                    let building = this.buildings.find(building => building.building_id == req_bld.building_id);
-                    if (building.level < req_bld.level) {
-                        if (req_building_lvl.style.color == '') {
-                            req_building_lvl.style.color = 'red';
-                        }
-                        disable_upgrade = true;
-                    } else if (req_building_lvl.style.color != '') {
-                        req_building_lvl.style.color = '';
+                for (let i = resource_containers.length - 1; i >= 0; i--) {
+                    if (resource_containers[i].id == resource_container.id) {
+                        resource_containers[i].keep = true
+                        break;
                     }
                 }
             }
+            for (let i = 0; i < resource_containers.length; i++) {
+                if (resource_containers[i].keep === undefined) {
+                    resource_containers[i].remove();
+                }
+            }
+            let req_building_containers = document.querySelectorAll('#building_requirements > div');
+            let req_buildings_container = document.getElementById('building_requirements');
+            if (building_details.level_details[level_index].req_buildings !== undefined) {
+                if (req_buildings_container.style.display == 'none') {
+                    req_buildings_container.style.display = '';
+                }
+                for (let i = 0; i < building_details.level_details[level_index].req_buildings.length; i++) {
+                    let req_bld = building_details.level_details[level_index].req_buildings[i];
+                    let req_bld_container = document.getElementById(`bld_${req_bld.building_id}_req`);
+                    if (req_bld_container == null) {
+                        let req_building_div = document.createElement('div');
+                        req_building_div.setAttribute('id', `bld_${req_bld.building_id}_req`);
+                        let req_building_img = document.createElement('img');
+                        let req_bld_details = await this.get_bld_details(req_bld.building_id);
+                        req_building_img.setAttribute('src', `/client_side/images/buildings/${req_bld_details.name}.png`);
+                        req_building_img.setAttribute('title', req_bld_details.name);
+                        req_bld_container = document.createElement('p');
+                        req_bld_container.append(req_bld.level);
+                        req_building_div.append(req_building_img, req_bld_container);
+                        req_buildings_container.append(req_building_div);
+                    }
+                    let req_building = this.buildings.find(building => building.building_id == req_bld.building_id);
+                    if (req_building === undefined) {
+                        req_building = {level: 0};
+                    }
+                    if (req_building.level < req_bld.level) {
+                        if (req_bld_container.style.color == '') {
+                            req_bld_container.style.color = 'red';
+                        }
+                        disable_upgrade = true;
+                    } else if (req_bld_container.style.color != '') {
+                        req_bld_container.style.color = '';
+                    }
+                    for (let i = req_building_containers.length - 1; i >= 0; i--) {
+                        if (req_building_containers[i].id == req_bld_container.id) {
+                            req_building_containers[i].keep = true;
+                            break;
+                        }
+                    }
+                }
+            } else if (req_buildings_container.style.display == '') {
+                req_buildings_container.style.display = 'none';
+            }
+            for (let i = 0; i < req_building_containers.length; i++) {
+                if (req_building_containers[i].keep === undefined) {
+                    req_building_containers[i].remove();
+                }
+            }
             let upgrade_button = document.querySelector('#building_dialog_buttons > button');
-            upgrade_button.disabled = disable_upgrade;
+            upgrade_button.disabled = disable_upgrade || building_details.level_details[level_index].upgrade_time < 0;
+            if (building.level == 0) {
+                document.querySelectorAll('#building_dialog_buttons > button')[1].disabled = true;
+            } else {
+                document.querySelectorAll('#building_dialog_buttons > button')[1].disabled = false;
+            }
         }
     }
 }

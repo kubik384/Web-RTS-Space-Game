@@ -233,7 +233,7 @@ io.on('connection', socket => {
 	});
 
 	socket.on('update_building', (building_id, downgrade) => {
-		if (downgrade == 0) {
+		if (downgrade == 1) {
 			dbManager.downgrade_building(socket.username, building_id);
 		} else {
 			dbManager.upgrade_building(socket.username, building_id).catch(e => {

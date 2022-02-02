@@ -14,6 +14,10 @@ div {
 	font-size: 0px;
 }
 
+#layout_table > tbody > tr > td:nth-child(2) {
+	width: 300px;
+}
+
 .upgrade_btn {
 	width: 500px;
 	height: 80px;
@@ -45,16 +49,12 @@ div {
 }
 
 .cancel {
-	align-self: flex-end;
-	height: 20px;
-	margin-left: auto;
-	margin-bottom: 4px;
+	height: 16px;
 	cursor: pointer;
 }
 
 .building_cell, .unit_cell {
 	display: flex;
-	width: 250px;
 }
 
 .building_update_button_wrapper {
@@ -234,4 +234,15 @@ div {
 #building_dialog_buttons > button {
 	flex-basis: auto;
 	flex-grow: 1;
+}
+
+.building_timer_container {
+	gap: 0 10px;
+	justify-content: center;
+	align-items: center
+}
+
+.building_timer_container > * {
+	font-size: 18px;
+	display: inline-block;
 }
