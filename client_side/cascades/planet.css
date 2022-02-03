@@ -31,16 +31,38 @@ div {
 
 #button_menu {
 	display: flex;
+	flex-wrap: wrap;
+	gap: 15px 30px;
 }
 
 #button_menu > div {
-	margin-right: 20px;
 	border: 2px solid black;
 	text-align: center;
+	width: 100px;
 }
 
-#button_menu > div > img:hover {
+#button_menu > div > img:first-child:hover {
 	cursor: pointer;
+}
+
+#button_menu > div > div > div {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	flex-wrap: wrap;
+}
+
+#button_menu > div > div > div > img {
+	height: 20px;
+	padding: 2px 0;
+}
+
+#button_menu > div > div > div > img:first-of-type {
+	align-self: flex-start;
+}
+
+#button_menu > div > div > div > p {
+	display: inline-block;
 }
 
 .button_image {
@@ -69,6 +91,7 @@ div {
 
 #layout_table > tbody > tr > td:nth-child(1) {
 	float: left;
+	width: calc(100% - 340px);
 }
 
 #layout_table > tbody > tr > td:nth-child(2) {
@@ -141,13 +164,6 @@ div {
 }
 */
 
-#error_message {
-	color: red;
-	text-align: center;
-	padding-bottom: 10px;
-	font-weight: 700;
-}
-
 #dialog_div {
 	display: flex;
 	flex-wrap: wrap;
@@ -161,7 +177,7 @@ div {
 	background-color: rgb(155, 155, 155);
 	z-index: 3;
 	padding: 10px;
-	max-width: 25%;
+	max-width: 60%;
 	min-width: 350px;
 	max-height: 80%;
 	border: 2px solid black;
@@ -173,12 +189,22 @@ div {
 	width: 100%;
 }
 
-#dialog_div > button {
-	font-size: 20px;
-	margin-top: 10px;
+#building_dialog_buttons > button {
 	padding: 6px 12px;
-	margin-top: 20px;
 	background-color: rgba(255, 255, 255, 1);
+	cursor: pointer;
+}
+
+#building_dialog_buttons > button > span:nth-of-type(2) {
+	margin-left: -10px;
+}
+
+.dialog_cancel_img {
+	width: 30px;
+}
+
+.dialog_arrow_img {
+	width: 24px;
 }
 
 #dialog_div > div:first-of-type {
@@ -218,26 +244,34 @@ div {
 
 #building_dialog_buttons {
 	display: flex;
-	gap: 0 10%;
-	padding: 0 25%;
+	justify-content: center;
+	gap: 0 40px;
 }
 
 #building_dialog_buttons > button {
-	height: 48px
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	height: 48px;
+	gap: 0 15px;
 }
 
-#building_dialog_buttons > button:first-child {
-	flex-basis: auto;
-	flex-grow: 6;
+#upgrade_dialog_button {
+	width: 340px;
 }
 
-#building_dialog_buttons > button {
-	flex-basis: auto;
-	flex-grow: 1;
+#cancel_dialog_button {
+	width: 460px;
+}
+
+#building_dialog_buttons > button:nth-child(2) {
+	width: 190px;
 }
 
 .building_timer_container {
-	gap: 0 10px;
+	display: flex;
+	width: 100%;
+	gap: 0 5px;
 	justify-content: center;
 	align-items: center
 }
@@ -245,4 +279,8 @@ div {
 .building_timer_container > * {
 	font-size: 18px;
 	display: inline-block;
+}
+
+.building_timer_container > p {
+	word-break: break-all;
 }

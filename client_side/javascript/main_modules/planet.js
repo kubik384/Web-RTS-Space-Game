@@ -134,6 +134,12 @@ class Game extends Base_Page {
             building_el.setAttribute('id', `building_${building_details.building_id}`);
             building_img.setAttribute('src', `/client_side/images/buildings/${building_details.name}.png`);
             building_img.addEventListener('click', function (event) { this.open_building_dialog(event.target.parentNode.id.split('_')[1]); }.bind(this));
+            let upgrade_arrow_img_el = document.createElement('img');
+            upgrade_arrow_img_el.setAttribute('src', '/client_side/images/ui/upgrade_arrow.png');
+            upgrade_arrow_img_el.style.display = 'none';
+            let downgrade_arrow_img_el = document.createElement('img');
+            downgrade_arrow_img_el.setAttribute('src', '/client_side/images/ui/downgrade_arrow.png');
+            downgrade_arrow_img_el.style.display = 'none';
             building_lvl.append(building.level);
             building_timer_container.style.display = 'none';
             building_cancel_img.classList.add('cancel');
@@ -143,7 +149,11 @@ class Game extends Base_Page {
             bld_arrowDown_img.setAttribute('src', '/client_side/images/ui/arrow_down.png');
             building_timer_container.classList.add('building_timer_container');
             building_timer_container.append(building_timer, building_cancel_img);
-            building_el.append(building_img, building_lvl, building_timer_container);
+            let building_level_container = document.createElement('div');
+            let building_lvl_container = document.createElement('div');
+            building_lvl_container.append(building_lvl, upgrade_arrow_img_el, downgrade_arrow_img_el);
+            building_level_container.append(building_lvl_container, building_timer_container);
+            building_el.append(building_img, building_level_container);
             document.getElementById('button_menu').append(building_el);
         }
         resource_building_ui_html += '</tbody></table>';
@@ -313,7 +323,6 @@ class Game extends Base_Page {
                         let res_type = 'reserved_' + resource_type;
                         if (this.resources[res_type] + lvl_details.upgrade_cost[resource_type] > available_pop) {
                             upgrade_building = false;
-                            this.set_error_message('Not enough available pop');
                             break;
                         } else {
                             changed_resources[res_type] = this.resources[res_type] + lvl_details.upgrade_cost[resource_type];
@@ -323,7 +332,6 @@ class Game extends Base_Page {
                             changed_resources[resource_type] = this.resources[resource_type] - lvl_details.upgrade_cost[resource_type];
                         } else {
                             upgrade_building = false;
-                            this.set_error_message('Not enough resources');
                             break;
                         }
                     }
@@ -333,7 +341,6 @@ class Game extends Base_Page {
                         let req_bld = this.buildings.find(building => building.building_id == lvl_details.req_buildings[i].building_id);
                         if (req_bld.level < lvl_details.req_buildings[i].level) {
                             upgrade_building = false;
-                            this.set_error_message('Building requirements are not met');
                         }
                     }
                 }
@@ -527,16 +534,28 @@ class Game extends Base_Page {
             lvl_details = (await this.get_bld_lvl_dts(await this.get_bld_details(building.building_id), building.level + 1));
         }
         let building_container = document.getElementById(`building_${building.building_id}`);
-        let building_timer_container = building_container.getElementsByTagName('div')[0];
-        let building_timer_els = building_container.querySelectorAll('p');
-        let building_level = building_timer_els[0];
-        let building_timer = building_timer_els[1];
+        let building_level_container = building_container.getElementsByTagName('div')[0];
+        let building_timer_container = building_level_container.getElementsByTagName('div')[1];
+        let building_building_els = building_level_container.querySelectorAll('p');
+        let building_imgs = building_level_container.getElementsByTagName('img');
+        let upgrade_arrow_img_el = building_imgs[0];
+        let downgrade_arrow_img_el = building_imgs[1];
+        let building_level = building_building_els[0];
+        let building_timer = building_building_els[1];
+        //let 
         if (update_start !== null) {
-            building_level.textContent = `${level} (${level - (downgrade == 0 ? -1 : 1)})`;
+            if (downgrade == 0) {
+                upgrade_arrow_img_el.style.display = '';
+            } else {
+                downgrade_arrow_img_el.style.display = '';
+            }
+            building_level.textContent = level;
             let building_time = update_start + upgrade_time - await utils.get_timestamp();
             building_timer.textContent = await utils.seconds_to_time(building_time);
             building_timer_container.style.display = 'flex';
         } else {
+            upgrade_arrow_img_el.style.display = 'none';
+            downgrade_arrow_img_el.style.display = 'none';
             building_level.textContent = level;
             building_timer_container.style.display = 'none';
         }
@@ -741,14 +760,6 @@ class Game extends Base_Page {
     }
     */
 
-    async set_error_message(text) {
-        document.getElementById('error_message').textContent = text;
-    }
-
-    async clear_error_message() {
-        document.getElementById('error_message').textContent = '';
-    }
-
     async open_building_dialog(building_id) {
         let building_details = await this.get_bld_details(building_id);
         let old_dialog = document.getElementById(dialog_id);
@@ -759,8 +770,6 @@ class Game extends Base_Page {
         }
         let dialog = document.createElement('div');
         dialog.setAttribute("id", dialog_id);
-        dialog.style.maxWidth = '75%';
-        dialog.style.width = '75%';
         let dialog_overlay = document.createElement('div');
         dialog_overlay.setAttribute("id", dialog_overlay_id);
         dialog_overlay.addEventListener('contextmenu', function(event) {
@@ -811,16 +820,41 @@ class Game extends Base_Page {
         let button_container = document.createElement('div');
         button_container.setAttribute('id', 'building_dialog_buttons');
         let upgrade_button = document.createElement('button');
+        upgrade_button.dataset.action = 'upgrade';
+        upgrade_button.dataset.building_id = building_details.building_id;
+        upgrade_button.setAttribute('id', 'upgrade_dialog_button');
+        let cancel_img_el = document.createElement('img');
+        cancel_img_el.setAttribute('src', '/client_side/images/ui/red_cross.png');
+        cancel_img_el.classList.add('dialog_cancel_img');
+        cancel_img_el.style.display = 'none';
+        let upgrade_arrow_img_el = document.createElement('img');
+        upgrade_arrow_img_el.setAttribute('src', '/client_side/images/ui/upgrade_arrow.png');
+        upgrade_arrow_img_el.classList.add('dialog_arrow_img');
+        let button_text_el = document.createElement('span');
         //upgrade time -1 = building is maxed out
-        upgrade_button.append(building_details.level_details[level_index].upgrade_time >= 0 ? 'Upgrade' : 'MAXED OUT');
+        button_text_el.append(building_details.level_details[level_index].upgrade_time >= 0 ? 'Upgrade' : 'MAXED OUT');
+        let button_timer_el = document.createElement('span');
+        button_timer_el.style.display = 'none';
+        upgrade_button.append(cancel_img_el, upgrade_arrow_img_el, button_text_el, button_timer_el);
+        let _that = this;
         upgrade_button.addEventListener('click', function() {
-            this.update_building(building_id);
-        }.bind(this));
+            if (this.dataset.action == 'upgrade') {
+                _that.update_building(building_id);
+            } else if (this.dataset.action == 'cancel') {
+                _that.cancel_building_update(this.dataset.building_id);
+            }
+        });
         if (disable_upgrade || building_details.level_details[level_index].upgrade_time < 0) {
             upgrade_button.disabled = true;
         }
         let downgrade_button = document.createElement('button');
-        downgrade_button.append('Downgrade');
+        let downgrade_arrow_img_el = document.createElement('img');
+        downgrade_arrow_img_el.setAttribute('src', '/client_side/images/ui/downgrade_arrow.png');
+        downgrade_arrow_img_el.classList.add('dialog_arrow_img');
+        let button_text = document.createElement('span');
+        //upgrade time -1 = building is maxed out
+        button_text.append('Downgrade');
+        downgrade_button.append(downgrade_arrow_img_el, button_text);
         downgrade_button.addEventListener('click', function() {
             this.update_building(building_id, 1);
         }.bind(this));
@@ -834,9 +868,6 @@ class Game extends Base_Page {
     }
 
     async update_building_dialog() {
-        //rename button to cancel upgrade/downgrade, if clicked -> cancel update?
-        //update the buttons when the upgrading/downgrading is done
-        //add timer into the buttons and disable? Also show the next/previous level requirements when upgrading/downgrading?
         let dialog = document.getElementById(dialog_id);
         if (dialog !== null) {
             let disable_upgrade = false;
@@ -844,11 +875,13 @@ class Game extends Base_Page {
             let building_details = await this.get_bld_details(building_id);
             let building = this.buildings.find(building => building.building_id == building_id);
             if (building === undefined) {
-                building = {level: 0};
+                building = {level: 0, update_start: null};
             }
             document.querySelector('#building_img_container > p').textContent = building.level;
             let level_index = building_details.level_details.findIndex(lvl_detail => lvl_detail.level == building.level);
             let resource_containers = document.querySelectorAll('#upgrade_cost > div');
+            let container_array = [];
+            resource_containers.forEach(res_cr => container_array.push(res_cr));
             for (let resource in building_details.level_details[level_index].upgrade_cost) {
                 let resource_container = document.getElementById(`bld_${resource}_cost`);
                 let resource_cost = building_details.level_details[level_index].upgrade_cost[resource];
@@ -860,12 +893,12 @@ class Game extends Base_Page {
                     resource_img.setAttribute('src', `/client_side/images/resources/${resource}.png`);
                     resource_img.setAttribute('title', resource);
                     resource_cost_el = document.createElement('p');
-                    resource_cost_el.append(building_details.level_details[level_index].upgrade_cost[resource]);
                     resource_container.append(resource_img, resource_cost_el);
                     upgrade_cost.append(resource_container);
                 } else {
                     resource_cost_el = resource_container.getElementsByTagName('p')[0];
                 }
+                resource_cost_el.textContent = building_details.level_details[level_index].upgrade_cost[resource];
                 if (resource == 'pop') {
                     let pop_building = this.buildings.find(building => building.building_id == 5);
                     let available_pop = (await this.get_bld_lvl_dts(await this.get_bld_details(pop_building.building_id), pop_building.level)).production['pop'];
@@ -886,54 +919,57 @@ class Game extends Base_Page {
                 } else if (resource_cost_el.style.color != '') {
                     resource_cost_el.style.color = '';
                 }
-                for (let i = resource_containers.length - 1; i >= 0; i--) {
-                    if (resource_containers[i].id == resource_container.id) {
-                        resource_containers[i].keep = true
+                for (let i = container_array.length - 1; i >= 0; i--) {
+                    if (container_array[i].id == resource_container.id) {
+                        container_array.splice(i,1);
                         break;
                     }
                 }
             }
-            for (let i = 0; i < resource_containers.length; i++) {
-                if (resource_containers[i].keep === undefined) {
-                    resource_containers[i].remove();
-                }
+            for (let i = container_array.length - 1; i >= 0; i--) {
+                container_array[i].remove();
             }
+            container_array = [];
             let req_building_containers = document.querySelectorAll('#building_requirements > div');
+            req_building_containers.forEach(req_bld_cr => container_array.push(req_bld_cr));
             let req_buildings_container = document.getElementById('building_requirements');
             if (building_details.level_details[level_index].req_buildings !== undefined) {
                 if (req_buildings_container.style.display == 'none') {
                     req_buildings_container.style.display = '';
                 }
                 for (let i = 0; i < building_details.level_details[level_index].req_buildings.length; i++) {
+                    let req_bld_lvl_el;
                     let req_bld = building_details.level_details[level_index].req_buildings[i];
                     let req_bld_container = document.getElementById(`bld_${req_bld.building_id}_req`);
                     if (req_bld_container == null) {
-                        let req_building_div = document.createElement('div');
-                        req_building_div.setAttribute('id', `bld_${req_bld.building_id}_req`);
+                        let req_bld_container = document.createElement('div');
+                        req_bld_container.setAttribute('id', `bld_${req_bld.building_id}_req`);
                         let req_building_img = document.createElement('img');
                         let req_bld_details = await this.get_bld_details(req_bld.building_id);
                         req_building_img.setAttribute('src', `/client_side/images/buildings/${req_bld_details.name}.png`);
                         req_building_img.setAttribute('title', req_bld_details.name);
-                        req_bld_container = document.createElement('p');
-                        req_bld_container.append(req_bld.level);
-                        req_building_div.append(req_building_img, req_bld_container);
-                        req_buildings_container.append(req_building_div);
+                        req_bld_lvl_el = document.createElement('p');
+                        req_bld_container.append(req_building_img, req_bld_lvl_el);
+                        req_buildings_container.append(req_bld_container);
+                    } else {
+                        req_bld_lvl_el = req_bld_container.getElementsByTagName('p')[0];
                     }
                     let req_building = this.buildings.find(building => building.building_id == req_bld.building_id);
                     if (req_building === undefined) {
                         req_building = {level: 0};
                     }
+                    req_bld_lvl_el.textContent = req_bld.level;
                     if (req_building.level < req_bld.level) {
-                        if (req_bld_container.style.color == '') {
-                            req_bld_container.style.color = 'red';
+                        if (req_bld_lvl_el.style.color == '') {
+                            req_bld_lvl_el.style.color = 'red';
                         }
                         disable_upgrade = true;
-                    } else if (req_bld_container.style.color != '') {
-                        req_bld_container.style.color = '';
+                    } else if (req_bld_lvl_el.style.color != '') {
+                        req_bld_lvl_el.style.color = '';
                     }
-                    for (let i = req_building_containers.length - 1; i >= 0; i--) {
-                        if (req_building_containers[i].id == req_bld_container.id) {
-                            req_building_containers[i].keep = true;
+                    for (let i = container_array.length - 1; i >= 0; i--) {
+                        if (container_array[i].id == req_bld_container.id) {
+                            container_array.splice(i,1);
                             break;
                         }
                     }
@@ -941,17 +977,52 @@ class Game extends Base_Page {
             } else if (req_buildings_container.style.display == '') {
                 req_buildings_container.style.display = 'none';
             }
-            for (let i = 0; i < req_building_containers.length; i++) {
-                if (req_building_containers[i].keep === undefined) {
-                    req_building_containers[i].remove();
-                }
+            for (let i = container_array.length - 1; i >= 0; i--) {
+                container_array[i].remove();
             }
-            let upgrade_button = document.querySelector('#building_dialog_buttons > button');
-            upgrade_button.disabled = disable_upgrade || building_details.level_details[level_index].upgrade_time < 0;
-            if (building.level == 0) {
-                document.querySelectorAll('#building_dialog_buttons > button')[1].disabled = true;
+            
+            let update_buttons = document.querySelectorAll('#building_dialog_buttons > button');
+            let upgrade_button = update_buttons[0];
+            let downgrade_button = update_buttons[1];
+            let cancel_img_el = upgrade_button.getElementsByTagName('img')[0];
+            let arrow_img_el = upgrade_button.getElementsByTagName('img')[1];
+            let button_span_els = upgrade_button.querySelectorAll('span');
+            let up_button_txt_el = button_span_els[0];
+            let button_timer_el = button_span_els[1];
+            if (building.update_start !== null) {
+                let lvl_index = level_index;
+                if (building.downgrade == 1) {
+                    lvl_index = building_details.level_details.findIndex(lvl_detail => lvl_detail.level == building.level - 1);
+                }
+                let upgrade_time = building_details.level_details[lvl_index].upgrade_time;
+                let building_time = building.update_start + upgrade_time - await utils.get_timestamp();
+                button_timer_el.textContent = `(${await utils.seconds_to_time(building_time)})`;
+                if (upgrade_button.dataset.action != 'cancel') {
+                    button_timer_el.style.display = '';
+                    cancel_img_el.style.display = '';
+                    arrow_img_el.style.display = 'none';
+                    downgrade_button.style.display = 'none';
+                    up_button_txt_el.textContent = `Cancel ${building.downgrade == 0 ? 'Upgrade' : 'Downgrade'}`;
+                    upgrade_button.dataset.action = 'cancel';
+                    upgrade_button.setAttribute('id', 'cancel_dialog_button');
+                    upgrade_button.disabled = false;
+                }
             } else {
-                document.querySelectorAll('#building_dialog_buttons > button')[1].disabled = false;
+                if (upgrade_button.dataset.action == 'cancel') {
+                    button_timer_el.style.display = 'none';
+                    cancel_img_el.style.display = 'none';
+                    downgrade_button.style.display = '';
+                    arrow_img_el.style.display = '';
+                    upgrade_button.dataset.action = 'upgrade';
+                    upgrade_button.setAttribute('id', 'upgrade_dialog_button');
+                    up_button_txt_el.textContent = (building_details.level_details[level_index].upgrade_time < 0 ? 'MAX LEVEL' : 'Upgrade');
+                    upgrade_button.disabled = disable_upgrade || building_details.level_details[level_index].upgrade_time < 0;
+                    if (building.level == 0) {
+                        downgrade_button.disabled = true;
+                    } else {
+                        downgrade_button.disabled = false;
+                    }
+                }
             }
         }
     }
