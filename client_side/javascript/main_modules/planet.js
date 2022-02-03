@@ -1015,14 +1015,13 @@ class Game extends Base_Page {
                     upgrade_button.dataset.action = 'upgrade';
                     upgrade_button.setAttribute('id', 'upgrade_dialog_button');
                     up_button_txt_el.textContent = (building_details.level_details[level_index].upgrade_time < 0 ? 'MAX LEVEL' : 'Upgrade');
-                    console.log(disable_upgrade || building_details.level_details[level_index].upgrade_time < 0);
-                    upgrade_button.disabled = disable_upgrade || building_details.level_details[level_index].upgrade_time < 0;
                     if (building.level == 0) {
                         downgrade_button.disabled = true;
                     } else {
                         downgrade_button.disabled = false;
                     }
                 }
+                upgrade_button.disabled = disable_upgrade || building_details.level_details[level_index].upgrade_time < 0;
             }
         }
     }
