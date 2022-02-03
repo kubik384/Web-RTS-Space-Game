@@ -54,7 +54,7 @@ div {
 
 #button_menu > div > div > div > img {
 	height: 20px;
-	padding: 2px 0;
+	padding: 2px 2px;
 }
 
 #button_menu > div > div > div > img:first-of-type {
@@ -91,6 +91,9 @@ div {
 
 #layout_table > tbody > tr > td:nth-child(1) {
 	float: left;
+}
+
+#layout_table > tbody > tr:first-of-type > td:nth-child(1) {
 	width: calc(100% - 340px);
 }
 

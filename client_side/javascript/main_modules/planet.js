@@ -820,7 +820,6 @@ class Game extends Base_Page {
         let button_container = document.createElement('div');
         button_container.setAttribute('id', 'building_dialog_buttons');
         let upgrade_button = document.createElement('button');
-        upgrade_button.dataset.action = 'upgrade';
         upgrade_button.dataset.building_id = building_details.building_id;
         upgrade_button.setAttribute('id', 'upgrade_dialog_button');
         let cancel_img_el = document.createElement('img');
@@ -1008,7 +1007,7 @@ class Game extends Base_Page {
                     upgrade_button.disabled = false;
                 }
             } else {
-                if (upgrade_button.dataset.action == 'cancel') {
+                if (upgrade_button.dataset.action != 'upgrade') {
                     button_timer_el.style.display = 'none';
                     cancel_img_el.style.display = 'none';
                     downgrade_button.style.display = '';
@@ -1016,6 +1015,7 @@ class Game extends Base_Page {
                     upgrade_button.dataset.action = 'upgrade';
                     upgrade_button.setAttribute('id', 'upgrade_dialog_button');
                     up_button_txt_el.textContent = (building_details.level_details[level_index].upgrade_time < 0 ? 'MAX LEVEL' : 'Upgrade');
+                    console.log(disable_upgrade || building_details.level_details[level_index].upgrade_time < 0);
                     upgrade_button.disabled = disable_upgrade || building_details.level_details[level_index].upgrade_time < 0;
                     if (building.level == 0) {
                         downgrade_button.disabled = true;
