@@ -110,7 +110,25 @@ div {
 }
 
 .unit_create_count {
-	width: 100px;
+	width: 110px;
+}
+
+#create_units_table td {
+	overflow-x: auto;
+}
+
+.unit_res_cost_cell {
+	overflow-x: auto;
+	display: flex;
+	flex-wrap: wrap;
+	width: 120px;
+}
+
+.unit_res_cost {
+	display: flex;
+	width: 100%;
+	gap: 0 8px;
+	align-items: center;
 }
 
 #submit_unit_create_cell {

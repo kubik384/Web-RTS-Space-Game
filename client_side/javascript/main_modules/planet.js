@@ -186,9 +186,9 @@ class Game extends Base_Page {
                     <td>
                         <span>${unit.name}</span>
                     </td>
-                    <td>`
+                    <td class="unit_res_cost_cell">`
                         for (let resource in unit.cost) {
-                            create_units_html += `${unit.cost[resource]} <img src="/client_side/images/resources/${resource.toLowerCase()}.png" height="20px"></img>`;
+                            create_units_html += `<div class="unit_res_cost"><img src="/client_side/images/resources/${resource.toLowerCase()}.png" height="20px"></img><span id="unit_${unit.unit_id}_${resource}_cost">${unit.cost[resource]}</span></div>`;
                         }
                         create_units_html += `
                     </td>
@@ -226,7 +226,7 @@ class Game extends Base_Page {
         document.getElementById('units_wrapper').innerHTML = units_table_html;
 
         this.unit_ques = datapack.unit_ques.sort((a,b) => a.unit_que_id - b.unit_que_id);
-        this.curr_unit_que_id = this.unit_ques[0] !== undefined ? this.unit_ques[this.unit_ques.length - 1].unit_que_id++ : 0;
+        this.curr_unit_que_id = this.unit_ques[0] !== undefined ? this.unit_ques[this.unit_ques.length - 1].unit_que_id++ : undefined;
         let units_que_table_html = `
         <table id="units_que_table">
             <thead>
@@ -276,15 +276,19 @@ class Game extends Base_Page {
         }
         let create_units_table = document.getElementById('create_units_table');
         let input_fields = create_units_table.getElementsByTagName('input');
-        let _that;
-        input_fields.forEach(input_field => {
-            input_field.addEventListener('input', () => {
+        let _that = this;
+        for (let i = 0; i < input_fields.length; i++) {
+            input_fields[i].addEventListener('input', async function() {
                 let unit_count = this.value;
-                let unit_id = this.id.split(_)[1];
-                let unit_details = _that.get_unit_dts(unit_id);
-                let cost = unit_details.cost
+                let unit_id = this.id.split('_')[1];
+                let unit_details = await _that.get_unit_dts(unit_id);
+                for (let resource in unit_details.cost) {
+                    let cost_el = document.getElementById(`unit_${unit_details.unit_id}_${resource}_cost`);
+                    console.log(cost_el);
+                    cost_el.textContent = unit_details.cost[resource] * unit_count;
+                }
             });
-        });
+        }
 
         this.lastUpdateTime = await utils.get_timestamp();
         this.updateLoop = setInterval(this.update_game.bind(this), 1000);
@@ -667,13 +671,13 @@ class Game extends Base_Page {
                     let create_unit_row_html = `
                     <tr>
                         <td><img src="/client_side/images/units/${unit_details.name}.png" height="20px"></img></td>
-                        <td>${unit_details.name}</td>
-                        <td>`
+                        <td><span>${unit_details.name}"</span></td>
+                        <td class="unit_res_cost_cell">`
                         for (let resource in unit_details.cost) {
-                            create_unit_row_html += `${unit_details.cost[resource]} <img src="/client_side/images/resources/${resource}.png" height="20px"></img>`;
+                            create_unit_row_html += `<div class="unit_res_cost"><img src="/client_side/images/resources/${resource}.png" height="20px"></img><span id="unit_${unit_details.unit_id}_${resource}_cost">${unit_details.cost[resource]}</span></div>`;
                         }
                         create_unit_row_html += `</td>
-                        <td>${unit_details.build_time}</td>
+                        <td><span>${unit_details.build_time}</span></td>
                         <td><input type="number" class="unit_create_count" id="unit_${unit_details.unit_id}"></td>
                     </tr>`;
                     create_unit_row.innerHTML = create_unit_row_html;

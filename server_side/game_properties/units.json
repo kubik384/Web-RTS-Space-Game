@@ -20,7 +20,8 @@
         "name": "Heavy Fighter",
         "description": "Heavier armored with size roughly one and a half times that of a Fighter. While the size combined with the decreased mobility makes it an easier target compared to the regular Fighter, the weaponry of the ship makes up for it with it's doubled fire power of two rotatable low-energy lasers positioned at the top and bottom of the ship. Heavy Fighter can also withstand getting hit thanks to the added armor. Just like the Fighter, it is reliant on carrier type ships to enable space travelling",
         "cost": {
-            "metal": 50
+            "metal": 50,
+            "kerosene": 10
         },
         "build_time": 120,
         "capacity": 0,
