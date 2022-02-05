@@ -287,3 +287,8 @@ div {
 .building_timer_container > p {
 	word-break: break-all;
 }
+
+.missing_requirement {
+	color: red;
+	font-weight: bold;
+}

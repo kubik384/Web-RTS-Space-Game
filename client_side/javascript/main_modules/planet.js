@@ -274,6 +274,17 @@ class Game extends Base_Page {
         for (let i = 0; i < this.buildings.length; i++) {
             this.update_building_ui(i);
         }
+        let create_units_table = document.getElementById('create_units_table');
+        let input_fields = create_units_table.getElementsByTagName('input');
+        let _that;
+        input_fields.forEach(input_field => {
+            input_field.addEventListener('input', () => {
+                let unit_count = this.value;
+                let unit_id = this.id.split(_)[1];
+                let unit_details = _that.get_unit_dts(unit_id);
+                let cost = unit_details.cost
+            });
+        });
 
         this.lastUpdateTime = await utils.get_timestamp();
         this.updateLoop = setInterval(this.update_game.bind(this), 1000);
@@ -903,20 +914,20 @@ class Game extends Base_Page {
                     let available_pop = (await this.get_bld_lvl_dts(await this.get_bld_details(pop_building.building_id), pop_building.level)).production['pop'];
                     let res_type = 'reserved_' + resource;
                     if (this.resources[res_type] + resource_cost > available_pop) {
-                        if (resource_cost_el.style.color == '') {
-                            resource_cost_el.style.color = 'red';
+                        if (resource_cost_el.classList.length == 0) {
+                            resource_cost_el.classList.add('missing_requirement');
                         }
                         disable_upgrade = true;
-                    } else if (resource_cost_el.style.color != '') {
-                        resource_cost_el.style.color = '';
+                    } else if (resource_cost_el.classList.length == 1) {
+                        resource_cost_el.classList.remove('missing_requirement');
                     }
                 } else if (resource_cost > this.resources[resource]) {
-                    if (resource_cost_el.style.color == '') {
-                        resource_cost_el.style.color = 'red';
+                    if (resource_cost_el.classList.length == 0) {
+                        resource_cost_el.classList.add('missing_requirement');
                     }
                     disable_upgrade = true;
-                } else if (resource_cost_el.style.color != '') {
-                    resource_cost_el.style.color = '';
+                } else if (resource_cost_el.classList.length == 1) {
+                    resource_cost_el.classList.remove('missing_requirement');
                 }
                 for (let i = container_array.length - 1; i >= 0; i--) {
                     if (container_array[i].id == resource_container.id) {
@@ -959,12 +970,12 @@ class Game extends Base_Page {
                     }
                     req_bld_lvl_el.textContent = req_bld.level;
                     if (req_building.level < req_bld.level) {
-                        if (req_bld_lvl_el.style.color == '') {
-                            req_bld_lvl_el.style.color = 'red';
+                        if (req_bld_lvl_el.classList.length == 0) {
+                            req_bld_lvl_el.classList.add('missing_requirement');
                         }
                         disable_upgrade = true;
-                    } else if (req_bld_lvl_el.style.color != '') {
-                        req_bld_lvl_el.style.color = '';
+                    } else if (req_bld_lvl_el.classList.length == 1) {
+                        req_bld_lvl_el.classList.remove('missing_requirement');
                     }
                     for (let i = container_array.length - 1; i >= 0; i--) {
                         if (container_array[i].id == req_bld_container.id) {
