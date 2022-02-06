@@ -186,14 +186,18 @@ class Game extends Base_Page {
                     <td>
                         <span>${unit.name}</span>
                     </td>
-                    <td class="unit_res_cost_cell">`
-                        for (let resource in unit.cost) {
-                            create_units_html += `<div class="unit_res_cost"><img src="/client_side/images/resources/${resource.toLowerCase()}.png" height="20px"></img><span id="unit_${unit.unit_id}_${resource}_cost">${unit.cost[resource]}</span></div>`;
-                        }
-                        create_units_html += `
+                    <td>
+                        <div class="unit_res_cost_container">`
+                            for (let resource in unit.cost) {
+                                create_units_html += `<div class="unit_res_cost"><img src="/client_side/images/resources/${resource.toLowerCase()}.png" height="20px"></img><span id="unit_${unit.unit_id}_${resource}_cost">${unit.cost[resource]}</span></div>`;
+                            }
+                            create_units_html += `
+                        </div>
                     </td>
                     <td>
-                        <span>${unit.build_time}</span>
+                        <div class="unit_time_cost_container">
+                            <span id="unit_${unit.unit_id}_time_cost"s>${unit.build_time}s</span>
+                        </did>
                     </td>
                     <td>
                         <input type="number" class="unit_create_count" id="unit_${unit.unit_id}">
@@ -278,15 +282,8 @@ class Game extends Base_Page {
         let input_fields = create_units_table.getElementsByTagName('input');
         let _that = this;
         for (let i = 0; i < input_fields.length; i++) {
-            input_fields[i].addEventListener('input', async function() {
-                let unit_count = this.value;
-                let unit_id = this.id.split('_')[1];
-                let unit_details = await _that.get_unit_dts(unit_id);
-                for (let resource in unit_details.cost) {
-                    let cost_el = document.getElementById(`unit_${unit_details.unit_id}_${resource}_cost`);
-                    console.log(cost_el);
-                    cost_el.textContent = unit_details.cost[resource] * unit_count;
-                }
+            input_fields[i].addEventListener('input', function() {
+                _that.update_unit_costs(this);
             });
         }
 
@@ -581,11 +578,15 @@ class Game extends Base_Page {
         await this.update_building_dialog();
     }
 
+    //TODO: Try to build as many units as specified, ignore the rest (subtract the units that have been put into the build queue from the input field)
+    //TODO: Add a button to create max amount of units possible
+    //TODO: Add "enables" to building dialogues (e.g. enables this unit when the space dock gets upgraded)
+    //TODO: The unit creation table needs to be periodically updated (e.g. as resource amount changes, might need to remove red styling as the required amount of res is reached, ...). Also once the max buildable units is added, that needs to be updated too
     async build_units(units_form) {
         let remaining_resources = Object.assign({}, this.resources);
         let sufficient_resources = true;
         let units = [];
-        //last one is the submit button - therefore length - 1
+        //last one is the submit button, hence length - 1
         for (let i = 0; i < units_form.elements.length - 1; i++) {
             let value = units_form.elements[i].value;
             units_form.elements[i].value = '';
@@ -636,6 +637,7 @@ class Game extends Base_Page {
             this.update_resource_ui();
             this.socket.emit('build_units', units);
         }
+        this.update_unit_costs();
     }
 
     async update_unit_ui() {
@@ -672,12 +674,12 @@ class Game extends Base_Page {
                     <tr>
                         <td><img src="/client_side/images/units/${unit_details.name}.png" height="20px"></img></td>
                         <td><span>${unit_details.name}"</span></td>
-                        <td class="unit_res_cost_cell">`
+                        <td><div class="unit_res_cost_container">`
                         for (let resource in unit_details.cost) {
                             create_unit_row_html += `<div class="unit_res_cost"><img src="/client_side/images/resources/${resource}.png" height="20px"></img><span id="unit_${unit_details.unit_id}_${resource}_cost">${unit_details.cost[resource]}</span></div>`;
                         }
-                        create_unit_row_html += `</td>
-                        <td><span>${unit_details.build_time}</span></td>
+                        create_unit_row_html += `</div></td>
+                        <td><div class="unit_time_cost_container"><span id="unit_${unit.unit_id}_time_cost">${unit_details.build_time}s</span></div></td>
                         <td><input type="number" class="unit_create_count" id="unit_${unit_details.unit_id}"></td>
                     </tr>`;
                     create_unit_row.innerHTML = create_unit_row_html;
@@ -918,19 +920,19 @@ class Game extends Base_Page {
                     let available_pop = (await this.get_bld_lvl_dts(await this.get_bld_details(pop_building.building_id), pop_building.level)).production['pop'];
                     let res_type = 'reserved_' + resource;
                     if (this.resources[res_type] + resource_cost > available_pop) {
-                        if (resource_cost_el.classList.length == 0) {
+                        if (!resource_cost_el.classList.contains('missing_requirement')) {
                             resource_cost_el.classList.add('missing_requirement');
                         }
                         disable_upgrade = true;
-                    } else if (resource_cost_el.classList.length == 1) {
+                    } else if (resource_cost_el.classList.contains('missing_requirement')) {
                         resource_cost_el.classList.remove('missing_requirement');
                     }
                 } else if (resource_cost > this.resources[resource]) {
-                    if (resource_cost_el.classList.length == 0) {
+                    if (!resource_cost_el.classList.contains('missing_requirement')) {
                         resource_cost_el.classList.add('missing_requirement');
                     }
                     disable_upgrade = true;
-                } else if (resource_cost_el.classList.length == 1) {
+                } else if (resource_cost_el.classList.contains('missing_requirement')) {
                     resource_cost_el.classList.remove('missing_requirement');
                 }
                 for (let i = container_array.length - 1; i >= 0; i--) {
@@ -1037,6 +1039,45 @@ class Game extends Base_Page {
                     }
                 }
                 upgrade_button.disabled = disable_upgrade || building_details.level_details[level_index].upgrade_time < 0;
+            }
+        }
+    }
+
+    /**
+     * 
+     * @param {*} field_el If undefined, updates all the unit costs
+     */
+    async update_unit_costs(field_el) {
+        if (field_el === undefined) {
+            let create_units_table = document.getElementById('create_units_table');
+            let input_fields = create_units_table.getElementsByTagName('input');
+            for (let i = 0; i < input_fields.length; i++) {
+                await this._update_unit_costs(input_fields[i]);
+            }
+        } else {
+            await this._update_unit_costs(field_el);
+        }
+    }
+
+    async _update_unit_costs(field_el) {
+        let unit_count = field_el.value;
+        let unit_id = field_el.id.split('_')[1];
+        let unit_details = await this.get_unit_dts(unit_id);
+        let time_cost_el = document.getElementById(`unit_${unit_id}_time_cost`);
+        if (unit_count < 1) {
+            unit_count = 1;
+            time_cost_el.textContent = unit_details.build_time + 's';
+        } else {
+            time_cost_el.textContent = await utils.seconds_to_time(unit_details.build_time * unit_count);
+        }
+        for (let resource in unit_details.cost) {
+            let res_cost_el = document.getElementById(`unit_${unit_details.unit_id}_${resource}_cost`);
+            let cost = unit_details.cost[resource] * unit_count;
+            res_cost_el.textContent = cost;
+            if (this.resources[resource] < cost && unit_count != 1) {
+                res_cost_el.classList.add('missing_requirement');
+            } else if (res_cost_el.classList.contains('missing_requirement')) {
+                res_cost_el.classList.remove('missing_requirement');
             }
         }
     }
