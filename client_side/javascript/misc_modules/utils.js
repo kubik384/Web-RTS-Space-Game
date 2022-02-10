@@ -3,13 +3,13 @@
 class Utils {
     async seconds_to_time(p_seconds, only_to_minutes = false) {
         if (only_to_minutes) {
-            var minutes = parseInt(p_seconds / 60 );
+            var minutes = Math.floor((p_seconds / 60 ));
             var seconds = Math.floor(p_seconds - ((minutes * 60)));
             return (minutes < 10 ? "0" + minutes : minutes) + ":" + (seconds < 10 ? "0" + seconds : seconds);
         }
-        var days = parseInt( (p_seconds / 86400) );
-        var hours = parseInt( (p_seconds - (days * 86400)) / 3600 );
-        var minutes = parseInt( (p_seconds - ((hours * 3600) + (days * 86400))) / 60 );
+        var days = Math.floor((p_seconds / 86400) );
+        var hours = Math.floor((p_seconds - (days * 86400)) / 3600 );
+        var minutes = Math.floor((p_seconds - ((hours * 3600) + (days * 86400))) / 60 );
         var seconds = Math.floor((p_seconds - ((hours * 3600) + (minutes * 60) + (days * 86400))));
         return (days != 0 ? days : '') + (days < 100 ? (days != 0 ? ":" : '') + (hours < 10 ? "0" + hours : hours) : '') + (days < 10 ? ":" + (minutes < 10 ? "0" + minutes : minutes) : '') + (days == 0 ? ":" + (seconds < 10 ? "0" + seconds : seconds) : '');
     }

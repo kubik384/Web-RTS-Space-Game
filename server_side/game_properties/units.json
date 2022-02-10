@@ -13,7 +13,8 @@
         "mobility": 0.25,
         "weapons": [
             {"weapon_id": 1, "count": 1}
-        ]
+        ],
+        "req_buildings": [{"building_id":3,"level":1}]
     },
     {
         "unit_id": 2,
@@ -30,7 +31,8 @@
         "mobility": 0.21,
         "weapons": [
             {"weapon_id": 1, "count": 2}
-        ]
+        ],
+        "req_buildings": [{"building_id":3,"level":2}]
     },
     {
         "unit_id": 3,
@@ -47,7 +49,8 @@
         "weapons": [
             {"weapon_id": 1, "count": 5},
             {"weapon_id": 2, "count": 1}
-        ]
+        ],
+        "req_buildings": [{"building_id":3,"level":3}]
     },
     {
         "unit_id": 4,
@@ -64,7 +67,8 @@
         "weapons": [
             {"weapon_id": 1, "count": 2},
             {"weapon_id": 2, "count": 4}
-        ]
+        ],
+        "req_buildings": [{"building_id":3,"level":2}]
     },
     {
         "unit_id": 5,
@@ -81,7 +85,8 @@
         "weapons": [
             {"weapon_id": 1, "count": 2},
             {"weapon_id": 3, "count": 1}
-        ]
+        ],
+        "req_buildings": [{"building_id":3,"level":2}]
     },
     {
         "unit_id": 6,
@@ -98,7 +103,8 @@
         "weapons": [
             {"weapon_id": 2, "count": 4},
             {"weapon_id": 3, "count": 3}
-        ]
+        ],
+        "req_buildings": [{"building_id":3,"level":2}]
     },
     {
         "unit_id": 7,
@@ -116,7 +122,8 @@
             {"weapon_id": 3, "count": 3},
             {"weapon_id": 4, "count": 1},
             {"weapon_id": 5, "count": 1}
-        ]
+        ],
+        "req_buildings": [{"building_id":3,"level":2}]
     },
     {
         "unit_id": 8,
@@ -132,7 +139,8 @@
         "mobility": 0.14,
         "weapons": [
             {"weapon_id": 6, "count": 2}
-        ]
+        ],
+        "req_buildings": [{"building_id":3,"level":2}]
     },
     {
         "unit_id": 9,
@@ -149,6 +157,7 @@
         "weapons": [
             {"weapon_id": 2, "count": 4}
         ],
+        "req_buildings": [{"building_id":3,"level":2}],
         "ship_capacity": 200
     },
     {
@@ -170,7 +179,8 @@
             {"weapon_id": 5, "count": 2},
             {"weapon_id": 6, "count": 4},
             {"weapon_id": 7, "count": 1}
-        ]
+        ],
+        "req_buildings": [{"building_id":3,"level":2}]
     },
     {
         "unit_id": 11,
@@ -187,7 +197,8 @@
         "weapons": [
             {"weapon_id": 7, "count": 2},
             {"weapon_id": 8, "count": 1}
-        ]
+        ],
+        "req_buildings": [{"building_id":3,"level":2}]
     },
     {
         "unit_id": 12,
@@ -202,7 +213,8 @@
         "shield": 10,
         "weapons": [
             {"weapon_id": 9, "count": 1}
-        ]
+        ],
+        "req_buildings": [{"building_id":3,"level":2}]
     },
     {
         "unit_id": 13,
@@ -217,7 +229,9 @@
         "shield": 10,
         "weapons": [
             {"weapon_id": 10, "count": 1}
-        ]
+        ],
+        "req_buildings": [{"building_id":3,"level":2}],
+        "req_research": [{"research_id":1,"level":2}]
     },
     {
         "unit_id": 14,
@@ -231,7 +245,8 @@
         "hull": 100,
         "shield": 10,
         "weapons": [
-        ]
+        ],
+        "req_buildings": [{"building_id":3,"level":2}]
     },
     {
         "unit_id": 15,
@@ -245,7 +260,8 @@
         "hull": 100,
         "shield": 10,
         "weapons": [
-        ]
+        ],
+        "req_buildings": [{"building_id":3,"level":2}]
     },
     {
         "unit_id": 16,
@@ -259,7 +275,8 @@
         "hull": 100,
         "shield": 10,
         "weapons": [
-        ]
+        ],
+        "req_buildings": [{"building_id":3,"level":2}]
     },
     {
         "unit_id": 17,
@@ -273,7 +290,8 @@
         "hull": 100,
         "shield": 10,
         "weapons": [
-        ]
+        ],
+        "req_buildings": [{"building_id":3,"level":2}]
     },
     {
         "unit_id": 18,
@@ -287,7 +305,8 @@
         "hull": 100,
         "shield": 10,
         "weapons": [
-        ]
+        ],
+        "req_buildings": [{"building_id":3,"level":2}]
     },
     {
         "unit_id": 19,
@@ -301,7 +320,8 @@
         "hull": 100,
         "shield": 10,
         "weapons": [
-        ]
+        ],
+        "req_buildings": [{"building_id":3,"level":2}]
     },
     {
         "unit_id": 20,
@@ -315,7 +335,8 @@
         "hull": 100,
         "shield": 10,
         "weapons": [
-        ]
+        ],
+        "req_buildings": [{"building_id":3,"level":2}]
     },
     {
         "unit_id": 21,
@@ -329,7 +350,8 @@
         "hull": 100,
         "shield": 10,
         "weapons": [
-        ]
+        ],
+        "req_buildings": [{"building_id":3,"level":2}]
     },
     {
         "unit_id": 22,
@@ -343,6 +365,7 @@
         "hull": 100,
         "shield": 10,
         "weapons": [
-        ]
+        ],
+        "req_buildings": [{"building_id":3,"level":2}]
     }
 ]

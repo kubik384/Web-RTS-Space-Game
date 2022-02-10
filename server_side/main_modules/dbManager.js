@@ -176,10 +176,12 @@ module.exports = class DbManager {
             l_index = buildings[b_index].level_details.findIndex(level_detail => level_detail.level == building_details.level)
         }
         var bld_lvl_details = buildings[b_index].level_details[l_index];
-        for (const req_bld_details in bld_lvl_details.req_buildings) {
-            var building = buildings.find(building => building.building_id == bld_lvl_details.req_buildings[req_bld_details].building_id);
-            if (building === undefined || building.level < bld_lvl_details.req_buildings[req_bld_details].level) {
-                throw new Error('A required building is not high enough level');
+        if (bld_lvl_details.req_buildings !== undefined) {
+            for (const req_bld_details in bld_lvl_details.req_buildings) {
+                var building = buildings.find(building => building.building_id == bld_lvl_details.req_buildings[req_bld_details].building_id);
+                if (building === undefined || building.level < bld_lvl_details.req_buildings[req_bld_details].level) {
+                    throw new Error('A required building is not high enough level');
+                }
             }
         }
         query = `UPDATE player_buildings pb 
@@ -646,11 +648,8 @@ module.exports = class DbManager {
     }
 
     async build_units(username, p_units) {
-        await this.update_building_level(username, 3, true);
+        await this.update_building_level(username, 'all');
         var player_resources = await this.get_resource(username, 'all', true);
-        var p_units_building = await this.get_player_building_details(username, 3);
-        var units_building_level_details = buildings.find(building => building.building_id == p_units_building.building_id).level_details;
-        var allowed_units = units_building_level_details.find(level_detail => level_detail.level == p_units_building.level).units;
         var updated_player_resources = Object.assign({}, player_resources);
         var query = `SELECT player_id 
         FROM players
@@ -658,23 +657,39 @@ module.exports = class DbManager {
         var player_id = (await this.execute_query(query, [username]))[0].player_id;
         query = 'UPDATE players SET ';
         for (var i = 0; i < p_units.length; i++) {
-            var u_index = units.findIndex(unit => unit.unit_id == p_units[i].unit_id);
-            for (var resource in units[u_index].cost) {
-                if (updated_player_resources[resource] >= units[u_index].cost[resource] * p_units[i].count) {
-                    if (p_units[i].count > 0 && allowed_units.includes(parseInt(p_units[i].unit_id))) {
-                        updated_player_resources[resource] -= units[u_index].cost[resource] * p_units[i].count;
-                    } else {
-                        p_units.splice(i, 1);
-                    }
+            if (p_units[i].count <= 0) {
+                p_units.splice(i, 1);
+                continue;
+            }
+            var unit_details = units.find(unit => unit.unit_id == p_units[i].unit_id);
+            for (var resource in unit_details.cost) {
+                if (updated_player_resources[resource] >= unit_details.cost[resource] * p_units[i].count) {
+                    updated_player_resources[resource] -= unit_details.cost[resource] * p_units[i].count;
                 } else {
-                    reject('Not enough resources to build all units');
-                    return;
+                    throw new Error('Not enough resources to build all units');
                 }
             }
+            if (unit_details.req_buildings !== undefined) {
+                for (let i = 0; i < unit_details.req_buildings.length; i++) {
+                    let req_bld = await this.get_player_building_details(username, unit_details.req_buildings[i].building_id);
+                    if (req_bld.level < unit_details.req_buildings[i].level) {
+                        throw new Error('Required buildings are not of high enough level');
+                    }
+                }
+            }
+            /*
+            if (unit_details.req_technologies !== undefined) {
+                for (let i = 0; i < unit_details.req_technologies.length; i++) {
+                    let req_tech = await this.get_player_technology(username, unit_details.req_buildings[i].building_id);
+                    if (req_tech.level < unit_details.req_technologies[i].level) {
+                        throw new Error('Required technologies are not of high enough level');
+                    }
+                }
+            }
+            */
         }
         if (p_units.length < 1) {
-            reject('Invalid units input received');
-            return;
+            throw new Error('Invalid units input received');
         }
         //Currently expecting units to cost at least 1 of every mentioned resource
         //If you want to implement free unit or just add cost of 0 for certain resource, will need to change this part of the code

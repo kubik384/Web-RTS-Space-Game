@@ -96,7 +96,6 @@
                     "pop": 1
                 },
                 "upgrade_time": 10,
-                "units": [],
                 "req_buildings": [{"building_id":1,"level":2}]
             },
             {
@@ -106,17 +105,24 @@
                     "pop": 1
                 },
                 "upgrade_time": 10,
-                "units": [1],
                 "req_buildings": [{"building_id":1,"level":2}]
             },
             {
                 "level": 2,
                 "upgrade_cost": {
-                    "metal": 8,
+                    "metal": 16,
                     "pop": 1
                 },
-                "upgrade_time": -1,
-                "units": [1,2]
+                "upgrade_time": 30,
+                "req_buildings": [{"building_id":1,"level":2}]
+            },
+            {
+                "level": 3,
+                "upgrade_cost": {
+                    "metal": 16,
+                    "pop": 1
+                },
+                "upgrade_time": -1
             }
         ]
     },

@@ -3,8 +3,9 @@
 import { Utils } from '../misc_modules/utils.js';
 import { Base_Page } from './base_page.js';
 let utils = new Utils();
-const dialog_id = 'dialog_div';
-const dialog_overlay_id = 'dialog_overlay';
+const building_dialog_id = 'building_dialog_div';
+const unit_dialog_id = 'unit_dialog_div';
+const dialog_overlay_class = 'dialog_overlay';
 
 class Game extends Base_Page {
     constructor(socket) {
@@ -162,53 +163,62 @@ class Game extends Base_Page {
         this.units = datapack.units;
         let units_building = await this.get_building(3);
         if (units_building !== undefined) {
-            let allowed_unit_ids = (await this.get_bld_lvl_dts(await this.get_bld_details(units_building.building_id), units_building.level)).units;
             let create_units_html = `
             <form id="create_units_form">
-                <table id="create_units_table" style="display: ${allowed_unit_ids.length > 0 ? 'table' : 'none'}">
+                <table id="create_units_table">
                     <thead>
                         <tr>
                             <th>Unit</th>
-                            <th>Name</th>
                             <th>Cost</th>
                             <th>Time</th>
                             <th>Build</th>
                         </tr>
                     </thead>
                     <tbody>`;
-            for (let i = 0; i < allowed_unit_ids.length; i++) {
-                let unit = await this.get_unit_dts(allowed_unit_ids[i]);
-                create_units_html += `
-                <tr>
-                    <td>
-                        <img src="/client_side/images/units/${unit.name.toLowerCase()}.png" height="20px"></img>
-                    </td>
-                    <td>
-                        <span>${unit.name}</span>
-                    </td>
-                    <td>
-                        <div class="unit_res_cost_container">`
-                            for (let resource in unit.cost) {
-                                create_units_html += `<div class="unit_res_cost"><img src="/client_side/images/resources/${resource.toLowerCase()}.png" height="20px"></img><span id="unit_${unit.unit_id}_${resource}_cost">${unit.cost[resource]}</span></div>`;
-                            }
-                            create_units_html += `
-                        </div>
-                    </td>
-                    <td>
-                        <div class="unit_time_cost_container">
-                            <span id="unit_${unit.unit_id}_time_cost"s>${unit.build_time}s</span>
-                        </did>
-                    </td>
-                    <td>
-                        <input type="number" class="unit_create_count" id="unit_${unit.unit_id}">
-                    </td>
-                </tr>`;
-            }
             create_units_html += '<tr><td colspan="10" id="submit_unit_create_cell"><input type="submit" value="Build"></input></td></tr></tbody></table></form>';
             document.getElementById('create_units_wrapper').innerHTML = create_units_html;
             document.getElementById('create_units_form').addEventListener('submit', event => { 
                 event.preventDefault();
                 this.build_units(event.currentTarget) ;
+            });
+        }
+
+        let create_units_table = document.getElementById("create_units_table");
+        let units = await this.get_units_details();
+        for (let i = 0; i < units.length; i++) {
+            let unit_details = units[i];
+            let create_unit_row = create_units_table.insertRow(create_units_table.rows.length - 1);
+            let create_unit_row_html = `
+            <tr>
+                <td><div class="unit_preview_container" data-unit_id="${unit_details.unit_id}"><img src="/client_side/images/units/${unit_details.name}.png"></img></div></td>
+                <td><div class="unit_res_cost_container">`
+                for (let resource in unit_details.cost) {
+                    create_unit_row_html += `<div class="unit_res_cost"><img src="/client_side/images/resources/${resource}.png" height="20px"></img><span id="unit_${unit_details.unit_id}_${resource}_cost">${unit_details.cost[resource]}</span></div>`;
+                }
+                create_unit_row_html += `</div></td>
+                <td><div class="unit_time_cost_container"><span id="unit_${unit_details.unit_id}_time_cost">${unit_details.build_time}s</span></div></td>
+                <td><input type="number" class="unit_create_count" id="unit_${unit_details.unit_id}_input"><p id="max_${unit_details.unit_id}_units">(0)</span></td>
+            </tr>`;
+            create_unit_row.innerHTML = create_unit_row_html;
+            let _that = this;
+            let max_units_el = document.getElementById(`max_${unit_details.unit_id}_units`);
+            max_units_el.addEventListener('click', function() {
+                let unit_id = this.id.split('_')[1];
+                let to_max_unit_count = +this.textContent.substr(1, this.textContent.length - 2);
+                let input = document.getElementById(`unit_${unit_id}_input`);
+                let unit_count = +input.value;
+                let new_value = (to_max_unit_count >= 0 ? (to_max_unit_count == '0' ? '' : unit_count + to_max_unit_count) : unit_count + to_max_unit_count);
+                input.value = new_value;
+                _that.update_unit_costs(input).then(_that.update_units_table.bind(_that));
+            });
+        }
+        await this.update_units_table();
+        let _that = this;
+        let unit_preview_containers = document.getElementsByClassName('unit_preview_container');
+        for (let i = 0; i < unit_preview_containers.length; i++) {
+            unit_preview_containers[i].addEventListener('click', function() {
+                let unit_id = this.dataset.unit_id;
+                _that.open_unit_dialog(unit_id);
             });
         }
 
@@ -278,12 +288,10 @@ class Game extends Base_Page {
         for (let i = 0; i < this.buildings.length; i++) {
             this.update_building_ui(i);
         }
-        let create_units_table = document.getElementById('create_units_table');
         let input_fields = create_units_table.getElementsByTagName('input');
-        let _that = this;
         for (let i = 0; i < input_fields.length; i++) {
             input_fields[i].addEventListener('input', function() {
-                _that.update_unit_costs(this);
+                _that.update_unit_costs(this).then(_that.update_units_table.bind(_that));
             });
         }
 
@@ -430,9 +438,6 @@ class Game extends Base_Page {
                     if (building_id == 5 || building_id == 4) {
                         update_resource_ui = true;
                     }
-                    if (building_id == 3) {
-                        await this.update_units_table(upgrading);
-                    }
                     building.update_start = null;
                     this.update_building_ui(i);
                 }
@@ -514,7 +519,8 @@ class Game extends Base_Page {
                 this.resources[resource_type] = storage[resource_type];
             }
         }
-        this.update_resource_ui();
+        await this.update_resource_ui();
+        await this.update_building_dialog();
     }
 
     async update_resource_ui() {
@@ -530,7 +536,8 @@ class Game extends Base_Page {
                 document.getElementById(resource_type).textContent = Math.floor(this.resources[resource_type]) + '/' + storage + ' (' + Math.round(this.resource_prods[resource_type]*3600 * 100)/100 + '/h)';
             }
         }
-        await this.update_building_dialog();
+        await this.update_units_table();
+        await this.update_unit_costs();
     }
 
     async update_building_ui(b_index) {
@@ -576,36 +583,42 @@ class Game extends Base_Page {
             upgrade_time = lvl_details.upgrade_time;
         }
         await this.update_building_dialog();
+        await this.update_unit_dialog();
+        await this.update_units_table();
     }
 
-    //TODO: Try to build as many units as specified, ignore the rest (subtract the units that have been put into the build queue from the input field)
-    //TODO: Add a button to create max amount of units possible
-    //TODO: Add "enables" to building dialogues (e.g. enables this unit when the space dock gets upgraded)
-    //TODO: The unit creation table needs to be periodically updated (e.g. as resource amount changes, might need to remove red styling as the required amount of res is reached, ...). Also once the max buildable units is added, that needs to be updated too
     async build_units(units_form) {
-        let remaining_resources = Object.assign({}, this.resources);
-        let sufficient_resources = true;
+        let res_costs = {};
         let units = [];
         //last one is the submit button, hence length - 1
         for (let i = 0; i < units_form.elements.length - 1; i++) {
-            let value = units_form.elements[i].value;
-            units_form.elements[i].value = '';
-            if (value != '' && parseInt(value) > 0) {
-                units.push({unit_id: units_form.elements[i].id.substr(5), count: value});
-                let unit_details = await this.get_unit_dts(units[units.length - 1].unit_id);
+            let input_field = units_form.elements[i];
+            let unit_count = Math.floor(input_field.value);
+            let unit_id = input_field.id.split('_')[1];
+            if (unit_count > 0 && !input_field.disabled) {
+                let unit_details = await this.get_unit_dts(unit_id);
                 for (let resource in unit_details.cost) {
-                    remaining_resources[resource] -= unit_details.cost[resource] * value;
-                    if (remaining_resources[resource] < 0) {
-                        sufficient_resources = false;
-                        break;
+                    let res_cost = unit_details.cost[resource] * unit_count;
+                    let res_available = this.resources[resource] - (res_costs[resource] !== undefined ? res_costs[resource] : 0);
+                    if (res_cost > res_available) {
+                        let overcost = res_cost - res_available;
+                        unit_count -= Math.ceil(overcost/unit_details.cost[resource]);
                     }
                 }
-            }
-            if (!sufficient_resources) {
-                break;
+                if (unit_count > 0) {
+                    for (let resource in unit_details.cost) {
+                        if (res_costs[resource] === undefined) {
+                            res_costs[resource] = unit_details.cost[resource] * unit_count;
+                        } else {
+                            res_costs[resource] += unit_details.cost[resource] * unit_count;
+                        }
+                    }
+                    input_field.value = Math.floor(input_field.value) - unit_count;
+                    units.push({unit_id: unit_id, count: unit_count});
+                }
             }
         }
-        if (sufficient_resources && units.length > 0) {
+        if (units.length > 0) {
             let timestamp = await utils.get_timestamp();
             let uq_table = document.getElementById('units_que_table');
             uq_table = uq_table.getElementsByTagName('tbody')[0];
@@ -633,11 +646,14 @@ class Game extends Base_Page {
                 time_left_span.append(await utils.seconds_to_time(time_left));
                 uq_time_left_cell.append(time_left_span);
             }
-            this.resources = remaining_resources;
+            for (let resource in res_costs) {
+                this.resources[resource] -= res_costs[resource];
+            }
             this.update_resource_ui();
             this.socket.emit('build_units', units);
         }
-        this.update_unit_costs();
+        await this.update_unit_costs();
+        await this.update_units_table();
     }
 
     async update_unit_ui() {
@@ -653,45 +669,65 @@ class Game extends Base_Page {
         }
     }
 
-    async update_units_table(upgrading) {
-        let units_building = this.buildings.find(b => b.building_id == 3);
-        let units_bld_dts = await this.get_bld_details(units_building.building_id);
-        let allowed_unit_ids = (await this.get_bld_lvl_dts(units_bld_dts, units_building.level)).units;
-        let previously_allowed_unit_ids = (await this.get_bld_lvl_dts(units_bld_dts, units_building.level + (upgrading ? -1 : 1))).units;
-        let changed_unit_ids = allowed_unit_ids.filter(allowed_unit_id => previously_allowed_unit_ids.indexOf(allowed_unit_id) === -1);
-        changed_unit_ids = changed_unit_ids.concat(previously_allowed_unit_ids.filter(previously_allowed_unit_id => allowed_unit_ids.indexOf(previously_allowed_unit_id) === -1));
-
-        if (changed_unit_ids.length > 0) {
-            let create_units_table = document.getElementById("create_units_table");
-            if (upgrading) {
-                if (previously_allowed_unit_ids.length == 0) {
-                    create_units_table.style.display = 'table';
+    async update_units_table() {
+        let units = await this.get_units_details();
+        for (let i = 0; i < units.length; i++) {
+            let unit_details = await this.get_unit_dts(units[i].unit_id);
+            let buildable = true;
+            for (let j = 0; j < unit_details.req_buildings.length; j++) {
+                let req_bld = unit_details.req_buildings[j];
+                let building = this.buildings.find(building => building.building_id == req_bld.building_id);
+                if (building === undefined) {
+                    building = {level: 0};
                 }
-                for (let i = 0; i < changed_unit_ids.length; i++) {
-                    let unit_details = await this.get_unit_dts(changed_unit_ids[i]);
-                    let create_unit_row = create_units_table.insertRow(create_units_table.rows.length - 1);
-                    let create_unit_row_html = `
-                    <tr>
-                        <td><img src="/client_side/images/units/${unit_details.name}.png" height="20px"></img></td>
-                        <td><span>${unit_details.name}"</span></td>
-                        <td><div class="unit_res_cost_container">`
-                        for (let resource in unit_details.cost) {
-                            create_unit_row_html += `<div class="unit_res_cost"><img src="/client_side/images/resources/${resource}.png" height="20px"></img><span id="unit_${unit_details.unit_id}_${resource}_cost">${unit_details.cost[resource]}</span></div>`;
-                        }
-                        create_unit_row_html += `</div></td>
-                        <td><div class="unit_time_cost_container"><span id="unit_${unit.unit_id}_time_cost">${unit_details.build_time}s</span></div></td>
-                        <td><input type="number" class="unit_create_count" id="unit_${unit_details.unit_id}"></td>
-                    </tr>`;
-                    create_unit_row.innerHTML = create_unit_row_html;
-                }
-            } else {
-                if (allowed_unit_ids.length == 0) {
-                    create_units_table.style.display = 'none';
-                }
-                for (let i = 0; i < changed_unit_ids.length; i++) {
-                    create_units_table.deleteRow(create_units_table.rows.length - 2);
+                if (building.level < req_bld.level) {
+                    buildable = false;
                 }
             }
+            let input_field = document.getElementById(`unit_${unit_details.unit_id}_input`);
+            let max_el = document.getElementById(`max_${unit_details.unit_id}_units`);
+            input_field.disabled = !buildable;
+            max_el.style.display = buildable ? '' : 'none';
+        }
+
+        let create_units_table = document.getElementById('create_units_table');
+        let input_fields = create_units_table.getElementsByTagName('input');
+        let res_costs = {};
+        //last one is the submit button, hence length - 1
+        for (let i = 0; i < input_fields.length - 1; i++) {
+            let unit_count = Math.floor(input_fields[i].value);
+            let unit_id = input_fields[i].id.split('_')[1];
+            let unit_details = await this.get_unit_dts(unit_id);
+            if (unit_count < 0) {
+                unit_count = 0;
+            }
+            for (let resource in unit_details.cost) {
+                if (res_costs[resource] === undefined) {
+                    res_costs[resource] = unit_details.cost[resource] * unit_count;
+                } else {
+                    res_costs[resource] += unit_details.cost[resource] * unit_count;
+                }
+            }
+        }
+        for (let i = 0; i < input_fields.length - 1; i++) {
+            let unit_id = input_fields[i].id.split('_')[1];
+            let unit_count = Math.floor(input_fields[i].value);
+            let max_unit_el = document.getElementById(`max_${unit_id}_units`);
+            let unit_details = await this.get_unit_dts(unit_id);
+            let max_units;
+            for (let resource in unit_details.cost) {
+                if (max_units !== undefined) {
+                    max_units = Math.min(max_units, Math.floor((this.resources[resource] - res_costs[resource])/unit_details.cost[resource]));
+                } else {
+                    max_units = Math.floor((this.resources[resource] - res_costs[resource])/unit_details.cost[resource]);
+                }
+            }
+            if (max_units <= 0 && unit_count <= 0) {
+                max_units = 0;
+            } else if (max_units <= 0 && Math.abs(max_units) > unit_count) {
+                max_units = -unit_count;
+            }
+            max_unit_el.textContent = `(${max_units})`;
         }
     }
 
@@ -727,6 +763,7 @@ class Game extends Base_Page {
         }
         if (update_unit_ui) {
             this.update_unit_ui();
+            this.update_unit_dialog();
         }
         this.update_unit_que_ui(timestamp);
     }
@@ -779,16 +816,17 @@ class Game extends Base_Page {
 
     async open_building_dialog(building_id) {
         let building_details = await this.get_bld_details(building_id);
-        let old_dialog = document.getElementById(dialog_id);
+        let old_dialog = document.getElementById(building_dialog_id);
         if (old_dialog !== null) {
             let old_overlay = document.getElementById(dialog_overlay_id);
             old_dialog.remove();
             old_overlay.remove();
         }
         let dialog = document.createElement('div');
-        dialog.setAttribute("id", dialog_id);
+        dialog.classList.add('dialog_div');
+        dialog.setAttribute("id", building_dialog_id);
         let dialog_overlay = document.createElement('div');
-        dialog_overlay.setAttribute("id", dialog_overlay_id);
+        dialog_overlay.classList.add(dialog_overlay_class);
         dialog_overlay.addEventListener('contextmenu', function(event) {
             event.preventDefault();
             dialog_overlay.style.display = 'none';
@@ -884,7 +922,7 @@ class Game extends Base_Page {
     }
 
     async update_building_dialog() {
-        let dialog = document.getElementById(dialog_id);
+        let dialog = document.getElementById(building_dialog_id);
         if (dialog !== null) {
             let disable_upgrade = false;
             let building_id = document.getElementsByTagName('h1')[0].dataset.building_id;
@@ -1051,7 +1089,8 @@ class Game extends Base_Page {
         if (field_el === undefined) {
             let create_units_table = document.getElementById('create_units_table');
             let input_fields = create_units_table.getElementsByTagName('input');
-            for (let i = 0; i < input_fields.length; i++) {
+            //- 1 because last is submit button
+            for (let i = 0; i < input_fields.length - 1; i++) {
                 await this._update_unit_costs(input_fields[i]);
             }
         } else {
@@ -1059,6 +1098,10 @@ class Game extends Base_Page {
         }
     }
 
+    /**
+     * 
+     * @param {WebElement} field_el Input field element has been updated
+     */
     async _update_unit_costs(field_el) {
         let unit_count = field_el.value;
         let unit_id = field_el.id.split('_')[1];
@@ -1068,16 +1111,217 @@ class Game extends Base_Page {
             unit_count = 1;
             time_cost_el.textContent = unit_details.build_time + 's';
         } else {
+            unit_count = unit_count;
             time_cost_el.textContent = await utils.seconds_to_time(unit_details.build_time * unit_count);
         }
         for (let resource in unit_details.cost) {
             let res_cost_el = document.getElementById(`unit_${unit_details.unit_id}_${resource}_cost`);
             let cost = unit_details.cost[resource] * unit_count;
             res_cost_el.textContent = cost;
-            if (this.resources[resource] < cost && unit_count != 1) {
+            if (+field_el.value > 0 && this.resources[resource] < cost) {
                 res_cost_el.classList.add('missing_requirement');
             } else if (res_cost_el.classList.contains('missing_requirement')) {
                 res_cost_el.classList.remove('missing_requirement');
+            }
+        }
+    }
+
+    async open_unit_dialog(unit_id) {
+        let unit_details = await this.get_unit_dts(unit_id);
+        let old_dialog = document.getElementById(unit_dialog_id);
+        if (old_dialog !== null) {
+            let old_overlay = document.getElementById(dialog_overlay_id);
+            old_dialog.remove();
+            old_overlay.remove();
+        }
+        let dialog = document.createElement('div');
+        dialog.classList.add('dialog_div');
+        dialog.setAttribute("id", unit_dialog_id);
+        let dialog_overlay = document.createElement('div');
+        dialog_overlay.classList.add(dialog_overlay_class);
+        dialog_overlay.addEventListener('contextmenu', function(event) {
+            event.preventDefault();
+            dialog_overlay.style.display = 'none';
+            let new_event = new event.constructor(event.type, event);
+            document.elementFromPoint(event.clientX, event.clientY).dispatchEvent(new_event);
+            dialog_overlay.style.display = 'block';
+        });
+        dialog_overlay.addEventListener('click', function() {
+            dialog.remove();
+            dialog_overlay.remove();
+        });
+        let unit_name = document.createElement('h1');
+        unit_name.append(unit_details.name);
+        unit_name.dataset.unit_id = unit_id;
+        let unit_img = document.createElement('img');
+        unit_img.setAttribute('src', `/client_side/images/units/${unit_details.name}.png`);
+        let unit_img_container = document.createElement('div');
+        unit_img_container.setAttribute('id', 'unit_img_container');
+        let unit = this.units.find(unit => unit.unit_id == unit_id);
+        if (unit === undefined) {
+            unit = {count: 0};
+        }
+        let unit_count_el = document.createElement('p');
+        unit_count_el.append(unit.count);
+        unit_img_container.append(unit_img, unit_count_el);
+        let unit_description_title = document.createElement('h4');
+        unit_description_title.append('Description');
+        let unit_description = document.createElement('p');
+        unit_description.append(unit_details.description);
+        let unit_desc_container = document.createElement('div');
+        unit_desc_container.setAttribute('id', 'building_description');
+        unit_desc_container.append(unit_description_title, unit_description);
+        let unit_cost = document.createElement('div');
+        unit_cost.setAttribute('id', 'upgrade_cost');
+        let resource_title = document.createElement('h4');
+        resource_title.append('Resource cost: ');
+        unit_cost.append(resource_title);
+        let building_req_container = document.createElement('div');
+        building_req_container.setAttribute('id', 'building_requirements');
+        let building_req_title = document.createElement('h4');
+        building_req_title.append('Building requirements: ');
+        building_req_container.append(building_req_title);
+        /*
+        //let level_index = building_details.level_details.findIndex(lvl_detail => lvl_detail.level == building.level);
+        let button_container = document.createElement('div');
+        button_container.setAttribute('id', 'building_dialog_buttons');
+        let upgrade_button = document.createElement('button');
+        upgrade_button.dataset.building_id = building_details.building_id;
+        upgrade_button.setAttribute('id', 'upgrade_dialog_button');
+        let cancel_img_el = document.createElement('img');
+        cancel_img_el.setAttribute('src', '/client_side/images/ui/red_cross.png');
+        cancel_img_el.classList.add('dialog_cancel_img');
+        cancel_img_el.style.display = 'none';
+        let upgrade_arrow_img_el = document.createElement('img');
+        upgrade_arrow_img_el.setAttribute('src', '/client_side/images/ui/upgrade_arrow.png');
+        upgrade_arrow_img_el.classList.add('dialog_arrow_img');
+        let button_text_el = document.createElement('span');
+        //upgrade time -1 = building is maxed out
+        button_text_el.append(building_details.level_details[level_index].upgrade_time >= 0 ? 'Upgrade' : 'MAXED OUT');
+        let button_timer_el = document.createElement('span');
+        button_timer_el.style.display = 'none';
+        upgrade_button.append(cancel_img_el, upgrade_arrow_img_el, button_text_el, button_timer_el);
+        let _that = this;
+        upgrade_button.addEventListener('click', function() {
+            if (this.dataset.action == 'upgrade') {
+                _that.update_building(building_id);
+            } else if (this.dataset.action == 'cancel') {
+                _that.cancel_building_update(this.dataset.building_id);
+            }
+        });
+        if (disable_upgrade || building_details.level_details[level_index].upgrade_time < 0) {
+            upgrade_button.disabled = true;
+        }
+        let downgrade_button = document.createElement('button');
+        let downgrade_arrow_img_el = document.createElement('img');
+        downgrade_arrow_img_el.setAttribute('src', '/client_side/images/ui/downgrade_arrow.png');
+        downgrade_arrow_img_el.classList.add('dialog_arrow_img');
+        let button_text = document.createElement('span');
+        //upgrade time -1 = building is maxed out
+        button_text.append('Downgrade');
+        downgrade_button.append(downgrade_arrow_img_el, button_text);
+        downgrade_button.addEventListener('click', function() {
+            this.update_building(building_id, 1);
+        }.bind(this));
+        if (building.level == 0) {
+            downgrade_button.disabled = true;
+        }
+        button_container.append(upgrade_button, downgrade_button);
+        */
+        dialog.append(unit_name, unit_img_container, unit_desc_container, unit_cost, building_req_container);//, button_container);
+        document.body.append(dialog, dialog_overlay);
+        await this.update_unit_dialog();
+    }
+
+    async update_unit_dialog() {
+        let dialog = document.getElementById(unit_dialog_id);
+        if (dialog !== null) {
+            let unit_id = document.getElementsByTagName('h1')[0].dataset.unit_id;
+            let unit_details = await this.get_unit_dts(unit_id);
+            let unit = this.units.find(unit => unit.unit_id == unit_id);
+            if (unit === undefined) {
+                unit = {count: 0};
+            }
+            document.querySelector('#unit_img_container > p').textContent = unit.count;
+            //let level_index = building_details.level_details.findIndex(lvl_detail => lvl_detail.level == building.level);
+            let resource_containers = document.querySelectorAll('#upgrade_cost > div');
+            let container_array = [];
+            resource_containers.forEach(res_cr => container_array.push(res_cr));
+            for (let resource in unit_details.cost) {
+                let resource_container = document.getElementById(`bld_${resource}_cost`);
+                let resource_cost_el;
+                if (resource_container === null) {
+                    resource_container = document.createElement('div');
+                    resource_container.setAttribute('id', `bld_${resource}_cost`);
+                    let resource_img = document.createElement('img');
+                    resource_img.setAttribute('src', `/client_side/images/resources/${resource}.png`);
+                    resource_img.setAttribute('title', resource);
+                    resource_cost_el = document.createElement('p');
+                    resource_container.append(resource_img, resource_cost_el);
+                    upgrade_cost.append(resource_container);
+                } else {
+                    resource_cost_el = resource_container.getElementsByTagName('p')[0];
+                }
+                resource_cost_el.textContent = unit_details.cost[resource];
+                for (let i = container_array.length - 1; i >= 0; i--) {
+                    if (container_array[i].id == resource_container.id) {
+                        container_array.splice(i,1);
+                        break;
+                    }
+                }
+            }
+            for (let i = container_array.length - 1; i >= 0; i--) {
+                container_array[i].remove();
+            }
+            container_array = [];
+            let req_building_containers = document.querySelectorAll('#building_requirements > div');
+            req_building_containers.forEach(req_bld_cr => container_array.push(req_bld_cr));
+            let req_buildings_container = document.getElementById('building_requirements');
+            if (unit_details.req_buildings !== undefined) {
+                if (req_buildings_container.style.display == 'none') {
+                    req_buildings_container.style.display = '';
+                }
+                for (let i = 0; i < unit_details.req_buildings.length; i++) {
+                    let req_bld_lvl_el;
+                    let req_bld = unit_details.req_buildings[i];
+                    let req_bld_container = document.getElementById(`bld_${req_bld.building_id}_req`);
+                    if (req_bld_container == null) {
+                        let req_bld_container = document.createElement('div');
+                        req_bld_container.setAttribute('id', `bld_${req_bld.building_id}_req`);
+                        let req_building_img = document.createElement('img');
+                        let req_bld_details = await this.get_bld_details(req_bld.building_id);
+                        req_building_img.setAttribute('src', `/client_side/images/buildings/${req_bld_details.name}.png`);
+                        req_building_img.setAttribute('title', req_bld_details.name);
+                        req_bld_lvl_el = document.createElement('p');
+                        req_bld_container.append(req_building_img, req_bld_lvl_el);
+                        req_buildings_container.append(req_bld_container);
+                    } else {
+                        req_bld_lvl_el = req_bld_container.getElementsByTagName('p')[0];
+                    }
+                    let req_building = this.buildings.find(building => building.building_id == req_bld.building_id);
+                    if (req_building === undefined) {
+                        req_building = {level: 0};
+                    }
+                    req_bld_lvl_el.textContent = req_bld.level;
+                    if (req_building.level < req_bld.level) {
+                        if (req_bld_lvl_el.classList.length == 0) {
+                            req_bld_lvl_el.classList.add('missing_requirement');
+                        }
+                    } else if (req_bld_lvl_el.classList.length == 1) {
+                        req_bld_lvl_el.classList.remove('missing_requirement');
+                    }
+                    for (let i = container_array.length - 1; i >= 0; i--) {
+                        if (container_array[i].id == req_bld_container.id) {
+                            container_array.splice(i,1);
+                            break;
+                        }
+                    }
+                }
+            } else if (req_buildings_container.style.display == '') {
+                req_buildings_container.style.display = 'none';
+            }
+            for (let i = container_array.length - 1; i >= 0; i--) {
+                container_array[i].remove();
             }
         }
     }

@@ -142,6 +142,7 @@ div {
 }
 
 #create_units_table {
+	display: table;
 	margin-top: 20px;
 }
 
@@ -166,6 +167,11 @@ div {
 	border-top: 1px solid black;
 }
 
+#create_units_table > tbody > tr > td > p {
+	user-select: none;
+	cursor: pointer;
+}
+
 #units_table img {
 	width: 20px;
 }
@@ -186,10 +192,10 @@ div {
 }
 */
 
-#dialog_div {
+.dialog_div {
 	display: flex;
 	flex-wrap: wrap;
-	position: absolute;
+	position: fixed;
 	font-size: 22px;
 	text-align: center;
 	transform: translateX(-50%);
@@ -207,7 +213,7 @@ div {
 	gap: 10px 0;
 }
 
-#dialog_div > * {
+.dialog_div > * {
 	width: 100%;
 }
 
@@ -233,7 +239,7 @@ div {
 	font-weight: bold;
 }
 
-#dialog_overlay {
+.dialog_overlay {
 	position: fixed;
 	top: 0;
 	left: 0;
@@ -295,7 +301,7 @@ div {
 	width: 100%;
 	gap: 0 5px;
 	justify-content: center;
-	align-items: center
+	align-items: center;
 }
 
 .building_timer_container > * {
@@ -310,4 +316,15 @@ div {
 .missing_requirement {
 	color: red;
 	font-weight: bold;
+}
+.unit_preview_container {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 0 10px;
+	cursor: pointer;
+}
+
+.unit_preview_container > img {
+	width: 100px;
 }
