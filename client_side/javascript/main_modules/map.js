@@ -81,7 +81,8 @@ class Game extends Base_Page {
                         unit_input_cell.append(unit_number_input);
                         var unit_number_input = document.createElement('span');
                         unit_number_input.append('(' + this.available_units[i].count + ')');
-                        unit_number_input.setAttribute("data-input_id", this.available_units[i].unit_id);
+                        unit_number_input.dataset.input_id = this.available_units[i].unit_id;
+                        unit_number_input.setAttribute('id', `available_${this.available_units[i].unit_id}_units`);
                         unit_number_input.addEventListener('click', function() {
                             document.getElementById('unit_id_' + this.dataset.input_id).value = +this.textContent.substr(1, this.textContent.length-2);
                         });
@@ -172,6 +173,12 @@ class Game extends Base_Page {
                                         utils.display_custom_confirm_dialog('Due to technical limitations, a player can currently have only one fleet. This fleet is in proccess of being abandoned and until the proccess has finished, another fleet cannot be assembled', function() {}, function() {}, 'OK', '');
                                     }
                                 } else {
+                                    for (let i = 0; i < units.length; i++) {
+                                        let unit = this.available_units.find(available_unit => available_unit.unit_id == units[i].unit_id);
+                                        unit.count -= unit_count;
+                                        let available_units_el = document.getElementById(`available_${units[i].unit_id}_units`);
+                                        available_units_el.textContent = `(${unit.count})`;
+                                    }
                                     this.socket.emit('request', e.target.id, units);
                                 }
                             }
@@ -189,6 +196,10 @@ class Game extends Base_Page {
                                         empty_fleet = false;
                                     }
                                     units.push({unit_id: unit_id, count: unit_count});
+                                    let unit = this.available_units.find(available_unit => available_unit.unit_id == unit_id);
+                                    unit.count -= unit_count;
+                                    let available_units_el = document.getElementById(`available_${unit_id}_units`);
+                                    available_units_el.textContent = `(${unit.count})`;
                                 } else {
                                     units.push({unit_id: unit_id, count: 0});
                                 }
@@ -232,6 +243,12 @@ class Game extends Base_Page {
                                         dialog_overlay.remove();
                                     });
                                     var expedition_function = function(length_type) {
+                                        for (let i = 0; i < units.length; i++) {
+                                            let unit = this.available_units.find(available_unit => available_unit.unit_id == units[i].unit_id);
+                                            unit.count -= unit_count;
+                                            let available_units_el = document.getElementById(`available_${units[i].unit_id}_units`);
+                                            available_units_el.textContent = `(${unit.count})`;
+                                        }
                                         this.socket.emit('send_expedition', units, length_type);
                                         dialog.remove();
                                         dialog_overlay.remove();

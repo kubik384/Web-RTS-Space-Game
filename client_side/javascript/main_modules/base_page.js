@@ -71,8 +71,7 @@ class Base_Page {
             new_reports_count_div.setAttribute('style', 'display: block');
             document.title += ' (' + new_reports_count + ')';
         } else {
-            var title = document.title;
-            document.title = title.substr(0, title.length - 2) + new_reports_count + ')';
+            document.title = ' (' + new_reports_count + ')';
         }
     }
 

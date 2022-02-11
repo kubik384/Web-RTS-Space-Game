@@ -555,6 +555,7 @@ module.exports = class Game {
                     } else {
                         fleet = {fleet_id: this.fleet_id++, owner: username, x: player_planet.x - player_planet.width, y: player_planet.y - player_planet.height, acceleration: 0.00025, velocity: new Vector(player_planet.velocity), units: units, capacity: capacity, resources: 0};
                     }
+                    await this.dbManager.remove_player_units(username, fleet.units);
                     this.fleets.push(fleet);
                 }
             }
@@ -1412,7 +1413,7 @@ module.exports = class Game {
         }
         var result_text = expedition_results[result_type][Math.floor(Math.random() * expedition_results[result_type].length)];
         this.generate_report(fleet.owner, 'Expedition Result', result_text, await utils.get_timestamp());
-        fleet.expedition_length_id = undefined;
+        fleet.expedition_length_id = undefined;await this.dbManager.remove_player_units(username, fleet.units);
     }
 
     async generate_report(username, title, content, timestamp, file_id) {

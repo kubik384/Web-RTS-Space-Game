@@ -879,7 +879,7 @@ module.exports = class DbManager {
     }
 
     async add_resource(username, resource, amount) {
-        var query = `UPDATE players SET ${resourace} = ${resource} + ${amount} WHERE username = ${username}`;
+        var query = `UPDATE players SET ${resource} = ${resource} + ${amount} WHERE username = ${username}`;
         return this.execute_query(query);
     }
 
@@ -905,5 +905,18 @@ module.exports = class DbManager {
         query_4 = query_4.substr(0, query_4.length - 2);
         await this.execute_query(query_3, [player_id, player_id]);
         return this.execute_query(query_4);
+    }
+
+    async remove_player_units(username, units) {
+        let query = "SELECT player_id FROM players WHERE username = ?";
+        let player_id = (await this.execute_query(query, [username]))[0].player_id;
+        let query_promises = [];
+        for (let i = 0; i < units.length; i++) {
+            if (units[i].count != 0) {
+                query = `UPDATE player_units SET count = count - ${units[i].count} WHERE player_id = ${player_id} && unit_id = ${units[i].unit_id}`;
+                query_promises.push(this.execute_query(query));
+            }
+        }
+        return Promise.all(query_promises);
     }
 }
