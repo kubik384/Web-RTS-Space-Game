@@ -4,3 +4,4 @@
 debug.log
 .vscode/launch.json
 package-lock.json
+/server_side/player_conversations
