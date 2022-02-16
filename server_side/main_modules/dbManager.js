@@ -651,10 +651,7 @@ module.exports = class DbManager {
         await this.update_building_level(username, 'all');
         var player_resources = await this.get_resource(username, 'all', true);
         var updated_player_resources = Object.assign({}, player_resources);
-        var query = `SELECT player_id 
-        FROM players
-        WHERE username = ?`;
-        var player_id = (await this.execute_query(query, [username]))[0].player_id;
+        let player_id = await this.get_player_id(username);
         query = 'UPDATE players SET ';
         for (var i = 0; i < p_units.length; i++) {
             if (p_units[i].count <= 0) {
@@ -715,10 +712,7 @@ module.exports = class DbManager {
 
     //certain information is being saved (e.g. fleets, space objects, etc.) in a file. This is however being saved only every x minutes. In case the server shut downs or something happens to the data, everything that happens before the last save will be rolled back. However, since reports are being saved on the db (since keeping them in RAM makes no sense), they are permanently saved immediately. Which can result in players keeping reports of actions that have been reverted and therefore haven't happened.
     async save_report(username, title, content, timestamp, file_id) {
-        var query = `SELECT player_id 
-        FROM players
-        WHERE username = ?`;
-        var player_id = (await this.execute_query(query, [username]))[0].player_id;
+        let player_id = await this.get_player_id(username);
         var arg_array = [player_id, title, content, timestamp];
         if (file_id !== undefined) {
             arg_array.push(file_id);
@@ -783,6 +777,48 @@ module.exports = class DbManager {
         SET isRead = 1
         WHERE report_id = ?`;
         return this.execute_query(query, [report_id]);
+    }
+
+    async get_message_datapack(username) {
+        let new_reports_count = await this.get_new_reports_count(username);
+        let conversations = await this.get_player_conversations(username);
+        return {conversations: conversations, new_reports_count: new_reports_count};
+    }
+
+    async get_player_conversations(p_username) {
+        let player_id = await this.get_player_id(p_username);
+        let conversations = await this.execute_query(`
+        SELECT pc.* FROM player_conversations AS pc
+        INNER JOIN players AS p ON pc.sender_player_id = p.player_id || pc.receiver_player_id = p.player_id
+        WHERE p.player_id = ${player_id}`);
+        for (let i = 0; i < conversations.length; i++) {
+            if (conversations[i].sender_player_id == player_id) {
+                let username = await this.get_username(conversations[i].receiver_player_id);
+                delete conversations[i].receiver_player_id;
+                conversations[i].receiver_username = username;
+                delete conversations[i].sender_player_id;
+                conversations[i].sender_username = p_username;
+            } else {
+                let username = await this.get_username(conversations[i].sender_player_id);
+                delete conversations[i].sender_player_id;
+                conversations[i].sender_username = username;
+                delete conversations[i].receiver_player_id;
+                conversations[i].receiver_username = p_username;
+            }
+        }
+        return conversations;
+    }
+
+    async create_conversation(sender, receiver, subject, timestamp) {
+        let sender_player_id = await this.get_player_id(sender);
+        let receiver_player_id = await this.get_player_id(receiver);
+        let query = `INSERT INTO player_conversations VALUES (NULL,?,?,?,?)`;
+        return this.execute_query(query, [sender_player_id, receiver_player_id, subject,timestamp]);
+    }
+
+    async update_conversation_timestamp(conversation_id, timestamp) {
+        let query = `UPDATE player_conversations SET last_message_date = ? WHERE conversation_id = ?`;
+        return this.execute_query(query, [timestamp, conversation_id]);
     }
 
     async get_research_datapack(username) {
@@ -892,12 +928,11 @@ module.exports = class DbManager {
      */
     async register_player(username, hash, so_id) {
         var query = "INSERT INTO players (username, password, system_id, space_object_id, res_last_update) VALUES ( ? , ? , ? , ? , UNIX_TIMESTAMP())";
-        var query_2 = "SELECT player_id FROM players WHERE username = ?";
         var query_3 = `INSERT INTO player_buildings VALUES 
         (?, '1', '1', NULL, 0), 
         (?, '2', '1', NULL, 0)`;
         await this.execute_query(query, [username, hash, 1, so_id]);
-        var player_id = (await this.execute_query(query_2, [username]))[0].player_id;
+        let player_id = await this.get_player_id(username);
         var query_4 = `INSERT INTO player_units VALUES `;
         for (var i = 0; i < units.length; i++) {
             query_4 += `(${player_id}, ${units[i].unit_id}, 0), `;
@@ -908,8 +943,7 @@ module.exports = class DbManager {
     }
 
     async remove_player_units(username, units) {
-        let query = "SELECT player_id FROM players WHERE username = ?";
-        let player_id = (await this.execute_query(query, [username]))[0].player_id;
+        let player_id = await this.get_player_id(username);
         let query_promises = [];
         for (let i = 0; i < units.length; i++) {
             if (units[i].count != 0) {
@@ -918,5 +952,19 @@ module.exports = class DbManager {
             }
         }
         return Promise.all(query_promises);
+    }
+
+    async get_player_id(username) {
+        var query = `SELECT player_id 
+        FROM players
+        WHERE username = ?`;
+        return ((await this.execute_query(query, [username]))[0].player_id);
+    }
+
+    async get_username(player_id) {
+        var query = `SELECT username
+        FROM players
+        WHERE player_id = ?`;
+        return ((await this.execute_query(query, [player_id]))[0].username);
     }
 }

@@ -22,37 +22,44 @@
 			<a href="/game/reports" id="reports_tab">
 				Reports<span id="new_report_count" style="display: none">0</span>
 			</a>
-			<a href='/game/message'>Messages</a>
+			<a href='/game/messages'>Messages</a>
 			<a href='/game/research'>Research</a>
 		</div>
-		<table id="layout_table">
-			<tbody>
-				<tr>
-					<td>
-						<div id='button_menu'>
-						</div>
-					</td>
-					<td>
-						<div id='resource_building_ui'>
-						</div>
-					</td>
-				</tr>
-				<tr>
-					<td>
-						<div id='units_que_wrapper'>
-						</div>
-						<div id='create_units_wrapper'>
-						</div>
-					</td>
-					<td>
-						<div id='units_wrapper'>
-						</div>
-					</td>
-				</tr>
-			</tbody>
-		</table>
-		<div id="planet_container">
-			<canvas id="planet_map"></canvas>
+		<div id="conversation_table_container">
+			<button id="new_message_btn">New Message</button>
+			<table id="conversation_table">
+				<thead>
+					<tr>
+						<th>Subject</th>
+						<th>Sender</th>
+						<th>Receiver</th>
+						<th>Date</th>
+					</tr>
+				</thead>
+				<tbody>
+				</tbody>
+			</table>
+		</div>
+		<div id="message_table_container" style="display: none">
+			<div id="response_container">
+				<textarea></textarea>
+				<button>Respond</button>
+			</div>
+			<table id="message_table">
+				<tbody>
+				</tbody>
+			</table>
+		</div>
+		<div id="new_message_container" style="display: none">
+			<form id="new_message_form">
+				<label>Subject</label>
+				<input type="text"></input>
+				<label>Username</label>
+				<input type="text"></input>
+				<label>Message</label>
+				<textarea></textarea>
+				<input type="submit"></input>
+			</form>
 		</div>
 	</body>
 </html>

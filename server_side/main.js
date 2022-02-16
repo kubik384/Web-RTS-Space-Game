@@ -9,6 +9,10 @@ var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser');
 var bcrypt = require('bcrypt');
 var io = require('socket.io')(server, {pingInterval: 1500});
+var fs = require('fs');
+var fsPromises = fs.promises;
+var Utils = require('./misc_modules/utils.js');
+var utils = new Utils();
 
 const DbManager = require('./main_modules/dbManager.js');
 const Game = require('./main_modules/game.js');
@@ -20,6 +24,7 @@ const planetURL = gameURL + '/planet';
 const mapURL = gameURL + '/map';
 const reportsURL = gameURL + '/reports';
 const reportURL = gameURL + '/report';
+const messagesURL = gameURL + '/messages';
 const messageURL = gameURL + '/message';
 const researchURL = gameURL + '/research';
 var tokens = [];
@@ -29,6 +34,7 @@ var dbManager = new DbManager();
 var game = new Game(dbManager, io);
 const root = path.resolve('client_side');
 const game_properties = path.resolve('server_side/game_properties');
+const conversation_dir = path.resolve('server_side/player_conversations');
 
 app.set('port', process.env.PORT || PORT);
 app.use('/client_side', express.static(root));// Routing
@@ -124,7 +130,7 @@ app.get(mapURL, function(req,res) {
 	}
 });
 
-app.get(messageURL, function(req,res) {
+app.get(messagesURL, function(req,res) {
 	if (req.cookies !== undefined && req.cookies.token !== undefined) {
 		if (is_valid_token(req.cookies.token)) {
 			res.sendFile(path.join(root, 'pages/message.html'));
@@ -136,6 +142,39 @@ app.get(messageURL, function(req,res) {
 		res.redirect(303, '/');
 	}
 });
+
+app.get(messageURL, async function(req,res) {
+	if (req.cookies !== undefined && req.cookies.token !== undefined) {
+		if (is_valid_token(req.cookies.token)) {
+			let conversation_id = req.query.id;
+			let conversation_file = path.join(conversation_dir, `conversation_${conversation_id}.txt`);
+			let readstream = fs.createReadStream(conversation_file);
+			readstream.pipe(res);
+			readstream.on('error', (err) => {
+				if (err.code == 'ENOENT') {
+					console.log('Error: Conversation file was not found');
+					res.status(409).send();
+				} else {
+					console.log('Error occured when reading report file: ' + err);
+					res.status(500).send();
+				}
+			});
+			res.on('error', (err) => {
+				console.log('Error occured when writing out report file: ' + err);
+				res.status(500).send();
+			});
+			readstream.on('finish', () => {
+				res.status(200).send();
+			});
+		} else {
+			res.clearCookie('token');
+			res.redirect(303, '/');
+		}
+	} else {
+		res.redirect(303, '/');
+	}
+});
+
 
 app.get(researchURL, function(req,res) {
 	if (req.cookies !== undefined && req.cookies.token !== undefined) {
@@ -203,6 +242,8 @@ app.get(reportURL, async function(req,res) {
 		res.redirect(303, '/');
 	}
 });
+
+
 
 app.listen(3000);
 
@@ -307,6 +348,40 @@ io.on('connection', socket => {
 	socket.on('get_fr_status', async (report_id) => {
 		var report_details = await dbManager.get_report_details(report_id, username);
 		socket.emit('fr_availability', (report_details !== undefined && report_details.file_id !== null));
+	});
+
+	socket.on('message_datapack_request', () => {
+		dbManager.get_message_datapack(socket.username).then(datapack => {socket.emit('message_datapack', JSON.stringify(datapack));});
+	});
+
+	socket.on('create_conversation', async (username, subject, text, confirmation_timestamp) => {
+		let timestamp = await utils.get_timestamp();
+		let conversation_id = (await dbManager.create_conversation(socket.username, username, subject, timestamp)).insertId;
+		socket.emit('conversation_created', socket.username, conversation_id, timestamp, confirmation_timestamp);
+		let file_path = path.join(conversation_dir, `conversation_${conversation_id}.txt`);
+		let file_handle = await fsPromises.open(file_path, 'a+');
+		let file = file_handle.createWriteStream();
+		file.on('error', (err) => {
+			throw (err);
+		});
+		text.replace(/>/g, "&gt;").replace(/</g, "&lt;");
+		file.write(`<${timestamp}_${socket.username}>\n${text}`);
+		file.end();
+	});
+
+	socket.on('write_message', async (conversation_id, text, confirmation_timestamp) => {
+		let timestamp = await utils.get_timestamp();
+		socket.emit('message_received', socket.username, timestamp, confirmation_timestamp);
+		await dbManager.update_conversation_timestamp(conversation_id, timestamp);
+		let file_path = path.join(conversation_dir, `conversation_${conversation_id}.txt`);
+		let file_handle = await fsPromises.open(file_path, 'a+');
+		let file = file_handle.createWriteStream();
+		file.on('error', (err) => {
+			throw (err);
+		});
+		text.replace(/>/g, "&gt;").replace(/</g, "&lt;");
+		file.write(`\n<${timestamp}_${socket.username}>\n${text}`);
+		file.end();
 	});
 
 	socket.on('research_datapack_request', () => {

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Dec 20, 2021 at 08:15 PM
+-- Generation Time: Feb 13, 2022 at 07:10 PM
 -- Server version: 10.4.17-MariaDB
 -- PHP Version: 8.0.0
 
@@ -47,7 +47,7 @@ CREATE TABLE `players` (
 --
 
 INSERT INTO `players` (`player_id`, `username`, `password`, `system_id`, `space_object_id`, `res_last_update`, `reserved_pop`, `metal`, `kerosene`, `hydrogen`, `uranium`, `research`) VALUES
-(1, 'Newstory', '$2b$10$jqoTtwOPhOALYsS7VtZ90eOLuj0/HFlyLzlfWLsaSLaQDHZpcw3uG', 1, 2, 1640016830, 3.000000, 500.000000, 100.000000, 0.000000, 0.000000, '{\"researched_techs\":[\"1\",\"2\",\"3\"]}'),
+(1, 'Newstory', '$2b$10$jqoTtwOPhOALYsS7VtZ90eOLuj0/HFlyLzlfWLsaSLaQDHZpcw3uG', 1, 2, 1644773238, 3.000000, 500.000000, 100.000000, 0.000000, 0.000000, '{\"researched_techs\":[\"1\",\"2\",\"3\"]}'),
 (2, 'Newstory2', '$2b$10$GnLP0TiKVWZPj/SxWaqWc.9ON02/eiXvBW.Q/JUlyQvvgtGbDgW5.', 1, 3, 1637663991, 0.000000, 500.000000, 100.000000, 0.000000, 0.000000, '{\"researched_techs\": []}');
 
 -- --------------------------------------------------------
@@ -84,6 +84,28 @@ INSERT INTO `player_buildings` (`player_id`, `building_id`, `level`, `update_sta
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `player_conversations`
+--
+
+CREATE TABLE `player_conversations` (
+  `conversation_id` int(11) UNSIGNED NOT NULL,
+  `sender_player_id` mediumint(9) UNSIGNED NOT NULL,
+  `receiver_player_id` mediumint(9) UNSIGNED NOT NULL,
+  `subject` text NOT NULL,
+  `last_message_date` int(11) UNSIGNED NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Dumping data for table `player_conversations`
+--
+
+INSERT INTO `player_conversations` (`conversation_id`, `sender_player_id`, `receiver_player_id`, `subject`, `last_message_date`) VALUES
+(1, 1, 2, 'test', 1644769691),
+(2, 2, 1, 'test', 1644769691);
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `player_reports`
 --
 
@@ -92,8 +114,8 @@ CREATE TABLE `player_reports` (
   `report_id` varchar(36) NOT NULL,
   `title` text NOT NULL,
   `text` text NOT NULL,
-  `isRead` tinyint(1) NOT NULL,
   `gotDisplayed` tinyint(1) NOT NULL,
+  `isRead` tinyint(1) NOT NULL,
   `timestamp` int(11) UNSIGNED NOT NULL,
   `file_id` int(2) UNSIGNED DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -192,6 +214,12 @@ ALTER TABLE `player_buildings`
   ADD PRIMARY KEY (`building_id`,`player_id`);
 
 --
+-- Indexes for table `player_conversations`
+--
+ALTER TABLE `player_conversations`
+  ADD PRIMARY KEY (`conversation_id`);
+
+--
 -- Indexes for table `player_reports`
 --
 ALTER TABLE `player_reports`
@@ -218,6 +246,12 @@ ALTER TABLE `player_unit_ques`
 --
 ALTER TABLE `players`
   MODIFY `player_id` mediumint(9) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `player_conversations`
+--
+ALTER TABLE `player_conversations`
+  MODIFY `conversation_id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `player_unit_ques`
