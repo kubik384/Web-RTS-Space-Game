@@ -592,51 +592,46 @@ module.exports = class Game {
         }
     }
 
-    async get_map_datapack(layout, username) {
+    async get_map_datapack(username) {
         if (this.updating) {
             await new Promise((resolve, reject) => {setTimeout(resolve, 0)});
             return this.get_map_datapack();
         } else {
             return new Promise(async (resolve, reject) => {
                 this.sending_datapack = true;
-                if (layout === 'galaxy') {
-                    resolve({systems: []});
-                    return;
-                } else if (layout === 'system') {
-                    for (var i = 0; i < this.players.length; i++) {
-                        if (this.players[i].username == username) {
-                            /*
-                            var player_planet = this.space_objects.find(space_object => space_object.space_object_id == this.players[i].space_object_id);
-                            var space_objects = [];
-                            if (player_planet !== undefined) {
-                                //will need to recalculate what is in the view range as it moves around
-                                for (var j = 0; j < this.space_objects.length; j++) {
-                                    var object_distance = await (new Vector(player_planet, this.space_objects[j])).length();
-                                    //Expect all the space objects to be squares (circles) = same width and height - for now
-                                    var calculated_view_range = this.players[i].view_range * this.space_objects[j].width;
-                                    if (calculated_view_range > object_distance) {
-                                        space_objects.push(this.space_objects[j]);
-                                    }
+                for (var i = 0; i < this.players.length; i++) {
+                    if (this.players[i].username == username) {
+                        /*
+                        var player_planet = this.space_objects.find(space_object => space_object.space_object_id == this.players[i].space_object_id);
+                        var space_objects = [];
+                        if (player_planet !== undefined) {
+                            //will need to recalculate what is in the view range as it moves around
+                            for (var j = 0; j < this.space_objects.length; j++) {
+                                var object_distance = await (new Vector(player_planet, this.space_objects[j])).length();
+                                //Expect all the space objects to be squares (circles) = same width and height - for now
+                                var calculated_view_range = this.players[i].view_range * this.space_objects[j].width;
+                                if (calculated_view_range > object_distance) {
+                                    space_objects.push(this.space_objects[j]);
                                 }
                             }
-                            */
-                            var units = await this.dbManager.get_player_units(this.players[i].username, 'all');
-                            var fleets = [];
-                            for (var j = 0; j < this.fleets.length; j++) {
-                                if (this.fleets[j].owner == this.players[i].username) {
-                                    fleets.push(this.fleets[j]);
-                                } else {
-                                    //don't like giving clients the actual fleets id, since if the fleet can get out of sight and then the player finds it again, they can check the id to see if it's the same fleet
-                                    fleets.push({fleet_id: this.fleets[j].fleet_id, x: this.fleets[j].x, y: this.fleets[j].y, units: this.fleets[j].units, abandoned: this.fleets[j].abandoned});
-                                    if (fleets[fleets.length - 1].abandoned) {
-                                        fleets[fleets.length - 1].resources = this.fleets[j].resources;
-                                    }
-                                }
-                            }
-                            var new_reports_count =  await this.dbManager.get_new_reports_count(this.players[i].username);
-                            resolve({home_planet_id: this.players[i].space_object_id, space_objects: this.space_objects, fleets: fleets, last_update: this.last_tick, time_passed: this.time_passed, boundaries: this.boundaries, available_units: units, new_reports_count: new_reports_count});
-                            return;
                         }
+                        */
+                        var units = await this.dbManager.get_player_units(this.players[i].username, 'all');
+                        var fleets = [];
+                        for (var j = 0; j < this.fleets.length; j++) {
+                            if (this.fleets[j].owner == this.players[i].username) {
+                                fleets.push(this.fleets[j]);
+                            } else {
+                                //don't like giving clients the actual fleets id, since if the fleet can get out of sight and then the player finds it again, they can check the id to see if it's the same fleet
+                                fleets.push({fleet_id: this.fleets[j].fleet_id, x: this.fleets[j].x, y: this.fleets[j].y, units: this.fleets[j].units, abandoned: this.fleets[j].abandoned});
+                                if (fleets[fleets.length - 1].abandoned) {
+                                    fleets[fleets.length - 1].resources = this.fleets[j].resources;
+                                }
+                            }
+                        }
+                        var new_reports_count =  await this.dbManager.get_new_reports_count(this.players[i].username);
+                        resolve({home_planet_id: this.players[i].space_object_id, space_objects: this.space_objects, fleets: fleets, last_update: this.last_tick, time_passed: this.time_passed, boundaries: this.boundaries, available_units: units, new_reports_count: new_reports_count});
+                        return;
                     }
                 }
                 reject(new Error('Player was not found to return map datapack'));

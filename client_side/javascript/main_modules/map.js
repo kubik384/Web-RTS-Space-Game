@@ -32,14 +32,10 @@ class Game extends Base_Page {
         this.assigning_objects = {last_selected_index: -1, objects: []};
         this.selecting_objects = {last_selected_index: -1, objects: []};
         this.debug_clicked = 0;
-        
-        const query_string = window.location.search;
-        const url_parameters = new URLSearchParams(query_string);
-        this.layout = url_parameters.get('layout');
     }
 
     async request_data() {
-        this.socket.emit('map_datapack_request', this.layout);
+        this.socket.emit('map_datapack_request');
     }
 
     async setup_game(p_datapack) {
@@ -47,74 +43,68 @@ class Game extends Base_Page {
         console.log(datapack);
         super.setup_page(datapack);
         this.updates = [{}];
-        if (this.layout === 'system') {
-            this.last_fe_tick = datapack.last_update;
-            this.updates[0].tick_timestamp = datapack.last_update;
-            this.updates[0].tick_be_time_passed = datapack.time_passed;
-            this.boundaries = datapack.boundaries;
-            if (this.map_canvas === undefined) {
-                this.available_units = datapack.available_units;
-                var assemble_fleet_table = document.getElementById('available_units_table');
-                var disable_button = true;
-                for (var i = 0; i < this.available_units.length; i++) {
-                    if (this.available_units[i].count > 0) {
-                        var unit_details = await this.get_unit_dts(this.available_units[i].unit_id);
-                        disable_button = false;
-                        var row = assemble_fleet_table.insertRow(-1);
-                        var unit_img_cell = row.insertCell(-1);
-                        var unit_label_cell = row.insertCell(-1);
-                        var unit_input_cell = row.insertCell(-1);
-                        var unit_count = row.insertCell(-1);
-                        
-                        var unit_type_img = document.createElement('img');
-                        unit_type_img.setAttribute('src', '/client_side/images/units/' + unit_details.name.toLowerCase() + '.png');
-                        unit_img_cell.append(unit_type_img);
-                        unit_img_cell.classList.add('img_cell');
-                        var unit_name_label = document.createElement('label');
-                        unit_name_label.append(' ' + unit_details.name);
-                        unit_label_cell.append(unit_name_label);
-                        var unit_number_input = document.createElement('input');
-                        unit_number_input.setAttribute("type", "number");
-                        unit_number_input.classList.add('game_unit');
-                        unit_number_input.setAttribute("id", 'unit_id_' + this.available_units[i].unit_id);
-                        unit_number_input.placeholder = 0;
-                        unit_input_cell.append(unit_number_input);
-                        var unit_number_input = document.createElement('span');
-                        unit_number_input.append('(' + this.available_units[i].count + ')');
-                        unit_number_input.dataset.input_id = this.available_units[i].unit_id;
-                        unit_number_input.setAttribute('id', `available_${this.available_units[i].unit_id}_units`);
-                        unit_number_input.addEventListener('click', function() {
-                            document.getElementById('unit_id_' + this.dataset.input_id).value = +this.textContent.substr(1, this.textContent.length-2);
-                        });
-                        unit_count.append(unit_number_input);
-                    }
-                }
-                if (disable_button) {
-                    document.getElementById('assemble_fleet').disabled = true;
-                    document.getElementById('send_expedition').disabled = true;
+        this.last_fe_tick = datapack.last_update;
+        this.updates[0].tick_timestamp = datapack.last_update;
+        this.updates[0].tick_be_time_passed = datapack.time_passed;
+        this.boundaries = datapack.boundaries;
+        if (this.map_canvas === undefined) {
+            this.available_units = datapack.available_units;
+            var assemble_fleet_table = document.getElementById('available_units_table');
+            var disable_button = true;
+            for (var i = 0; i < this.available_units.length; i++) {
+                if (this.available_units[i].count > 0) {
+                    var unit_details = await this.get_unit_dts(this.available_units[i].unit_id);
+                    disable_button = false;
+                    var row = assemble_fleet_table.insertRow(-1);
+                    var unit_img_cell = row.insertCell(-1);
+                    var unit_label_cell = row.insertCell(-1);
+                    var unit_input_cell = row.insertCell(-1);
+                    var unit_count = row.insertCell(-1);
+                    
+                    var unit_type_img = document.createElement('img');
+                    unit_type_img.setAttribute('src', '/client_side/images/units/' + unit_details.name.toLowerCase() + '.png');
+                    unit_img_cell.append(unit_type_img);
+                    unit_img_cell.classList.add('img_cell');
+                    var unit_name_label = document.createElement('label');
+                    unit_name_label.append(' ' + unit_details.name);
+                    unit_label_cell.append(unit_name_label);
+                    var unit_number_input = document.createElement('input');
+                    unit_number_input.setAttribute("type", "number");
+                    unit_number_input.classList.add('game_unit');
+                    unit_number_input.setAttribute("id", 'unit_id_' + this.available_units[i].unit_id);
+                    unit_number_input.placeholder = 0;
+                    unit_input_cell.append(unit_number_input);
+                    var unit_number_input = document.createElement('span');
+                    unit_number_input.append('(' + this.available_units[i].count + ')');
+                    unit_number_input.dataset.input_id = this.available_units[i].unit_id;
+                    unit_number_input.setAttribute('id', `available_${this.available_units[i].unit_id}_units`);
+                    unit_number_input.addEventListener('click', function() {
+                        document.getElementById('unit_id_' + this.dataset.input_id).value = +this.textContent.substr(1, this.textContent.length-2);
+                    });
+                    unit_count.append(unit_number_input);
                 }
             }
-            var space_objects = datapack.space_objects;
-            for (var i = 0; i < space_objects.length; i++) {
-                space_objects[i].HTMLimage = document.getElementById(space_objects[i].image);
-                space_objects[i].last_x = space_objects[i].x;
-                space_objects[i].last_y = space_objects[i].y;
+            if (disable_button) {
+                document.getElementById('assemble_fleet').disabled = true;
+                document.getElementById('send_expedition').disabled = true;
             }
-            this.updates[0].space_objects = space_objects;
-            
-            this.updates[0].fleets = datapack.fleets;
-            for (var i = 0; i < this.updates[0].fleets.length; i++) {
-                if (this.updates[0].fleets[i].owner !== undefined) {
-                    this.controlled_fleet_index = i;
-                    if (this.updates[0].fleets[i].abandon_timer !== undefined) {
-                        this.add_abandon_timer(this.updates[0].fleets[i].abandon_timer);
-                    }
+        }
+        var space_objects = datapack.space_objects;
+        for (var i = 0; i < space_objects.length; i++) {
+            space_objects[i].HTMLimage = document.getElementById(space_objects[i].image);
+            space_objects[i].last_x = space_objects[i].x;
+            space_objects[i].last_y = space_objects[i].y;
+        }
+        this.updates[0].space_objects = space_objects;
+        
+        this.updates[0].fleets = datapack.fleets;
+        for (var i = 0; i < this.updates[0].fleets.length; i++) {
+            if (this.updates[0].fleets[i].owner !== undefined) {
+                this.controlled_fleet_index = i;
+                if (this.updates[0].fleets[i].abandon_timer !== undefined) {
+                    this.add_abandon_timer(this.updates[0].fleets[i].abandon_timer);
                 }
             }
-
-        } else if (this.layout === 'galaxy') {
-            this.updates[0].systems = datapack.systems;
-            this.last_fe_tick = Date.now();
         }
         if (this.map_canvas === undefined) {
             this.map_canvas = document.getElementById("map");
@@ -290,7 +280,7 @@ class Game extends Base_Page {
                             }
                             break;
                         case "restart":
-                            this.socket.emit('request', e.target.id, this.layout);
+                            this.socket.emit('request', e.target.id);
                             break;
                         default: 
                             this.socket.emit('request', e.target.id);
@@ -474,78 +464,76 @@ class Game extends Base_Page {
         this.logic_loop = setTimeout(this.update.bind(this), this.tick_time);
         var time_passed = timestamp - this.last_fe_tick;
         this.tick_fe_time_passed = time_passed;
-        if (this.layout === 'system') {
-            /*
-            for (var i = 0; i < this.space_objects.length; i++) {
-                if (this.controlled_fleet !== undefined) {
-                    Object.assign(this.controlled_fleet.last_velocity, this.controlled_fleet.velocity);
-                    this.controlled_fleet.last_x = this.controlled_fleet.x;
-                    this.controlled_fleet.last_y = this.controlled_fleet.y;
-                    var rads = await utils.angleToRad(this.space_objects[i].rot);
-                    var [origin_x, origin_y] = [this.space_objects[i].x, this.space_objects[i].y];
-                    var [center_x, center_y] = [this.center_system_object.x, this.center_system_object.y];
-                    var object_x = center_x + (origin_x - center_x) * Math.cos(rads) - (origin_y - center_y) * Math.sin(rads);
-                    var object_y = center_y + (origin_x - center_x) * Math.sin(rads) + (origin_y - center_y) * Math.cos(rads);
-                    
-                    var vector;
-                    vector = new Vector(this.controlled_fleet, new Vector(object_x, object_y));
-                    //Expect all the space objects to be squares (circles) = same width and height - for now
-                    var object_radius = this.space_objects[i].width/2;
-                    var g_strength = Math.pow(object_radius/await vector.length(), 2);
-                    var pull = g_strength * object_radius / 2500;
-                    this.controlled_fleet.velocity = await this.controlled_fleet.last_velocity.add(await (await vector.normalize()).multiply(pull));
+        /*
+        for (var i = 0; i < this.space_objects.length; i++) {
+            if (this.controlled_fleet !== undefined) {
+                Object.assign(this.controlled_fleet.last_velocity, this.controlled_fleet.velocity);
+                this.controlled_fleet.last_x = this.controlled_fleet.x;
+                this.controlled_fleet.last_y = this.controlled_fleet.y;
+                var rads = await utils.angleToRad(this.space_objects[i].rot);
+                var [origin_x, origin_y] = [this.space_objects[i].x, this.space_objects[i].y];
+                var [center_x, center_y] = [this.center_system_object.x, this.center_system_object.y];
+                var object_x = center_x + (origin_x - center_x) * Math.cos(rads) - (origin_y - center_y) * Math.sin(rads);
+                var object_y = center_y + (origin_x - center_x) * Math.sin(rads) + (origin_y - center_y) * Math.cos(rads);
+                
+                var vector;
+                vector = new Vector(this.controlled_fleet, new Vector(object_x, object_y));
+                //Expect all the space objects to be squares (circles) = same width and height - for now
+                var object_radius = this.space_objects[i].width/2;
+                var g_strength = Math.pow(object_radius/await vector.length(), 2);
+                var pull = g_strength * object_radius / 2500;
+                this.controlled_fleet.velocity = await this.controlled_fleet.last_velocity.add(await (await vector.normalize()).multiply(pull));
 
-                    var object_radius = this.space_objects[i].width/2;
-                    if (await vector.length() <= object_radius) {
-                        this.controlled_fleet.deleted = true;
+                var object_radius = this.space_objects[i].width/2;
+                if (await vector.length() <= object_radius) {
+                    this.controlled_fleet.deleted = true;
+                    this.move_point.deleted = true;
+                }
+            }
+        }
+        if (this.controlled_fleet !== undefined) {
+            var object_radius = this.center_system_object.width/2;
+            var vector = new Vector(this.controlled_fleet, this.center_system_object);
+            if (await vector.length() <= object_radius) {
+                this.controlled_fleet.deleted = true;
+                this.move_point.deleted = true;
+            } else {
+                var vector = new Vector(this.controlled_fleet, this.center_system_object);
+                //Expect all the space objects to be squares (circles) = same width and height - for now
+                var object_radius = this.center_system_object.width/2;
+                var g_strength = Math.pow(object_radius/await vector.length(), 2);
+                var pull = g_strength * object_radius / 2500;
+                this.controlled_fleet.velocity = await this.controlled_fleet.velocity.add(await (await vector.normalize()).multiply(pull));
+
+                if (this.move_point.x !== undefined) {
+                    if (this.controlled_fleet.x != this.move_point.x || this.controlled_fleet.y != this.move_point.y) {
+                        var vector = new Vector(this.controlled_fleet, this.move_point);
+                        var distance = await vector.length();
+                        var speed = await this.controlled_fleet.velocity.length();
+                        var acceleration_input = speed/this.controlled_fleet.acceleration;
+                        var adjusted_vector = await vector.divide(acceleration_input);
+                        var slowdown_time = distance/speed;
+                        var calculated_vector;
+                        if ((await adjusted_vector.length() > speed) || (slowdown_time < acceleration_input)) {
+                            calculated_vector = await (new Vector(this.controlled_fleet.velocity, adjusted_vector)).normalize();
+                        } else {
+                            var normalized_velocity = await this.controlled_fleet.velocity.isNull() ? this.controlled_fleet.velocity : await this.controlled_fleet.velocity.normalize();
+                            calculated_vector = await (new Vector(normalized_velocity, await vector.normalize())).normalize();
+                        }
+
+                        this.controlled_fleet.velocity = await this.controlled_fleet.velocity.add(await calculated_vector.multiply(this.controlled_fleet.acceleration));
+                    } else {
                         this.move_point.deleted = true;
                     }
                 }
             }
-            if (this.controlled_fleet !== undefined) {
-                var object_radius = this.center_system_object.width/2;
-                var vector = new Vector(this.controlled_fleet, this.center_system_object);
-                if (await vector.length() <= object_radius) {
-                    this.controlled_fleet.deleted = true;
-                    this.move_point.deleted = true;
-                } else {
-                    var vector = new Vector(this.controlled_fleet, this.center_system_object);
-                    //Expect all the space objects to be squares (circles) = same width and height - for now
-                    var object_radius = this.center_system_object.width/2;
-                    var g_strength = Math.pow(object_radius/await vector.length(), 2);
-                    var pull = g_strength * object_radius / 2500;
-                    this.controlled_fleet.velocity = await this.controlled_fleet.velocity.add(await (await vector.normalize()).multiply(pull));
-
-                    if (this.move_point.x !== undefined) {
-                        if (this.controlled_fleet.x != this.move_point.x || this.controlled_fleet.y != this.move_point.y) {
-                            var vector = new Vector(this.controlled_fleet, this.move_point);
-                            var distance = await vector.length();
-                            var speed = await this.controlled_fleet.velocity.length();
-                            var acceleration_input = speed/this.controlled_fleet.acceleration;
-                            var adjusted_vector = await vector.divide(acceleration_input);
-                            var slowdown_time = distance/speed;
-                            var calculated_vector;
-                            if ((await adjusted_vector.length() > speed) || (slowdown_time < acceleration_input)) {
-                                calculated_vector = await (new Vector(this.controlled_fleet.velocity, adjusted_vector)).normalize();
-                            } else {
-                                var normalized_velocity = await this.controlled_fleet.velocity.isNull() ? this.controlled_fleet.velocity : await this.controlled_fleet.velocity.normalize();
-                                calculated_vector = await (new Vector(normalized_velocity, await vector.normalize())).normalize();
-                            }
-
-                            this.controlled_fleet.velocity = await this.controlled_fleet.velocity.add(await calculated_vector.multiply(this.controlled_fleet.acceleration));
-                        } else {
-                            this.move_point.deleted = true;
-                        }
-                    }
-                }
-            }
-
-            if (this.controlled_fleet !== undefined) {
-                this.controlled_fleet.x += this.controlled_fleet.velocity.x;
-                this.controlled_fleet.y += this.controlled_fleet.velocity.y;
-            }
-            */
         }
+
+        if (this.controlled_fleet !== undefined) {
+            this.controlled_fleet.x += this.controlled_fleet.velocity.x;
+            this.controlled_fleet.y += this.controlled_fleet.velocity.y;
+        }
+        */
         this.last_fe_tick = timestamp;
     }
     
@@ -556,80 +544,68 @@ class Game extends Base_Page {
         var be_interpolation_coefficient = (timestamp - update.tick_timestamp)/update.tick_be_time_passed;
         //var fe_interpolation_coefficient = (timestamp - this.last_fe_tick)/this.tick_fe_time_passed;
         this.map_ctx.clearRect(0, 0, this.map_width, this.map_height);
-        if (this.layout === 'system') {
-            var space_objects = update.space_objects;
-            for (var i = 0; i < space_objects.length; i++) {
-                var x_position = ((space_objects[i].x - space_objects[i].last_x) * be_interpolation_coefficient + space_objects[i].last_x) * this.zoom - space_objects[i].width/2 * this.zoom;
-                var y_position = ((space_objects[i].y - space_objects[i].last_y) * be_interpolation_coefficient + space_objects[i].last_y) * this.zoom - space_objects[i].height/2 * this.zoom;
-                this.map_ctx.save();
-                this.map_ctx.translate(this.xOffset, this.yOffset);
-                this.map_ctx.drawImage(space_objects[i].HTMLimage, x_position, y_position, space_objects[i].width * this.zoom, space_objects[i].height * this.zoom);
-                this.map_ctx.font = this.calc_object_name_font_size(space_objects[i]) + "px Arial";
-                this.map_ctx.fillStyle = "rgb(35, 50, 185)";
-                this.map_ctx.textAlign = "center";
-                this.map_ctx.textBaseline = "middle";
-                this.map_ctx.fillText(this.get_object_name(space_objects[i]), x_position + space_objects[i].width/2 * this.zoom, y_position - this.calc_so_name_spacing(space_objects[i]) * this.zoom);
-                this.map_ctx.restore();
-            }
-            var fleets = update.fleets;
-            for (var i = 0; i < fleets.length; i++) {
-                if (fleets[i].expedition_timer === undefined) {
-                    var x_position = ((fleets[i].x - fleets[i].last_x) * be_interpolation_coefficient + fleets[i].last_x) * this.zoom;
-                    var y_position = ((fleets[i].y - fleets[i].last_y) * be_interpolation_coefficient + fleets[i].last_y) * this.zoom;
+        var space_objects = update.space_objects;
+        for (var i = 0; i < space_objects.length; i++) {
+            var x_position = ((space_objects[i].x - space_objects[i].last_x) * be_interpolation_coefficient + space_objects[i].last_x) * this.zoom - space_objects[i].width/2 * this.zoom;
+            var y_position = ((space_objects[i].y - space_objects[i].last_y) * be_interpolation_coefficient + space_objects[i].last_y) * this.zoom - space_objects[i].height/2 * this.zoom;
+            this.map_ctx.save();
+            this.map_ctx.translate(this.xOffset, this.yOffset);
+            this.map_ctx.drawImage(space_objects[i].HTMLimage, x_position, y_position, space_objects[i].width * this.zoom, space_objects[i].height * this.zoom);
+            this.map_ctx.font = this.calc_object_name_font_size(space_objects[i]) + "px Arial";
+            this.map_ctx.fillStyle = "rgb(35, 50, 185)";
+            this.map_ctx.textAlign = "center";
+            this.map_ctx.textBaseline = "middle";
+            this.map_ctx.fillText(this.get_object_name(space_objects[i]), x_position + space_objects[i].width/2 * this.zoom, y_position - this.calc_so_name_spacing(space_objects[i]) * this.zoom);
+            this.map_ctx.restore();
+        }
+        var fleets = update.fleets;
+        for (var i = 0; i < fleets.length; i++) {
+            if (fleets[i].expedition_timer === undefined) {
+                var x_position = ((fleets[i].x - fleets[i].last_x) * be_interpolation_coefficient + fleets[i].last_x) * this.zoom;
+                var y_position = ((fleets[i].y - fleets[i].last_y) * be_interpolation_coefficient + fleets[i].last_y) * this.zoom;
 
-                    if (fleets[i].move_point !== undefined) {
-                        this.map_ctx.save();
-                        this.map_ctx.translate(this.xOffset, this.yOffset);
-                        this.map_ctx.beginPath();
-                        this.map_ctx.moveTo(x_position, y_position);
-                        this.map_ctx.lineTo(fleets[i].move_point.x * this.zoom, fleets[i].move_point.y * this.zoom);
-                        this.map_ctx.strokeStyle = "lightblue";
-                        this.map_ctx.stroke();
-                        this.map_ctx.restore();
-                    }
-
+                if (fleets[i].move_point !== undefined) {
                     this.map_ctx.save();
                     this.map_ctx.translate(this.xOffset, this.yOffset);
                     this.map_ctx.beginPath();
-                    if (fleets[i].abandoned === undefined) {
-                        this.map_ctx.fillStyle = "red";
-                    } else {
-                        this.map_ctx.fillStyle = "gray";
-                    }
-                    this.map_ctx.rect(x_position - this.fleet_size/2 * this.zoom, y_position - this.fleet_size/2 * this.zoom, this.fleet_size * this.zoom, this.fleet_size * this.zoom);
-                    this.map_ctx.fill();
-                    this.map_ctx.font = this.calc_fleet_name_font_size() + "px Arial";
-                    this.map_ctx.textAlign = "center";
-                    this.map_ctx.textBaseline = "middle";
-                    if (i == this.controlled_fleet_index) {
-                        this.map_ctx.fillStyle = "lightblue";
-                    } else if (fleets[i].abandoned === undefined) {
-                        this.map_ctx.fillStyle = "red";
-                    } else {
-                        this.map_ctx.fillStyle = "gray";
-                    }
-                    this.map_ctx.fillText(this.get_fleet_name(fleets[i]), x_position, y_position - this.fleet_name_spacing * this.zoom);
+                    this.map_ctx.moveTo(x_position, y_position);
+                    this.map_ctx.lineTo(fleets[i].move_point.x * this.zoom, fleets[i].move_point.y * this.zoom);
+                    this.map_ctx.strokeStyle = "lightblue";
+                    this.map_ctx.stroke();
                     this.map_ctx.restore();
                 }
-            }
-            this.map_ctx.save();
-            this.map_ctx.translate(this.xOffset, this.yOffset);
-            this.map_ctx.beginPath();
-            this.map_ctx.strokeStyle = "purple";
-            this.map_ctx.lineWidth = 5;
-            this.map_ctx.strokeRect(-this.boundaries * this.zoom, -this.boundaries * this.zoom, this.boundaries * 2 * this.zoom, this.boundaries * 2 * this.zoom);
-            this.map_ctx.restore();
-        } else if (this.layout = 'galaxy') {
-            var systems = update.systems;
-            for (var i = 0; i < systems.length; i++) {
+
                 this.map_ctx.save();
                 this.map_ctx.translate(this.xOffset, this.yOffset);
-                this.map_ctx.drawImage(systems[i].HTMLimage, systems[i].x - systems[i].width/2, systems[i].y - systems[i].width/2, systems[i].width, systems[i].height);
+                this.map_ctx.beginPath();
+                if (fleets[i].abandoned === undefined) {
+                    this.map_ctx.fillStyle = "red";
+                } else {
+                    this.map_ctx.fillStyle = "gray";
+                }
+                this.map_ctx.rect(x_position - this.fleet_size/2 * this.zoom, y_position - this.fleet_size/2 * this.zoom, this.fleet_size * this.zoom, this.fleet_size * this.zoom);
+                this.map_ctx.fill();
+                this.map_ctx.font = this.calc_fleet_name_font_size() + "px Arial";
+                this.map_ctx.textAlign = "center";
+                this.map_ctx.textBaseline = "middle";
+                if (i == this.controlled_fleet_index) {
+                    this.map_ctx.fillStyle = "lightblue";
+                } else if (fleets[i].abandoned === undefined) {
+                    this.map_ctx.fillStyle = "red";
+                } else {
+                    this.map_ctx.fillStyle = "gray";
+                }
+                this.map_ctx.fillText(this.get_fleet_name(fleets[i]), x_position, y_position - this.fleet_name_spacing * this.zoom);
                 this.map_ctx.restore();
             }
-            var center_system = update.center_system;
-            this.map_ctx.drawImage(center_system.HTMLimage, center_system.x + this.xOffset - center_system.width/2, center_system.y + this.yOffset - center_system.width/2, center_system.width, center_system.height);
         }
+        this.map_ctx.save();
+        this.map_ctx.translate(this.xOffset, this.yOffset);
+        this.map_ctx.beginPath();
+        this.map_ctx.strokeStyle = "purple";
+        this.map_ctx.lineWidth = 5;
+        this.map_ctx.strokeRect(-this.boundaries * this.zoom, -this.boundaries * this.zoom, this.boundaries * 2 * this.zoom, this.boundaries * 2 * this.zoom);
+        this.map_ctx.restore();
         //this.draw_grid(this.map_ctx, -this.boundaries, -this.boundaries, this.xOffset, this.yOffset, 10000, 10000, this.boundaries * 2, this.boundaries * 2, this.zoom);
         window.requestAnimationFrame(this.draw.bind(this));
     }

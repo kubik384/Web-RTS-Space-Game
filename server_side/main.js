@@ -290,10 +290,10 @@ io.on('connection', socket => {
 		dbManager.cancel_building_update(socket.username, building);
 	});
 
-	socket.on('map_datapack_request', (layout) => {
+	socket.on('map_datapack_request', () => {
 		game.addPlayer(socket, socket.username).then(() => {
 			socket.gameAdded = true;
-			game.get_map_datapack(layout, socket.username).then(result => {socket.emit('map_datapack', JSON.stringify(result))});
+			game.get_map_datapack(socket.username).then(result => {socket.emit('map_datapack', JSON.stringify(result))});
 		});
 	});
 
@@ -403,7 +403,7 @@ io.on('connection', socket => {
 });
 
 //does not refresh the cache of the code for main.js -> any changes in main.js will not be loaded when restarting through FE
-function restart_server(socket, layout) {
+function restart_server(socket) {
 	var token;
 	if (socket !== undefined) {
 		token = socket.token;
@@ -419,7 +419,7 @@ function restart_server(socket, layout) {
 		if (socket !== undefined) {
 			game.addPlayer(socket, token).then(() => {
 				socket.gameAdded = true;
-				game.get_map_datapack(layout, socket.username).then(result => {socket.emit('map_datapack', JSON.stringify(result))});
+				game.get_map_datapack(socket.username).then(result => {socket.emit('map_datapack', JSON.stringify(result))});
 			});
 		}
 	});
