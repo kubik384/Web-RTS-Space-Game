@@ -2,37 +2,66 @@
     {
         "technology_id": 1,
         "req_tech_ids": [],
+        "req_buildings": [{"building_id":3,"level":1},{"building_id":7,"level":1}],
         "col": 0,
         "row": 0,
-        "name": "rocket",
+        "name": "Combustion Drive",
         "cost": {
             "metal": 1
         },
         "research_time": 120,
-        "description": "Enables the construction of rockets that can be launched into space"
+        "description": "The combustion engine technology is the first method that has been developed as the means of spacecraft propulsion, enabling the early developed types of spacecrafts to be released into the space."
     },
     {
         "technology_id": 2,
         "req_tech_ids": [1],
+        "req_buildings": [{"building_id":3,"level":2},{"building_id":7,"level":1}],
         "col": 1,
-        "row": 0,
-        "name": "spacecraft",
+        "row": 2,
+        "name": "Reinforced Armor",
         "cost": {
             "metal": 2
         },
         "research_time": 240,
-        "description": "Enables the construction of spacecrafts which can be then launched into space together with a rocket"
+        "description": "Advanced techniques of metal processing into spacecraft armor, improving it's durability."
     },
     {
         "technology_id": 3,
         "req_tech_ids": [1],
+        "req_buildings": [{"building_id":3,"level":2},{"building_id":7,"level":2}],
         "col": 1,
-        "row": 1,
-        "name": "spacecraft",
+        "row": 3,
+        "name": "Augmented Weapon Systems",
+        "cost": {
+            "metal": 2
+        },
+        "research_time": 240,
+        "description": "The augment research increases the efficiency of power convertion in all existing weapon systems, boosting their power-up times."
+    },
+    {
+        "technology_id": 4,
+        "req_tech_ids": [1],
+        "req_buildings": [{"building_id":3,"level":2},{"building_id":7,"level":1}],
+        "col": 1,
+        "row": 4,
+        "name": "Shield Battery Supercooling",
+        "cost": {
+            "metal": 2
+        },
+        "research_time": 240,
+        "description": "Improved methods of shield battery supercooling. Decreasing the battery mixture's temperature increases it's power capacity, enabling them to absorb more damage."
+    },
+    {
+        "technology_id": 5,
+        "req_tech_ids": [1],
+        "req_buildings": [{"building_id":3,"level":3},{"building_id":7,"level":2}],
+        "col": 1,
+        "row": 0,
+        "name": "Impulse Drive",
         "cost": {
             "metal": 3
         },
         "research_time": 240,
-        "description": "Enables the construction of spacecrafts which can be then launched into space together with a rocket"
+        "description": "Due to the inefficiencies of the Combustion Drive, a need for new, more efficient way of propulsion has emerged. The Impulse Drive allows the spacecrafts utilizing this drive to reach significantly greater distances."
     }
 ]

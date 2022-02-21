@@ -639,12 +639,13 @@ module.exports = class DbManager {
         await this.update_resource(username);
         await this.update_building_level(username, 'all');
         await this.update_player_unit_que(username, 'all');
-        var resources = await this.get_resource(username, 'all');
-        var building_details = await this.get_player_building_details(username, 'all');
-        var player_units = await this.get_player_units(username, 'all');
-        var player_ques = await this.get_player_unit_ques(username, 'all');
-        var new_reports_count =  await this.get_new_reports_count(username);
-        return {resources: resources, buildings: building_details, units: player_units, unit_ques: player_ques, new_reports_count: new_reports_count};
+        let resources = await this.get_resource(username, 'all');
+        let building_details = await this.get_player_building_details(username, 'all');
+        let player_units = await this.get_player_units(username, 'all');
+        let player_ques = await this.get_player_unit_ques(username, 'all');
+        let new_reports_count =  await this.get_new_reports_count(username);
+        let research_details = await this.get_player_research_details(username, true);
+        return {resources: resources, buildings: building_details, units: player_units, unit_ques: player_ques, new_reports_count: new_reports_count, research_details: research_details};
     }
 
     async build_units(username, p_units) {

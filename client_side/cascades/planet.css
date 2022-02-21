@@ -254,19 +254,23 @@ div {
 	font-size: 24px;
 }
 
-#upgrade_cost, #building_requirements {
+#upgrade_cost {
+	padding-top: 20px;
+}
+
+#upgrade_cost, #building_requirements, #technology_requirements {
 	display: flex;
 	flex-wrap: wrap;
 	font-size: 24px;
 	gap: 4px 10px;
 }
 
-#upgrade_cost > h4, #building_requirements > h4 {
+#upgrade_cost > h4, #building_requirements > h4, #technology_requirements > h4 {
 	width: 100%;
 	text-align: left;
 }
 
-#upgrade_cost img, #building_requirements img {
+#upgrade_cost img, #building_requirements img, #technology_requirements img {
 	width: 40px;
 }
 

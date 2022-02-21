@@ -104,6 +104,8 @@ class Game extends Base_Page {
         */
 
         this.resources = datapack.resources;
+        this.research_details = datapack.research_details;
+        
         let resource_building_ui_html = '<table id="resource_table"><tbody>';
         for(let resource in datapack.resources) {
             let split_resource = resource.split('reserved_');
@@ -521,6 +523,7 @@ class Game extends Base_Page {
         }
         await this.update_resource_ui();
         await this.update_building_dialog();
+        await this.update_unit_dialog();
     }
 
     async update_resource_ui() {
@@ -872,6 +875,11 @@ class Game extends Base_Page {
         let building_req_title = document.createElement('h4');
         building_req_title.append('Building requirements: ');
         building_req_container.append(building_req_title);
+        let req_technology_container = document.createElement('div');
+        req_technology_container.setAttribute('id', 'technology_requirements');
+        let req_technology_title = document.createElement('h4');
+        req_technology_title.append('Technology requirements: ');
+        req_technology_container.append(req_technology_title);
         let button_container = document.createElement('div');
         button_container.setAttribute('id', 'building_dialog_buttons');
         let upgrade_button = document.createElement('button');
@@ -1181,6 +1189,12 @@ class Game extends Base_Page {
         let building_req_title = document.createElement('h4');
         building_req_title.append('Building requirements: ');
         building_req_container.append(building_req_title);
+
+        let technology_req_container = document.createElement('div');
+        technology_req_container.setAttribute('id', 'technology_requirements');
+        let technology_req_title = document.createElement('h4');
+        technology_req_title.append('Technology requirements: ');
+        technology_req_container.append(technology_req_title);
         /*
         //let level_index = building_details.level_details.findIndex(lvl_detail => lvl_detail.level == building.level);
         let button_container = document.createElement('div');
@@ -1228,7 +1242,7 @@ class Game extends Base_Page {
         }
         button_container.append(upgrade_button, downgrade_button);
         */
-        dialog.append(unit_name, unit_img_container, unit_desc_container, unit_cost, building_req_container);//, button_container);
+        dialog.append(unit_name, unit_img_container, unit_desc_container, unit_cost, building_req_container, technology_req_container);//, button_container);
         document.body.append(dialog, dialog_overlay);
         await this.update_unit_dialog();
     }
@@ -1244,9 +1258,6 @@ class Game extends Base_Page {
             }
             document.querySelector('#unit_img_container > p').textContent = unit.count;
             //let level_index = building_details.level_details.findIndex(lvl_detail => lvl_detail.level == building.level);
-            let resource_containers = document.querySelectorAll('#upgrade_cost > div');
-            let container_array = [];
-            resource_containers.forEach(res_cr => container_array.push(res_cr));
             for (let resource in unit_details.cost) {
                 let resource_container = document.getElementById(`bld_${resource}_cost`);
                 let resource_cost_el;
@@ -1263,19 +1274,7 @@ class Game extends Base_Page {
                     resource_cost_el = resource_container.getElementsByTagName('p')[0];
                 }
                 resource_cost_el.textContent = unit_details.cost[resource];
-                for (let i = container_array.length - 1; i >= 0; i--) {
-                    if (container_array[i].id == resource_container.id) {
-                        container_array.splice(i,1);
-                        break;
-                    }
-                }
             }
-            for (let i = container_array.length - 1; i >= 0; i--) {
-                container_array[i].remove();
-            }
-            container_array = [];
-            let req_building_containers = document.querySelectorAll('#building_requirements > div');
-            req_building_containers.forEach(req_bld_cr => container_array.push(req_bld_cr));
             let req_buildings_container = document.getElementById('building_requirements');
             if (unit_details.req_buildings !== undefined) {
                 if (req_buildings_container.style.display == 'none') {
@@ -1310,18 +1309,57 @@ class Game extends Base_Page {
                     } else if (req_bld_lvl_el.classList.length == 1) {
                         req_bld_lvl_el.classList.remove('missing_requirement');
                     }
-                    for (let i = container_array.length - 1; i >= 0; i--) {
-                        if (container_array[i].id == req_bld_container.id) {
-                            container_array.splice(i,1);
-                            break;
-                        }
-                    }
                 }
             } else if (req_buildings_container.style.display == '') {
                 req_buildings_container.style.display = 'none';
             }
-            for (let i = container_array.length - 1; i >= 0; i--) {
-                container_array[i].remove();
+
+            let req_technology_container = document.getElementById('technology_requirements');
+            if (unit_details.req_technologies !== undefined) {
+                if (req_technology_container.style.display == 'none') {
+                    req_technology_container.style.display = '';
+                }
+                for (let i = 0; i < unit_details.req_technologies.length; i++) {
+                    let req_tech_lvl_el;
+                    let req_technology = unit_details.req_technologies[i];
+                    let req_tech_container = document.getElementById(`bld_${req_technology.technology_id}_req`);
+                    if (req_tech_container == null) {
+                        let req_tech_container = document.createElement('div');
+                        req_tech_container.setAttribute('id', `bld_${req_technology.technology_id}_req`);
+                        let req_technology_img = document.createElement('img');
+                        let req_tech_details = await this.get_tech_details(req_technology.technology_id);
+                        req_technology_img.setAttribute('src', `/client_side/images/research/${req_tech_details.name}_preview.png`);
+                        req_technology_img.setAttribute('title', req_tech_details.name);
+                        req_tech_lvl_el = document.createElement('p');
+                        req_tech_lvl_el.append('1');
+                        req_tech_container.append(req_technology_img, req_tech_lvl_el);
+                        req_technology_container.append(req_tech_container);
+                    } else {
+                        req_tech_lvl_el = req_tech_container.getElementsByTagName('p')[0];
+                    }
+                    await this.update_technologies();
+                    let req_tech = this.research_details.researched_techs.find(tech_id => tech_id == req_technology.technology_id);
+                    if (req_tech === undefined) {
+                        if (req_tech_lvl_el.classList.length == 0) {
+                            req_tech_lvl_el.classList.add('missing_requirement');
+                        }
+                    } else if (req_tech_lvl_el.classList.length == 1) {
+                        req_tech_lvl_el.classList.remove('missing_requirement');
+                    }
+                }
+            } else if (req_technology_container.style.display == '') {
+                req_technology_container.style.display = 'none';
+            }
+        }
+    }
+
+    async update_technologies() {
+        if (this.research_details.inResearch !== undefined) {
+            let tech_details = await this.get_tech_details(this.research_details.inResearch);
+            let time_left = this.research_details.start_timestamp + tech_details.research_time - await utils.get_timestamp();
+            if (time_left <= 0) {
+                this.research_details.researched_techs.push(this.research_details.inResearch);
+                delete this.research_details.inResearch;
             }
         }
     }
