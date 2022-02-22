@@ -249,28 +249,28 @@ div {
 	background-color: rgba(255, 255, 255, 0);
 }
 
-#building_description {
+#description {
 	text-align: left;
 	font-size: 24px;
 }
 
-#upgrade_cost {
+#resource_cost {
 	padding-top: 20px;
 }
 
-#upgrade_cost, #building_requirements, #technology_requirements {
+#resource_cost, #building_requirements, #technology_requirements {
 	display: flex;
 	flex-wrap: wrap;
 	font-size: 24px;
 	gap: 4px 10px;
 }
 
-#upgrade_cost > h4, #building_requirements > h4, #technology_requirements > h4 {
+#resource_cost > h4, #building_requirements > h4, #technology_requirements > h4 {
 	width: 100%;
 	text-align: left;
 }
 
-#upgrade_cost img, #building_requirements img, #technology_requirements img {
+#resource_cost img, #building_requirements img, #technology_requirements img {
 	width: 40px;
 }
 
@@ -321,6 +321,7 @@ div {
 	color: red;
 	font-weight: bold;
 }
+
 .unit_preview_container {
 	display: flex;
 	justify-content: center;

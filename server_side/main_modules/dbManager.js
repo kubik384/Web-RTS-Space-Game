@@ -636,11 +636,9 @@ module.exports = class DbManager {
     }
 
     async get_planet_datapack(username) {
-        await this.update_resource(username);
-        await this.update_building_level(username, 'all');
         await this.update_player_unit_que(username, 'all');
-        let resources = await this.get_resource(username, 'all');
-        let building_details = await this.get_player_building_details(username, 'all');
+        let resources = await this.get_resource(username, 'all', true);
+        let building_details = await this.get_player_building_details(username, 'all', true);
         let player_units = await this.get_player_units(username, 'all');
         let player_ques = await this.get_player_unit_ques(username, 'all');
         let new_reports_count =  await this.get_new_reports_count(username);
@@ -823,9 +821,11 @@ module.exports = class DbManager {
     }
 
     async get_research_datapack(username) {
-        var new_reports_count =  await this.get_new_reports_count(username);
-        var research_details = await this.get_player_research_details(username, true);
-        return {new_reports_count: new_reports_count, technologies: technologies, research_details: research_details};
+        let new_reports_count =  await this.get_new_reports_count(username);
+        let research_details = await this.get_player_research_details(username, true);
+        let resources = await this.get_resource(username, 'all', true);
+        let building_details = await this.get_player_building_details(username, 'all', true);
+        return {new_reports_count: new_reports_count, technologies: technologies, research_details: research_details, resources: resources, buildings: building_details};
     }
 
     async get_player_research_details(username, update = false) {

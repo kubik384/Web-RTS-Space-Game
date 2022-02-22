@@ -862,10 +862,10 @@ class Game extends Base_Page {
         let building_description = document.createElement('p');
         building_description.append(building_details.description);
         let building_desc_container = document.createElement('div');
-        building_desc_container.setAttribute('id', 'building_description');
+        building_desc_container.setAttribute('id', 'description');
         building_desc_container.append(building_description_title, building_description);
         let upgrade_cost = document.createElement('div');
-        upgrade_cost.setAttribute('id', 'upgrade_cost');
+        upgrade_cost.setAttribute('id', 'resource_cost');
         let resource_title = document.createElement('h4');
         resource_title.append('Resource cost: ');
         upgrade_cost.append(resource_title);
@@ -941,7 +941,8 @@ class Game extends Base_Page {
             }
             document.querySelector('#building_img_container > p').textContent = building.level;
             let level_index = building_details.level_details.findIndex(lvl_detail => lvl_detail.level == building.level);
-            let resource_containers = document.querySelectorAll('#upgrade_cost > div');
+            let upgrade_cost_container = document.getElementById('resource_cost');
+            let resource_containers = upgrade_cost_container.querySelectorAll(':scope > div');
             let container_array = [];
             resource_containers.forEach(res_cr => container_array.push(res_cr));
             for (let resource in building_details.level_details[level_index].upgrade_cost) {
@@ -956,11 +957,11 @@ class Game extends Base_Page {
                     resource_img.setAttribute('title', resource);
                     resource_cost_el = document.createElement('p');
                     resource_container.append(resource_img, resource_cost_el);
-                    upgrade_cost.append(resource_container);
+                    upgrade_cost_container.append(resource_container);
                 } else {
                     resource_cost_el = resource_container.getElementsByTagName('p')[0];
                 }
-                resource_cost_el.textContent = building_details.level_details[level_index].upgrade_cost[resource];
+                resource_cost_el.textContent = resource_cost;
                 if (resource == 'pop') {
                     let pop_building = this.buildings.find(building => building.building_id == 5);
                     let available_pop = (await this.get_bld_lvl_dts(await this.get_bld_details(pop_building.building_id), pop_building.level)).production['pop'];
@@ -992,9 +993,9 @@ class Game extends Base_Page {
                 container_array[i].remove();
             }
             container_array = [];
-            let req_building_containers = document.querySelectorAll('#building_requirements > div');
-            req_building_containers.forEach(req_bld_cr => container_array.push(req_bld_cr));
             let req_buildings_container = document.getElementById('building_requirements');
+            let req_building_containers = req_buildings_container.querySelectorAll(':scope > div');
+            req_building_containers.forEach(req_bld_cr => container_array.push(req_bld_cr));
             if (building_details.level_details[level_index].req_buildings !== undefined) {
                 if (req_buildings_container.style.display == 'none') {
                     req_buildings_container.style.display = '';
@@ -1177,10 +1178,10 @@ class Game extends Base_Page {
         let unit_description = document.createElement('p');
         unit_description.append(unit_details.description);
         let unit_desc_container = document.createElement('div');
-        unit_desc_container.setAttribute('id', 'building_description');
+        unit_desc_container.setAttribute('id', 'description');
         unit_desc_container.append(unit_description_title, unit_description);
         let unit_cost = document.createElement('div');
-        unit_cost.setAttribute('id', 'upgrade_cost');
+        unit_cost.setAttribute('id', 'resource_cost');
         let resource_title = document.createElement('h4');
         resource_title.append('Resource cost: ');
         unit_cost.append(resource_title);
@@ -1256,6 +1257,7 @@ class Game extends Base_Page {
             if (unit === undefined) {
                 unit = {count: 0};
             }
+            let unit_cost_container = document.getElementById('resource_cost');
             document.querySelector('#unit_img_container > p').textContent = unit.count;
             //let level_index = building_details.level_details.findIndex(lvl_detail => lvl_detail.level == building.level);
             for (let resource in unit_details.cost) {
@@ -1269,7 +1271,7 @@ class Game extends Base_Page {
                     resource_img.setAttribute('title', resource);
                     resource_cost_el = document.createElement('p');
                     resource_container.append(resource_img, resource_cost_el);
-                    upgrade_cost.append(resource_container);
+                    unit_cost_container.append(resource_container);
                 } else {
                     resource_cost_el = resource_container.getElementsByTagName('p')[0];
                 }
