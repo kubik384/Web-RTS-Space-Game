@@ -113,3 +113,13 @@ div {
     display: block;
     height: 150px;
 }
+
+.security_warning {
+    font-size: 18px;
+    padding-bottom: 20px;
+}
+
+.security_warning > img {
+    padding-right: 6px;
+    margin-bottom: -3px;
+}
