@@ -270,6 +270,10 @@ div {
 	text-align: left;
 }
 
+#resource_cost > div:first-of-type > img {
+	width: 140px;
+}
+
 #resource_cost img, #building_requirements img, #technology_requirements img {
 	width: 40px;
 }

@@ -1,6 +1,16 @@
 * {
-    margin:0px;
-    padding:0px;
+	margin: 0;
+	padding: 0;
+	border-spacing: 0;
+	font-size: 24px;
+}
+
+h1, h2, h3, h4, h5 {
+	font-size: revert;
+}
+
+div {
+	font-size: 0px;
 }
 
 html, body {
@@ -49,10 +59,17 @@ body::-webkit-scrollbar {
 	width: 40%;
 	height: calc(100% - 48px);
 	min-width: 200px;
+	font-size: 24px;
+	text-align: center;
 	top: 0;
 	right: 0;
 	z-index: 1;
 	padding: 0 15px;
+}
+
+#research_info_panel > h1 {
+	width: 100%;
+	text-align: center;
 }
 
 #close_button {
@@ -125,6 +142,10 @@ body::-webkit-scrollbar {
 #resource_cost > h4, #building_requirements > h4, #unit_cost > h4 {
 	width: 100%;
 	text-align: left;
+}
+
+#resource_cost > div:first-of-type > img {
+	width: 140px;
 }
 
 #resource_cost img, #building_requirements img, #unit_cost img {

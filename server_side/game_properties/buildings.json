@@ -30,10 +30,7 @@
             },
             {
                 "level": 3,
-                "upgrade_cost": {
-                    "metal": 6,
-                    "pop": 1
-                },
+                "upgrade_cost": {},
                 "upgrade_time": -1
             }
         ]
@@ -75,10 +72,7 @@
             },
             {
                 "level": 3,
-                "upgrade_cost": {
-                    "metal": 4,
-                    "pop": 1
-                },
+                "upgrade_cost": {},
                 "upgrade_time": -1,
                 "production": {"metal": 0.00060, "kerosene": 0, "hydrogen": 0, "uranium": 0}
             }
@@ -118,10 +112,7 @@
             },
             {
                 "level": 3,
-                "upgrade_cost": {
-                    "metal": 16,
-                    "pop": 1
-                },
+                "upgrade_cost": {},
                 "upgrade_time": -1
             }
         ]
@@ -160,9 +151,7 @@
             },
             {
                 "level": 3,
-                "upgrade_cost": {
-                    "metal": 4
-                },
+                "upgrade_cost": {},
                 "upgrade_time": -1,
                 "storage": {"metal": 1000, "kerosene": 300, "hydrogen": 0, "uranium": 0}
             }
@@ -202,9 +191,7 @@
             },
             {
                 "level": 3,
-                "upgrade_cost": {
-                    "metal": 4
-                },
+                "upgrade_cost": {},
                 "upgrade_time": -1,
                 "production": {"pop": 1000}
             }
@@ -244,10 +231,7 @@
             },
             {
                 "level": 3,
-                "upgrade_cost": {
-                    "metal": 4,
-                    "pop": 1
-                },
+                "upgrade_cost": {},
                 "upgrade_time": -1
             }
         ]
@@ -286,10 +270,7 @@
             },
             {
                 "level": 3,
-                "upgrade_cost": {
-                    "metal": 4,
-                    "pop": 5
-                },
+                "upgrade_cost": {},
                 "upgrade_time": -1
             }
         ]

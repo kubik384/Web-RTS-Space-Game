@@ -551,9 +551,15 @@ module.exports = class Game {
                     }
                     var fleet;
                     if (expedition_timer !== undefined) {
-                        fleet = {fleet_id: this.fleet_id++, owner: username, x: 0, y: 0, acceleration: 0.00025, velocity: new Vector(player_planet.velocity), units: units, capacity: capacity, resources: 0, expedition_timer: expedition_timer, expedition_length_id: expedition_length_id};
+                        fleet = {fleet_id: this.fleet_id++, owner: username, x: 0, y: 0, acceleration: 0.00025, velocity: new Vector(player_planet.velocity), units: units, capacity: capacity, resources: 0, expedition_timer: expedition_timer, expedition_length_id: expedition_length_id, research: []};
                     } else {
-                        fleet = {fleet_id: this.fleet_id++, owner: username, x: player_planet.x - player_planet.width, y: player_planet.y - player_planet.height, acceleration: 0.00025, velocity: new Vector(player_planet.velocity), units: units, capacity: capacity, resources: 0};
+                        fleet = {fleet_id: this.fleet_id++, owner: username, x: player_planet.x - player_planet.width, y: player_planet.y - player_planet.height, acceleration: 0.00025, velocity: new Vector(player_planet.velocity), units: units, capacity: capacity, resources: 0, research_upgrades: []};
+                    }
+                    let player_techs = await this.dbManager.get_researched_techs(username);
+                    for (let i = 0; i < player_techs.length; i++) {
+                        if (player_techs[i].technology_id == 2 || player_techs[i].technology_id == 3 || player_techs[i].technology_id == 4) {
+                            fleet.research_upgrades.push(player_techs[i].technology_id);
+                        }
                     }
                     await this.dbManager.remove_player_units(username, fleet.units);
                     this.fleets.push(fleet);
@@ -798,6 +804,8 @@ module.exports = class Game {
         var opposing_fleet_index = this.fleets.findIndex(opposing_fleet => opposing_fleet.fleet_id == p_fleet.engaged_fleet_id);
         var opposing_fleet = this.fleets[opposing_fleet_index];
         opposing_fleet.calculating_fight = true;
+        let fleet_damage_multiplier = (fleet.research_upgrades.findIndex(tech_upgrade => tech_upgrade == 3) != -1) ? 1.1 : 1;
+        let opposing_fleet_damage_multiplies = (opposing_fleet.research_upgrades.findIndex(tech_upgrade => tech_upgrade == 3) != -1) ? 1.1 : 1;
         var id = 0;
         var file_found = true;
         var file_path;
@@ -846,6 +854,8 @@ module.exports = class Game {
                 let unit_capture = [];
                 let fleet_unit_count = 0;
                 let fleet = i == 0 ? p_fleet : opposing_fleet;
+                let hull_multiplier = (fleet.research_upgrades.findIndex(tech_upgrade => tech_upgrade == 2) != -1) ? 1.1 : 1;
+                let shield_multiplier = (fleet.research_upgrades.findIndex(tech_upgrade => tech_upgrade == 4) != -1) ? 1.1 : 1;
                 for (let j = 0; j < fleet.units.length; j++) {
                     fleet_unit_count += fleet.units[j].count;
                 }
@@ -857,7 +867,7 @@ module.exports = class Game {
                     if (unit_detail.unit_id !== undefined || unit_detail.unit_id != unit.unit_id) {
                         unit_detail = (await this.dbManager.get_unit_details([unit]))[0];
                     }
-                    units[i].push(...Array(unit.count).fill(JSON.stringify({unit_id: unit.unit_id, hull: unit_detail.hull, shield: unit_detail.shield, mobility: unit_detail.mobility, weapons: JSON.parse(JSON.stringify(unit_detail.weapons)), taken_shots: 0})));
+                    units[i].push(...Array(unit.count).fill(JSON.stringify({unit_id: unit.unit_id, hull: unit_detail.hull * hull_multiplier, shield: unit_detail.shield * shield_multiplier, mobility: unit_detail.mobility, weapons: JSON.parse(JSON.stringify(unit_detail.weapons)), taken_shots: 0})));
                 }
                 let weapon_details;
                 let prev_unit_id = -1;
@@ -913,6 +923,7 @@ module.exports = class Game {
                 }
                 var fighting = true;
                 for (var z = 0; z < units.length; z++) {
+                    let damage_multiplier = z == 0 ? fleet_damage_multiplier : opposing_fleet_damage_multiplies;
                     var has_functioning_units = false;
                     var opposing_fleet_units = units[(z + 1 == units.length ? 0 : z + 1)];
                     for (var i = 0; i < units[z].length; i++) {
@@ -945,7 +956,7 @@ module.exports = class Game {
                                             if ((weapon_details[k].weapon_id != 4 || target_unit.shield >= 0) && (weapon_details[k].weapon_id != 5 || target_unit.shield < 1)) {
                                                 if (units_distance <= weapon_details[k].range) {
                                                     //x and y do not change, only there to calculate the distance of the original position of the projectile and the target unit
-                                                    projectiles.push({projectile_id: curr_projectile_id, x: unit.x, y: unit.y, dist_travelled: weapon_details[k].velocity, source: weapon_details[k], target_unit: target_unit});
+                                                    projectiles.push({projectile_id: curr_projectile_id, x: unit.x, y: unit.y, dist_travelled: weapon_details[k].velocity, source: weapon_details[k], target_unit: target_unit, damage_multiplier: damage_multiplier});
                                                     projectiles_generated.push(curr_projectile_id, z, unit, j, weapon_details[k].weapon_id);
                                                     curr_projectile_id++;
                                                     unit.weapons[k].curr_cds[charged_weapon_index] = weapon_details[k].cooldown + 1;
@@ -994,9 +1005,10 @@ module.exports = class Game {
                             let target_status;
                             if (isHit) {
                                 if (weapon_details.damage !== undefined) {
-                                    let damage_leftover = weapon_details.damage - (target_unit.shield > 0 ? (projectile.source.weapon_id != 5 ? target_unit.shield : weapon_details.damage) : 0);
+                                    let damage = weapon_details.damage * projectile.damage_multiplier;
+                                    let damage_leftover = damage - (target_unit.shield > 0 ? (projectile.source.weapon_id != 5 ? target_unit.shield : damage) : 0);
                                     if (projectile.source.weapon_id != 5) {
-                                        target_unit.shield -= weapon_details.damage;
+                                        target_unit.shield -= damage;
                                     }
                                     if (damage_leftover > 0) {
                                         var hull_damage_ratio = damage_leftover/target_unit.hull;
@@ -1017,7 +1029,8 @@ module.exports = class Game {
                                         target_unit.hull -= damage_leftover;
                                     }
                                 } else if (weapon_details.shield_damage !== undefined) {
-                                    target_unit.shield -= weapon_details.shield_damage; 
+                                    let shield_damage = weapon_details.shield_damage * projectile.damage_multiplier;
+                                    target_unit.shield -= shield_damage; 
                                 }
                             }
                             target_status = (!isHit ? 1 : target_unit.disabled ? 3 : target_unit.hull <= 0 ? 4 : 2);

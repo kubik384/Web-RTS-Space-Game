@@ -272,7 +272,8 @@ class Game extends Base_Page {
     async display_tech_description(tech) {
         let disable_upgrade = false;
         var panel = document.getElementById('research_info_panel');
-        panel.style.removeProperty("display");
+        panel.style.display = '';
+        panel.querySelector(':scope > h1').textContent = tech.name;
         document.getElementById('research_image').setAttribute("src", "/client_side/images/research/" + tech.name + ".png");
         document.getElementById('description').textContent = tech.description;
         var res_btn_wrapper = document.getElementById('res_btn_wrapper');
@@ -298,14 +299,19 @@ class Game extends Base_Page {
             disable_upgrade = true;
         }
 
-
         let research_cost_container = document.getElementById('resource_cost');
         let resource_containers = research_cost_container.querySelectorAll(':scope > div');
         let container_array = [];
         resource_containers.forEach(res_cr => container_array.push(res_cr));
-        for (let resource in tech.cost) {
+
+        let update_resource_container = async function(resource) {
             let resource_container = document.getElementById(`bld_${resource}_cost`);
-            let resource_cost = tech.cost[resource];
+            let resource_cost;
+            if (resource != 'time') {
+                resource_cost = tech.cost[resource];
+            } else {
+                resource_cost = await utils.seconds_to_time(tech.research_time, false, true);
+            }
             let resource_cost_el;
             if (resource_container === null) {
                 resource_container = document.createElement('div');
@@ -333,16 +339,29 @@ class Game extends Base_Page {
                     resource_cost_el.classList.remove('missing_requirement');
                 }
             } else*/
-            if (resource_cost > this.resources[resource]) {
-                if (!resource_cost_el.classList.contains('missing_requirement')) {
-                    resource_cost_el.classList.add('missing_requirement');
+            if (resource != 'time') {
+                if (resource_cost > this.resources[resource]) {
+                    if (!resource_cost_el.classList.contains('missing_requirement')) {
+                        resource_cost_el.classList.add('missing_requirement');
+                    }
+                    disable_upgrade = true;
+                } else if (resource_cost_el.classList.contains('missing_requirement')) {
+                    resource_cost_el.classList.remove('missing_requirement');
                 }
-                disable_upgrade = true;
-            } else if (resource_cost_el.classList.contains('missing_requirement')) {
-                resource_cost_el.classList.remove('missing_requirement');
             }
+            return resource_container.id;
+        }.bind(this);
+        let time_res_con_id = await update_resource_container('time');
+        for (let i = container_array.length - 1; i >= 0; i--) {
+            if (container_array[i].id == time_res_con_id) {
+                container_array.splice(i,1);
+                break;
+            }
+        }
+        for (let resource in tech.cost) {
+            let resource_container_id = await update_resource_container(resource);
             for (let i = container_array.length - 1; i >= 0; i--) {
-                if (container_array[i].id == resource_container.id) {
+                if (container_array[i].id == resource_container_id) {
                     container_array.splice(i,1);
                     break;
                 }
@@ -404,12 +423,13 @@ class Game extends Base_Page {
         }
 
         if (disable_upgrade) {
-            this.disable_reseach_button(res_btn_wrapper);
+            //this.disable_reseach_button(res_btn_wrapper);
         }
     }
 
     disable_reseach_button(btn_wrapper) {
         btn_wrapper.setAttribute('style', 'background-color: rgba(0,0,0,0.6)');
+        btn_wrapper.classList.remove('res_btn_clicked');
         btn_wrapper.classList.remove('res_btn');
     }
 

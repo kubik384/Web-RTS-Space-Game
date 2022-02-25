@@ -616,7 +616,8 @@ class Game extends Base_Page {
                             res_costs[resource] += unit_details.cost[resource] * unit_count;
                         }
                     }
-                    input_field.value = Math.floor(input_field.value) - unit_count;
+                    let units_left = Math.floor(input_field.value) - unit_count;
+                    input_field.value = units_left != 0 ? units_left : '';
                     units.push({unit_id: unit_id, count: unit_count});
                 }
             }
@@ -677,14 +678,24 @@ class Game extends Base_Page {
         for (let i = 0; i < units.length; i++) {
             let unit_details = await this.get_unit_dts(units[i].unit_id);
             let buildable = true;
-            for (let j = 0; j < unit_details.req_buildings.length; j++) {
-                let req_bld = unit_details.req_buildings[j];
-                let building = this.buildings.find(building => building.building_id == req_bld.building_id);
-                if (building === undefined) {
-                    building = {level: 0};
+            if (unit_details.req_buildings !== undefined) {
+                for (let j = 0; j < unit_details.req_buildings.length; j++) {
+                    let req_bld = unit_details.req_buildings[j];
+                    let building = this.buildings.find(building => building.building_id == req_bld.building_id);
+                    if (building === undefined) {
+                        building = {level: 0};
+                    }
+                    if (building.level < req_bld.level) {
+                        buildable = false;
+                    }
                 }
-                if (building.level < req_bld.level) {
-                    buildable = false;
+            }
+            if (unit_details.req_technologies !== undefined) {
+                for (let j = 0; j < unit_details.req_technologies.length; j++) {
+                    let req_tech = unit_details.req_technologies[j];
+                    if (this.research_details.researched_techs.findIndex(tech => tech.technology_id == req_tech.technology_id) == -1) {
+                        buildable = false;
+                    }
                 }
             }
             let input_field = document.getElementById(`unit_${unit_details.unit_id}_input`);
@@ -857,13 +868,11 @@ class Game extends Base_Page {
         building_level.append(building.level);
         building_img_container.append(building_img);
         building_img_container.append(building_level);
-        let building_description_title = document.createElement('h4');
-        building_description_title.append('Description');
         let building_description = document.createElement('p');
         building_description.append(building_details.description);
         let building_desc_container = document.createElement('div');
         building_desc_container.setAttribute('id', 'description');
-        building_desc_container.append(building_description_title, building_description);
+        building_desc_container.append(building_description);
         let upgrade_cost = document.createElement('div');
         upgrade_cost.setAttribute('id', 'resource_cost');
         let resource_title = document.createElement('h4');
@@ -942,106 +951,133 @@ class Game extends Base_Page {
             document.querySelector('#building_img_container > p').textContent = building.level;
             let level_index = building_details.level_details.findIndex(lvl_detail => lvl_detail.level == building.level);
             let upgrade_cost_container = document.getElementById('resource_cost');
-            let resource_containers = upgrade_cost_container.querySelectorAll(':scope > div');
-            let container_array = [];
-            resource_containers.forEach(res_cr => container_array.push(res_cr));
-            for (let resource in building_details.level_details[level_index].upgrade_cost) {
-                let resource_container = document.getElementById(`bld_${resource}_cost`);
-                let resource_cost = building_details.level_details[level_index].upgrade_cost[resource];
-                let resource_cost_el;
-                if (resource_container === null) {
-                    resource_container = document.createElement('div');
-                    resource_container.setAttribute('id', `bld_${resource}_cost`);
-                    let resource_img = document.createElement('img');
-                    resource_img.setAttribute('src', `/client_side/images/resources/${resource}.png`);
-                    resource_img.setAttribute('title', resource);
-                    resource_cost_el = document.createElement('p');
-                    resource_container.append(resource_img, resource_cost_el);
-                    upgrade_cost_container.append(resource_container);
-                } else {
-                    resource_cost_el = resource_container.getElementsByTagName('p')[0];
-                }
-                resource_cost_el.textContent = resource_cost;
-                if (resource == 'pop') {
-                    let pop_building = this.buildings.find(building => building.building_id == 5);
-                    let available_pop = (await this.get_bld_lvl_dts(await this.get_bld_details(pop_building.building_id), pop_building.level)).production['pop'];
-                    let res_type = 'reserved_' + resource;
-                    if (this.resources[res_type] + resource_cost > available_pop) {
-                        if (!resource_cost_el.classList.contains('missing_requirement')) {
-                            resource_cost_el.classList.add('missing_requirement');
+            let req_buildings_container = document.getElementById('building_requirements');
+            if (building_details.level_details[level_index].upgrade_time != -1) {
+                upgrade_cost_container.style.display = '';
+                req_buildings_container.style.display = '';
+
+                let resource_containers = upgrade_cost_container.querySelectorAll(':scope > div');
+                let container_array = [];
+                resource_containers.forEach(res_cr => container_array.push(res_cr));
+                
+                let update_resource_container = async function(resource) {
+                    let resource_container = document.getElementById(`bld_${resource}_cost`);
+                    let resource_cost;
+                    if (resource != 'time') {
+                        resource_cost = building_details.level_details[level_index].upgrade_cost[resource];
+                    } else {
+                        resource_cost = await utils.seconds_to_time(building_details.level_details[level_index].upgrade_time, false, true);
+                    }
+                    let resource_cost_el;
+                    if (resource_container === null) {
+                        resource_container = document.createElement('div');
+                        resource_container.setAttribute('id', `bld_${resource}_cost`);
+                        let resource_img = document.createElement('img');
+                        resource_img.setAttribute('src', `/client_side/images/resources/${resource}.png`);
+                        resource_img.setAttribute('title', resource);
+                        resource_cost_el = document.createElement('p');
+                        resource_container.append(resource_img, resource_cost_el);
+                        upgrade_cost_container.append(resource_container);
+                    } else {
+                        resource_cost_el = resource_container.getElementsByTagName('p')[0];
+                    }
+                    resource_cost_el.textContent = resource_cost;
+                    if (resource == 'pop') {
+                        let pop_building = this.buildings.find(building => building.building_id == 5);
+                        let available_pop = (await this.get_bld_lvl_dts(await this.get_bld_details(pop_building.building_id), pop_building.level)).production['pop'];
+                        let res_type = 'reserved_' + resource;
+                        if (this.resources[res_type] + resource_cost > available_pop) {
+                            if (!resource_cost_el.classList.contains('missing_requirement')) {
+                                resource_cost_el.classList.add('missing_requirement');
+                            }
+                            disable_upgrade = true;
+                        } else if (resource_cost_el.classList.contains('missing_requirement')) {
+                            resource_cost_el.classList.remove('missing_requirement');
                         }
-                        disable_upgrade = true;
-                    } else if (resource_cost_el.classList.contains('missing_requirement')) {
-                        resource_cost_el.classList.remove('missing_requirement');
+                    } else if (resource != 'time') {
+                        if (resource_cost > this.resources[resource]) {
+                            if (!resource_cost_el.classList.contains('missing_requirement')) {
+                                resource_cost_el.classList.add('missing_requirement');
+                            }
+                            disable_upgrade = true;
+                        } else if (resource_cost_el.classList.contains('missing_requirement')) {
+                            resource_cost_el.classList.remove('missing_requirement');
+                        }
                     }
-                } else if (resource_cost > this.resources[resource]) {
-                    if (!resource_cost_el.classList.contains('missing_requirement')) {
-                        resource_cost_el.classList.add('missing_requirement');
-                    }
-                    disable_upgrade = true;
-                } else if (resource_cost_el.classList.contains('missing_requirement')) {
-                    resource_cost_el.classList.remove('missing_requirement');
-                }
+                    return resource_container.id;
+                }.bind(this);
+                let time_res_con_id = await update_resource_container('time');
                 for (let i = container_array.length - 1; i >= 0; i--) {
-                    if (container_array[i].id == resource_container.id) {
+                    if (container_array[i].id == time_res_con_id) {
                         container_array.splice(i,1);
                         break;
                     }
                 }
-            }
-            for (let i = container_array.length - 1; i >= 0; i--) {
-                container_array[i].remove();
-            }
-            container_array = [];
-            let req_buildings_container = document.getElementById('building_requirements');
-            let req_building_containers = req_buildings_container.querySelectorAll(':scope > div');
-            req_building_containers.forEach(req_bld_cr => container_array.push(req_bld_cr));
-            if (building_details.level_details[level_index].req_buildings !== undefined) {
-                if (req_buildings_container.style.display == 'none') {
-                    req_buildings_container.style.display = '';
-                }
-                for (let i = 0; i < building_details.level_details[level_index].req_buildings.length; i++) {
-                    let req_bld_lvl_el;
-                    let req_bld = building_details.level_details[level_index].req_buildings[i];
-                    let req_bld_container = document.getElementById(`bld_${req_bld.building_id}_req`);
-                    if (req_bld_container == null) {
-                        let req_bld_container = document.createElement('div');
-                        req_bld_container.setAttribute('id', `bld_${req_bld.building_id}_req`);
-                        let req_building_img = document.createElement('img');
-                        let req_bld_details = await this.get_bld_details(req_bld.building_id);
-                        req_building_img.setAttribute('src', `/client_side/images/buildings/${req_bld_details.name}.png`);
-                        req_building_img.setAttribute('title', req_bld_details.name);
-                        req_bld_lvl_el = document.createElement('p');
-                        req_bld_container.append(req_building_img, req_bld_lvl_el);
-                        req_buildings_container.append(req_bld_container);
-                    } else {
-                        req_bld_lvl_el = req_bld_container.getElementsByTagName('p')[0];
-                    }
-                    let req_building = this.buildings.find(building => building.building_id == req_bld.building_id);
-                    if (req_building === undefined) {
-                        req_building = {level: 0};
-                    }
-                    req_bld_lvl_el.textContent = req_bld.level;
-                    if (req_building.level < req_bld.level) {
-                        if (req_bld_lvl_el.classList.length == 0) {
-                            req_bld_lvl_el.classList.add('missing_requirement');
-                        }
-                        disable_upgrade = true;
-                    } else if (req_bld_lvl_el.classList.length == 1) {
-                        req_bld_lvl_el.classList.remove('missing_requirement');
-                    }
+                for (let resource in building_details.level_details[level_index].upgrade_cost) {
+                    let resource_container_id = await update_resource_container(resource);
                     for (let i = container_array.length - 1; i >= 0; i--) {
-                        if (container_array[i].id == req_bld_container.id) {
+                        if (container_array[i].id == resource_container_id) {
                             container_array.splice(i,1);
                             break;
                         }
                     }
                 }
-            } else if (req_buildings_container.style.display == '') {
+                for (let i = container_array.length - 1; i >= 0; i--) {
+                    container_array[i].remove();
+                }
+                container_array = [];
+                let req_building_containers = req_buildings_container.querySelectorAll(':scope > div');
+                req_building_containers.forEach(req_bld_cr => container_array.push(req_bld_cr));
+                if (building_details.level_details[level_index].req_buildings !== undefined) {
+                    if (req_buildings_container.style.display == 'none') {
+                        req_buildings_container.style.display = '';
+                    }
+                    for (let i = 0; i < building_details.level_details[level_index].req_buildings.length; i++) {
+                        let req_bld_lvl_el;
+                        let req_bld = building_details.level_details[level_index].req_buildings[i];
+                        let req_bld_container = document.getElementById(`bld_${req_bld.building_id}_req`);
+                        if (req_bld_container == null) {
+                            let req_bld_container = document.createElement('div');
+                            req_bld_container.setAttribute('id', `bld_${req_bld.building_id}_req`);
+                            let req_building_img = document.createElement('img');
+                            let req_bld_details = await this.get_bld_details(req_bld.building_id);
+                            req_building_img.setAttribute('src', `/client_side/images/buildings/${req_bld_details.name}.png`);
+                            req_building_img.setAttribute('title', req_bld_details.name);
+                            req_bld_lvl_el = document.createElement('p');
+                            req_bld_container.append(req_building_img, req_bld_lvl_el);
+                            req_buildings_container.append(req_bld_container);
+                        } else {
+                            req_bld_lvl_el = req_bld_container.getElementsByTagName('p')[0];
+                        }
+                        let req_building = this.buildings.find(building => building.building_id == req_bld.building_id);
+                        if (req_building === undefined) {
+                            req_building = {level: 0};
+                        }
+                        req_bld_lvl_el.textContent = req_bld.level;
+                        if (req_building.level < req_bld.level) {
+                            if (req_bld_lvl_el.classList.length == 0) {
+                                req_bld_lvl_el.classList.add('missing_requirement');
+                            }
+                            disable_upgrade = true;
+                        } else if (req_bld_lvl_el.classList.length == 1) {
+                            req_bld_lvl_el.classList.remove('missing_requirement');
+                        }
+                        for (let i = container_array.length - 1; i >= 0; i--) {
+                            if (container_array[i].id == req_bld_container.id) {
+                                container_array.splice(i,1);
+                                break;
+                            }
+                        }
+                    }
+                } else if (req_buildings_container.style.display == '') {
+                    req_buildings_container.style.display = 'none';
+                }
+                for (let i = container_array.length - 1; i >= 0; i--) {
+                    container_array[i].remove();
+                }
+            } else {
+                upgrade_cost_container.style.display = 'none';
                 req_buildings_container.style.display = 'none';
-            }
-            for (let i = container_array.length - 1; i >= 0; i--) {
-                container_array[i].remove();
             }
             
             let update_buttons = document.querySelectorAll('#building_dialog_buttons > button');
@@ -1173,13 +1209,11 @@ class Game extends Base_Page {
         let unit_count_el = document.createElement('p');
         unit_count_el.append(unit.count);
         unit_img_container.append(unit_img, unit_count_el);
-        let unit_description_title = document.createElement('h4');
-        unit_description_title.append('Description');
         let unit_description = document.createElement('p');
         unit_description.append(unit_details.description);
         let unit_desc_container = document.createElement('div');
         unit_desc_container.setAttribute('id', 'description');
-        unit_desc_container.append(unit_description_title, unit_description);
+        unit_desc_container.append(unit_description);
         let unit_cost = document.createElement('div');
         unit_cost.setAttribute('id', 'resource_cost');
         let resource_title = document.createElement('h4');
@@ -1259,8 +1293,7 @@ class Game extends Base_Page {
             }
             let unit_cost_container = document.getElementById('resource_cost');
             document.querySelector('#unit_img_container > p').textContent = unit.count;
-            //let level_index = building_details.level_details.findIndex(lvl_detail => lvl_detail.level == building.level);
-            for (let resource in unit_details.cost) {
+            let update_resource_container = async function(resource) {
                 let resource_container = document.getElementById(`bld_${resource}_cost`);
                 let resource_cost_el;
                 if (resource_container === null) {
@@ -1275,7 +1308,17 @@ class Game extends Base_Page {
                 } else {
                     resource_cost_el = resource_container.getElementsByTagName('p')[0];
                 }
-                resource_cost_el.textContent = unit_details.cost[resource];
+                if (resource == 'time') {
+                    resource_cost_el.textContent = await utils.seconds_to_time(unit_details.build_time, false, true);
+                } else {
+                    resource_cost_el.textContent = unit_details.cost[resource];
+                }
+            }
+            await update_resource_container('time');
+
+            //let level_index = building_details.level_details.findIndex(lvl_detail => lvl_detail.level == building.level);
+            for (let resource in unit_details.cost) {
+                await update_resource_container(resource);
             }
             let req_buildings_container = document.getElementById('building_requirements');
             if (unit_details.req_buildings !== undefined) {
