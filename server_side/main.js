@@ -28,6 +28,7 @@ const messagesURL = gameURL + '/messages';
 const messageURL = gameURL + '/message';
 const allianceURL = gameURL + '/alliance';
 const researchURL = gameURL + '/research';
+const profileURL = gameURL + '/profile';
 var tokens = [];
 //switch to jwt token at some point for authentication?
 var token_timeouts = {};
@@ -257,6 +258,19 @@ app.get(allianceURL, function(req,res) {
 	}
 });
 
+app.get(profileURL, function(req,res) {
+	if (req.cookies !== undefined && req.cookies.token !== undefined) {
+		if (is_valid_token(req.cookies.token)) {
+			res.sendFile(path.join(root, 'pages/profile.html'));
+		} else {
+			res.clearCookie('token');
+			res.redirect(303, '/');
+		}
+	} else {
+		res.redirect(303, '/');
+	}
+});
+
 app.listen(3000);
 
 app.use(function(req, res){
@@ -402,6 +416,10 @@ io.on('connection', socket => {
 
 	socket.on('research_technology', tech_id => {
 		dbManager.research_technology(socket.username, tech_id);
+	});
+
+	socket.on('request_profile_details', username => {
+		dbManager.get_basic_player_map_info(username).then(results => { socket.emit('profile_details', JSON.stringify(results[0])); });
 	});
 
 	socket.on('disconnect', () => {

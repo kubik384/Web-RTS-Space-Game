@@ -12,6 +12,12 @@ class Game extends Base_Page {
         this.sent_messages = [];
         this.created_conversation;
         this.received_conversations = false;
+        const query_string = window.location.search;
+        const url_parameters = new URLSearchParams(query_string);
+        let username = url_parameters.get('username');
+        if (username !== null) {
+            this.open_new_message_form(username);
+        }
     }
 
     async request_datapack() {
@@ -119,13 +125,18 @@ class Game extends Base_Page {
         }
     }
 
-    async open_new_message_form() {
+    async open_new_message_form(username) {
         document.getElementById('conversation_table_container').style.display = 'none';
         document.getElementById('new_message_container').style.display = '';
         let new_message_form = document.getElementById('new_message_form');
+        if (username !== undefined) {
+            let input_els = new_message_form.getElementsByTagName('input');
+            let username_el = input_els[1];
+            username_el.value = username;
+        }
         new_message_form.addEventListener('submit', async e => {
             e.preventDefault();
-            let input_els = new_message_form.getElementsByTagName('input');
+            let input_els = this.getElementsByTagName('input');
             let subject_el = input_els[0];
             let subject = subject_el.value;
             subject_el.value = '';

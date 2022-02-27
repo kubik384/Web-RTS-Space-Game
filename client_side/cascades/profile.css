@@ -1,0 +1,25 @@
+* {
+	margin: 0;
+	padding: 0;
+	border-spacing: 0;
+    font-size: 16px;
+}
+
+
+h3 {
+	font-size: 24px;
+}
+
+div {
+	font-size: 0px;
+}
+
+.clickable {
+    color:sienna;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.clickable:hover {
+    color: tan;
+}

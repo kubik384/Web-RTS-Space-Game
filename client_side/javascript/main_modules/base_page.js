@@ -181,6 +181,19 @@ class Base_Page {
     async get_tech_details(technology_id) {
         return (await this.get_technologies_details()).find(tech => tech.technology_id == technology_id);
     }
+
+        calc_so_name_spacing(space_object) {
+        return space_object.height/8;
+    }
+
+    get_fleet_name(fleet_id) {
+        let name = 'Fleet ' + (fleet_id + 1);
+        return name;
+    }
+
+    get_object_name(object_id) {
+        return "JXYZ_" + object_id;
+    }
 }
 
 export { Base_Page };

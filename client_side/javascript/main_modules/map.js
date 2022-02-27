@@ -346,7 +346,7 @@ class Game extends Base_Page {
                                 let f_index = fleets.findIndex(fleet => fleet.fleet_id == object.id);
                                 let fleet = fleets[f_index];
                                 let fleet_name = document.getElementById('object_name');
-                                fleet_name.textContent = this.get_fleet_name(fleet);
+                                fleet_name.textContent = this.get_fleet_name(fleet.fleet_id);
                                 let object_owner_el = document.getElementById('object_owner');
                                 object_owner_el.style.display = '';
                                 if (fleet.owner !== undefined) {
@@ -402,18 +402,22 @@ class Game extends Base_Page {
                                             status = 'Moving';
                                         } else if (fleet.engaged_fleet_id !== undefined) {
                                             let engaged_fleet = this.fleets.find(fleet => fleet.fleet_id == fleet.engaged_fleet_id);
-                                            status = 'Engaging in combat against ' + this.get_fleet_name(engaged_fleet);
+                                            status = 'Engaging in combat against ' + this.get_fleet_name(engaged_fleet.fleet_id);
                                         } else if (fleet.status_cooldown !== undefined && fleet.assigned_object_id !== undefined) {
                                             if (fleet.assigned_object_id != this.home_planet_id) {
                                                 console.log(this.updates[0].space_objects);
                                                 let object_details = this.updates[0].space_objects.find(space_object => space_object.space_object_id == fleet.assigned_object_id);
                                                 if (fleet.status_cooldown < 1) {
-                                                    status = 'Idle on space object ' + this.get_object_name(object_details);
+                                                    status = 'Idle on space object ' + this.get_object_name(object_details.space_object_id);
                                                     if (object_details.resources !== undefined) {
-                                                        status = 'Gathering resources from space object ' + this.get_object_name(object_details);
+                                                        if (fleet.capacity <= fleet.resources) {
+                                                            status = 'Gathering resources from space object ' + this.get_object_name(object_details.space_object_id);
+                                                        } else {
+                                                            status = 'Idle on space object ' + this.get_object_name(object_details.space_object_id);
+                                                        }
                                                     }
                                                 } else {
-                                                    status = 'Landing on space object ' + this.get_object_name(object_details);
+                                                    status = 'Landing on space object ' + this.get_object_name(object_detail.space_object_ids);
                                                 }
                                             } else {
                                                 status = 'Docking planet';
@@ -457,7 +461,7 @@ class Game extends Base_Page {
                             document.getElementById('fleet_units_table').style.display = 'none';
                             let resource_table = document.getElementById('resource_table');
                             let object_name_el = document.getElementById('object_name');
-                            object_name_el.textContent = this.get_object_name(object_details);
+                            object_name_el.textContent = this.get_object_name(object_details.space_object_id);
                             if (object_details.resources !== undefined) {
                                 resource_table.style.display = '';
                                 let new_tbody = document.createElement('tbody');
@@ -640,7 +644,7 @@ class Game extends Base_Page {
             this.map_ctx.fillStyle = "rgb(35, 50, 185)";
             this.map_ctx.textAlign = "center";
             this.map_ctx.textBaseline = "middle";
-            this.map_ctx.fillText(this.get_object_name(space_objects[i]), x_position + space_objects[i].width/2 * this.zoom, y_position - this.calc_so_name_spacing(space_objects[i]) * this.zoom);
+            this.map_ctx.fillText(this.get_object_name(space_objects[i].space_object_id), x_position + space_objects[i].width/2 * this.zoom, y_position - this.calc_so_name_spacing(space_objects[i]) * this.zoom);
             this.map_ctx.restore();
         }
         var fleets = update.fleets;
@@ -680,7 +684,7 @@ class Game extends Base_Page {
                 } else {
                     this.map_ctx.fillStyle = "gray";
                 }
-                this.map_ctx.fillText(this.get_fleet_name(fleets[i]), x_position, y_position - this.fleet_name_spacing * this.zoom);
+                this.map_ctx.fillText(this.get_fleet_name(fleets[i].fleet_id), x_position, y_position - this.fleet_name_spacing * this.zoom);
                 this.map_ctx.restore();
             }
         }
@@ -922,15 +926,6 @@ class Game extends Base_Page {
         return px / (this.zoom > 1 ? this.zoom : 1);
     }
 
-    get_fleet_name(fleet) {
-        var name = 'Fleet ';
-        if (fleet.abandoned) {
-            name += 'Wreck ';
-        }
-        name += (fleet.fleet_id + 1);
-        return name;
-    }
-
     calc_fleet_name_font_size() {
         var font_size = 8 * this.zoom;
         return (font_size < 8 ? 8 : font_size);
@@ -938,10 +933,6 @@ class Game extends Base_Page {
 
     calc_so_name_spacing(space_object) {
         return space_object.height/8;
-    }
-
-    get_object_name(object) {
-        return "JXYZ_" + object.space_object_id;
     }
 
     calc_object_name_font_size(object) {
@@ -967,7 +958,7 @@ class Game extends Base_Page {
         var fleets = this.updates[0].fleets;
         for (var i = 0; i < fleets.length; i++) {
             var objects = [];
-            var fleet_name = this.get_fleet_name(fleets[i]);
+            var fleet_name = this.get_fleet_name(fleets[i].fleet_id);
             this.map_ctx.font = this.calc_fleet_name_font_size() + "px Arial";
             var metrics = this.map_ctx.measureText(fleet_name);
             var fleet_name_width = metrics.width/this.zoom;
@@ -992,7 +983,7 @@ class Game extends Base_Page {
         var space_objects = this.updates[0].space_objects;
         for (var i = 0; i < space_objects.length; i++) {
             var objects = [];
-            var object_name = this.get_object_name(space_objects[i]);
+            var object_name = this.get_object_name(space_objects[i].space_object_id);
             this.map_ctx.font = this.calc_object_name_font_size(space_objects[i]) + "px Arial";
             var metrics = this.map_ctx.measureText(object_name);
             var object_name_height = (metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent)/this.zoom;
