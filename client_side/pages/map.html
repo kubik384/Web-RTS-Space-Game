@@ -26,12 +26,14 @@
 			<a href="/game/alliance">Alliance</a>
 			<a href="/game/research">Research</a>
 		</div>
-		<div id="fleet_details" class="side_panel">
+		<div id="space_object_details" class="side_panel">
 			<div id="close_button_wrapper">
 				<img src="/client_side/images/ui/cancel.png" id="fd_close_button" class="ui_button">
 			</div>
-			<h3 id="fleet_name"></h3>
-			<table id="fleet_units_table">
+			<h3 id="object_name"></h3>
+			<p id="object_owner"></p>
+			<p id="fleet_status"></p>
+			<table id="fleet_units_table" style="display: none">
 				<thead>
 					<tr>
 						<td></td>
@@ -40,9 +42,20 @@
 					</tr>
 				</thead>
 				<tbody>
-					
 				</tbody>
 			</table>
+			<table id="resource_table" style="display: none">
+				<thead>
+					<tr>
+						<td></td>
+						<td id="fleet_type_cell">Resource</td>
+						<td id="fleet_number_cell">Amount</td>
+					</tr>
+				</thead>
+				<tbody>
+				</tbody>
+			</table>
+			<p id="fleet_capacity"></p>
 		</div>
 		<div id="map_container">
 			<canvas id="map"></canvas>

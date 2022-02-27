@@ -47,6 +47,7 @@ class Game extends Base_Page {
         this.updates[0].tick_timestamp = datapack.last_update;
         this.updates[0].tick_be_time_passed = datapack.time_passed;
         this.boundaries = datapack.boundaries;
+        this.home_planet_id = datapack.home_planet_id;
         if (this.map_canvas === undefined) {
             this.available_units = datapack.available_units;
             var assemble_fleet_table = document.getElementById('available_units_table');
@@ -99,7 +100,7 @@ class Game extends Base_Page {
         
         this.updates[0].fleets = datapack.fleets;
         for (var i = 0; i < this.updates[0].fleets.length; i++) {
-            if (this.updates[0].fleets[i].owner !== undefined) {
+            if (this.updates[0].fleets[i].owner !== undefined && this.updates[0].fleets[i].resources !== undefined) {
                 this.controlled_fleet_index = i;
                 if (this.updates[0].fleets[i].abandon_timer !== undefined) {
                     this.add_abandon_timer(this.updates[0].fleets[i].abandon_timer);
@@ -321,7 +322,7 @@ class Game extends Base_Page {
                 }
             });
 
-            this.map_canvas.addEventListener('mouseup', e => {
+            this.map_canvas.addEventListener('mouseup', async e => {
                 /*
                 var cursor = {button_code: button_code, x:x, y:y};
                 var object = await this.check_position(cursor);
@@ -333,33 +334,41 @@ class Game extends Base_Page {
                 */
 
                 if (e.button == 0) {
-                    var cursor = {button_code: 0};
+                    let cursor = {button_code: 0};
                     cursor.x = (e.clientX - this.xOffset - this.map_rect.left/* - this.map_canvas_border*/)/this.zoom;
                     cursor.y = (e.clientY - this.yOffset - this.map_rect.top/* - this.map_canvas_border*/)/this.zoom;
-                    this.check_position(cursor, true).then(object => {
-                        if (object !== undefined && object.type == 'fleet') {
-                            var mouse_pow_dist_travelled = Math.pow(this.dist_travelled.x, 2) + Math.pow(this.dist_travelled.y, 2);
+                    let object = await this.check_position(cursor, true);
+                    if (object !== undefined) {
+                        if (object.type == 'fleet') {
+                            let mouse_pow_dist_travelled = Math.pow(this.dist_travelled.x, 2) + Math.pow(this.dist_travelled.y, 2);
                             if (mouse_pow_dist_travelled < 80) {
-                                var fleets = this.updates[0].fleets;
-                                var f_index = fleets.findIndex(fleet => fleet.fleet_id == object.id);
-                                var fleet = fleets[f_index];
-                                console.log(fleet);
-                                var fleet_name = document.getElementById('fleet_name');
+                                let fleets = this.updates[0].fleets;
+                                let f_index = fleets.findIndex(fleet => fleet.fleet_id == object.id);
+                                let fleet = fleets[f_index];
+                                let fleet_name = document.getElementById('object_name');
                                 fleet_name.textContent = this.get_fleet_name(fleet);
-                                var table = document.getElementById('fleet_units_table');
-                                var new_tbody = document.createElement('tbody');
-                                table.getElementsByTagName('tbody')[0].remove();
-                                var new_tbody = document.createElement('tbody');
-                                var type_cell = document.getElementById('fleet_type_cell');
-                                var number_cell = document.getElementById('fleet_number_cell');
+                                let object_owner_el = document.getElementById('object_owner');
+                                object_owner_el.style.display = '';
+                                if (fleet.owner !== undefined) {
+                                    object_owner_el.textContent = 'Owner: ' + fleet.owner;
+                                } else {
+                                    object_owner_el.textContent = 'Owner: None';
+                                }
+                                let unit_table = document.getElementById('fleet_units_table');
+                                unit_table.style.display = '';
+                                let resource_table = document.getElementById('resource_table');
+                                let new_tbody = document.createElement('tbody');
+                                unit_table.getElementsByTagName('tbody')[0].remove();
+                                let type_cell = document.getElementById('fleet_type_cell');
+                                let number_cell = document.getElementById('fleet_number_cell');
                                 if (fleet.abandoned !== undefined) {
                                     type_cell.textContent = 'Resource';
                                     number_cell.textContent = 'Amount';
-                                    var row = new_tbody.insertRow(-1);
-                                    var img = row.insertCell(-1);
-                                    var resource = row.insertCell(-1);
-                                    var amount = row.insertCell(-1);
-                                    var resource_img = document.createElement('img');
+                                    let row = new_tbody.insertRow(-1);
+                                    let img = row.insertCell(-1);
+                                    let resource = row.insertCell(-1);
+                                    let amount = row.insertCell(-1);
+                                    let resource_img = document.createElement('img');
                                     resource_img.setAttribute('src','/client_side/images/resources/metal.png');
                                     img.classList.add('img_cell');
                                     img.append(resource_img);
@@ -368,31 +377,107 @@ class Game extends Base_Page {
                                 } else {
                                     type_cell.textContent = 'Unit';
                                     number_cell.textContent = 'Count';
-                                    for (var j = 0; j < fleet.units.length; j++) {
-                                        (async () => {
-                                            var unit = fleet.units[j];
-                                            if (unit.count > 0) {
-                                                var unit_details = await this.get_unit_dts(unit.unit_id);
-                                                var row = new_tbody.insertRow(-1);
-                                                var img = row.insertCell(-1);
-                                                var name = row.insertCell(-1);
-                                                var count = row.insertCell(-1);
-                                                var unit_img = document.createElement('img');
-                                                unit_img.setAttribute('src','/client_side/images/units/' + unit_details.name.toLowerCase() + '.png');
-                                                img.classList.add('img_cell');
-                                                img.append(unit_img);
-                                                name.textContent = unit_details.name;
-                                                count.textContent = unit.count;
-                                            };
-                                        })();
+                                    for (let j = 0; j < fleet.units.length; j++) {
+                                        let unit = fleet.units[j];
+                                        if (unit.count > 0) {
+                                            let unit_details = await this.get_unit_dts(unit.unit_id);
+                                            let row = new_tbody.insertRow(-1);
+                                            let img = row.insertCell(-1);
+                                            let name = row.insertCell(-1);
+                                            let count = row.insertCell(-1);
+                                            let unit_img = document.createElement('img');
+                                            unit_img.setAttribute('src','/client_side/images/units/' + unit_details.name.toLowerCase() + '.png');
+                                            img.classList.add('img_cell');
+                                            img.append(unit_img);
+                                            name.textContent = unit_details.name;
+                                            count.textContent = unit.count;
+                                        };
+                                    }
+                                    let fleet_cap_el = document.getElementById('fleet_capacity');
+                                    let fleet_status_el = document.getElementById('fleet_status');
+                                    if (fleet.resources !== undefined) {
+                                        fleet_status_el.style.display = '';
+                                        let status;
+                                        if (fleet.move_point !== undefined) {
+                                            status = 'Moving';
+                                        } else if (fleet.engaged_fleet_id !== undefined) {
+                                            let engaged_fleet = this.fleets.find(fleet => fleet.fleet_id == fleet.engaged_fleet_id);
+                                            status = 'Engaging in combat against ' + this.get_fleet_name(engaged_fleet);
+                                        } else if (fleet.status_cooldown !== undefined && fleet.assigned_object_id !== undefined) {
+                                            if (fleet.assigned_object_id != this.home_planet_id) {
+                                                console.log(this.updates[0].space_objects);
+                                                let object_details = this.updates[0].space_objects.find(space_object => space_object.space_object_id == fleet.assigned_object_id);
+                                                if (fleet.status_cooldown < 1) {
+                                                    status = 'Idle on space object ' + this.get_object_name(object_details);
+                                                    if (object_details.resources !== undefined) {
+                                                        status = 'Gathering resources from space object ' + this.get_object_name(object_details);
+                                                    }
+                                                } else {
+                                                    status = 'Landing on space object ' + this.get_object_name(object_details);
+                                                }
+                                            } else {
+                                                status = 'Docking planet';
+                                            }
+                                        } else {
+                                            status = 'Idle';
+                                        }
+                                        fleet_status_el.textContent = 'Status: ' + status;
+                                        fleet_cap_el.style.display = '';
+                                        fleet_cap_el.textContent = `Resource capacity: ${fleet.resources}/${fleet.capacity}`;
+                                        resource_table.style.display = '';
+                                        let new_tbody = document.createElement('tbody');
+                                        resource_table.getElementsByTagName('tbody')[0].remove();
+                                        let row = new_tbody.insertRow(-1);
+                                        let img = row.insertCell(-1);
+                                        let name = row.insertCell(-1);
+                                        let amount = row.insertCell(-1);
+                                        let res_img = document.createElement('img');
+                                        res_img.setAttribute('src','/client_side/images/resources/metal.png');
+                                        img.classList.add('img_cell');
+                                        img.append(res_img);
+                                        name.append('Metal');
+                                        amount.textContent = fleet.resources;
+                                        resource_table.append(new_tbody);
+                                    } else {
+                                        resource_table.style.display = 'none';
+                                        fleet_cap_el.style.display = 'none';
+                                        fleet_status_el.style.display = 'none';
                                     }
                                 }
-                                table.append(new_tbody);
+                                unit_table.append(new_tbody);
                             }
-                            document.getElementById('fleet_details').removeAttribute('style');
+                            document.getElementById('space_object_details').removeAttribute('style');
                             document.getElementById('fd_expand_button').style.display = "none";
+                        } else if (object.type == 'space_object') {
+                            document.getElementById('fleet_status').style.display = 'none';
+                            document.getElementById('object_owner').style.display = 'none';
+                            let fleet_cap_el = document.getElementById('fleet_capacity');
+                            fleet_cap_el.style.display = 'none';
+                            let object_details = this.updates[0].space_objects.find(space_object => space_object.space_object_id == object.id);
+                            document.getElementById('fleet_units_table').style.display = 'none';
+                            let resource_table = document.getElementById('resource_table');
+                            let object_name_el = document.getElementById('object_name');
+                            object_name_el.textContent = this.get_object_name(object_details);
+                            if (object_details.resources !== undefined) {
+                                resource_table.style.display = '';
+                                let new_tbody = document.createElement('tbody');
+                                resource_table.getElementsByTagName('tbody')[0].remove();
+                                let row = new_tbody.insertRow(-1);
+                                let img = row.insertCell(-1);
+                                let name = row.insertCell(-1);
+                                let amount = row.insertCell(-1);
+                                let res_img = document.createElement('img');
+                                res_img.setAttribute('src','/client_side/images/resources/metal.png');
+                                img.classList.add('img_cell');
+                                img.append(res_img);
+                                name.append('Metal');
+                                amount.textContent = object_details.resources;
+                                resource_table.append(new_tbody);
+                            } else {
+                                resource_table.style.display = 'none';
+                            }
                         }
-                    });
+                    }
                 }
             });
 
@@ -428,12 +513,12 @@ class Game extends Base_Page {
             });
 
             document.getElementById('fd_close_button').addEventListener('click', function() {
-                document.getElementById('fleet_details').style.display = "none";
+                document.getElementById('space_object_details').style.display = "none";
                 document.getElementById('fd_expand_button').removeAttribute('style');
             });
 
             document.getElementById('fd_expand_button').addEventListener('click', function() {
-                document.getElementById('fleet_details').removeAttribute('style');
+                document.getElementById('space_object_details').removeAttribute('style');
                 document.getElementById('fd_expand_button').style.display = "none";
             });
 
@@ -669,7 +754,7 @@ class Game extends Base_Page {
             if (number_of_fleets > no_this_fleets) {
                 var new_fleets = updated_fleets.slice(no_this_fleets - number_of_fleets);
                 for (var i = 0; i < new_fleets.length; i++) {
-                    if (new_fleets[i].owner !== undefined) {
+                    if (new_fleets[i].owner !== undefined && new_fleets[i].resources !== undefined) {
                         this.controlled_fleet_index = update.fleets.length + i;
                     }
                 }
@@ -678,13 +763,14 @@ class Game extends Base_Page {
 
             var fleets = update.fleets;
             for (var i = 0; i < fleets.length; i++) {
-                //if the fleet has an owner attribute, it's the controlled fleet - temporary solution
-                if (fleets[i].owner !== undefined) {
-                    if (updated_fleets[i].owner !== undefined) {
+                //if the fleet has resources attribute, it's the controlled fleet - temporary solution
+                if (fleets[i].owner !== undefined && fleets[i].resources !== undefined) {
+                    if (updated_fleets[i].owner !== undefined && updated_fleets[i].resources !== undefined) {
                         fleets[i].engaged_fleet_id = updated_fleets[i].engaged_fleet_id;
                         if (fleets[i].owner_deleted !== undefined) {
                             fleets[i].owner_deleted = undefined;
                             fleets[i].owner = updated_fleets[i].owner;
+                            this.controlled_fleet_index = i;
                         }
                         if (fleets[i].abandon_timer === undefined && updated_fleets[i].abandon_timer !== undefined) {
                             fleets[i].abandon_timer = updated_fleets[i].abandon_timer;
@@ -722,6 +808,9 @@ class Game extends Base_Page {
                 fleets[i].y = updated_fleets[i].y;
                 fleets[i].resources = updated_fleets[i].resources;
                 fleets[i].units = updated_fleets[i].units;
+                fleets[i].engaged_fleet_id = updated_fleets[i].engaged_fleet_id;
+                fleets[i].status_cooldown = updated_fleets[i].status_cooldown;
+                fleets[i].assigned_object_id = updated_fleets[i].assigned_object_id;
                 /* Velocity is not currently used anywhere anyway
                 if (this.fleets.velocity !== undefined) {
                     this.fleets[i].last_velocity = this.fleets[i].velocity;

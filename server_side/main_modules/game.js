@@ -440,7 +440,7 @@ module.exports = class Game {
                             fleets.push(this.fleets[j]);
                         } else {
                             //don't like giving clients the actual fleets id, since if the fleet can get out of sight and then the player finds it again, they can check the id to see if it's the same fleet
-                            fleets.push({fleet_id: this.fleets[j].fleet_id, x: this.fleets[j].x, y: this.fleets[j].y, units: this.fleets[j].units, abandoned: this.fleets[j].abandoned, resources: this.fleets[j].resources});
+                            fleets.push({fleet_id: this.fleets[j].fleet_id, owner: this.fleets[j].owner, x: this.fleets[j].x, y: this.fleets[j].y, units: this.fleets[j].units, abandoned: this.fleets[j].abandoned});
                             if (fleets[fleets.length - 1].abandoned) {
                                 fleets[fleets.length - 1].resources = this.fleets[j].resources;
                             }
@@ -551,7 +551,7 @@ module.exports = class Game {
                     }
                     var fleet;
                     if (expedition_timer !== undefined) {
-                        fleet = {fleet_id: this.fleet_id++, owner: username, x: 0, y: 0, acceleration: 0.00025, velocity: new Vector(player_planet.velocity), units: units, capacity: capacity, resources: 0, expedition_timer: expedition_timer, expedition_length_id: expedition_length_id, research: []};
+                        fleet = {fleet_id: this.fleet_id++, owner: username, x: 0, y: 0, acceleration: 0.00025, velocity: new Vector(player_planet.velocity), units: units, capacity: capacity, resources: 0, expedition_timer: expedition_timer, expedition_length_id: expedition_length_id, research_upgrades: []};
                     } else {
                         fleet = {fleet_id: this.fleet_id++, owner: username, x: player_planet.x - player_planet.width, y: player_planet.y - player_planet.height, acceleration: 0.00025, velocity: new Vector(player_planet.velocity), units: units, capacity: capacity, resources: 0, research_upgrades: []};
                     }
@@ -629,7 +629,7 @@ module.exports = class Game {
                                 fleets.push(this.fleets[j]);
                             } else {
                                 //don't like giving clients the actual fleets id, since if the fleet can get out of sight and then the player finds it again, they can check the id to see if it's the same fleet
-                                fleets.push({fleet_id: this.fleets[j].fleet_id, x: this.fleets[j].x, y: this.fleets[j].y, units: this.fleets[j].units, abandoned: this.fleets[j].abandoned});
+                                fleets.push({fleet_id: this.fleets[j].fleet_id, owner: this.fleets[j].owner, x: this.fleets[j].x, y: this.fleets[j].y, units: this.fleets[j].units, abandoned: this.fleets[j].abandoned});
                                 if (fleets[fleets.length - 1].abandoned) {
                                     fleets[fleets.length - 1].resources = this.fleets[j].resources;
                                 }
@@ -804,7 +804,7 @@ module.exports = class Game {
         var opposing_fleet_index = this.fleets.findIndex(opposing_fleet => opposing_fleet.fleet_id == p_fleet.engaged_fleet_id);
         var opposing_fleet = this.fleets[opposing_fleet_index];
         opposing_fleet.calculating_fight = true;
-        let fleet_damage_multiplier = (fleet.research_upgrades.findIndex(tech_upgrade => tech_upgrade == 3) != -1) ? 1.1 : 1;
+        let fleet_damage_multiplier = (p_fleet.research_upgrades.findIndex(tech_upgrade => tech_upgrade == 3) != -1) ? 1.1 : 1;
         let opposing_fleet_damage_multiplies = (opposing_fleet.research_upgrades.findIndex(tech_upgrade => tech_upgrade == 3) != -1) ? 1.1 : 1;
         var id = 0;
         var file_found = true;

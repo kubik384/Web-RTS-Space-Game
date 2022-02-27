@@ -1,17 +1,20 @@
 * {
-    margin:0px;
-	padding:0px;
+	margin: 0;
+	padding: 0;
+	border-spacing: 0;
 }
 
-html {
-	height: 100%;
+
+h1, h2, h3, h4, h5 {
+	font-size: revert;
 }
 
-body {
-	height: 100%;
+div {
 	font-size: 0px;
-	overflow: hidden;
-	overflow-y: scroll;
+}
+
+html, body {
+	height: 100%;
 }
 
 body::-webkit-scrollbar {
@@ -64,11 +67,15 @@ body::-webkit-scrollbar {
 	user-select: none;
 }
 
-#fleet_ui, #fleet_ui button, input, #fleet_details {
+#fleet_ui button, input, #space_object_details, #assemble_fleet_wrapper {
 	font-size: 20px;
 }
 
-#fleet_name {
+#space_object_details {
+	left: 0;
+}
+
+#object_name {
 	text-align: center;
 	padding-bottom: 10px;
 	margin-bottom: 10px;
@@ -123,7 +130,11 @@ body::-webkit-scrollbar {
 	width: 100%;
 }
 
-#available_units_table img, #fleet_units_table img {
+#fleet_units_table, #resource_table, #fleet_status {
+	padding-bottom: 20px;
+}
+
+#available_units_table img, #fleet_units_table img, #resource_table img {
 	width: 28px;
 }
 
@@ -198,10 +209,6 @@ body::-webkit-scrollbar {
 
 #fleet_ui {
 	right: 0;
-}
-
-#fleet_details {
-	left: 0;
 }
 
 .ui_button {
