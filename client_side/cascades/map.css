@@ -254,7 +254,7 @@ body::-webkit-scrollbar {
     cursor: pointer;
 }
 
-.clickable {
+.clickable:hover {
     color: tan;
 }
 

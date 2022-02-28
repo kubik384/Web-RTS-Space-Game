@@ -42,7 +42,7 @@ div {
     cursor: pointer;
 }
 
-.clickable {
+.clickable:hover {
     color: tan;
 }
 
