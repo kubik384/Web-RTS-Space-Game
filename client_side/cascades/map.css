@@ -247,3 +247,43 @@ body::-webkit-scrollbar {
 	width: 20px;
 	height: 20px;
 }
+
+.clickable {
+    color:sienna;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.clickable {
+    color: tan;
+}
+
+#profile_iframe {
+    border: 0;
+}
+
+#profile_iframe_container {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 3;
+    border: 1px solid black;
+	background-color: white;
+}
+
+#iframe_overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	z-index: 2;
+	background-color: rgba(255, 255, 255, 0);
+}
+
+#profile_iframe_header {
+    background-color: black;
+    color: white;
+	font-size: 20px;
+}

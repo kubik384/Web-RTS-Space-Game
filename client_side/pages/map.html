@@ -31,7 +31,7 @@
 				<img src="/client_side/images/ui/cancel.png" id="fd_close_button" class="ui_button">
 			</div>
 			<h3 id="object_name"></h3>
-			<p id="object_owner"></p>
+			<p id="object_owner" style="display:none">Owner <span id="object_owner_name"></span></p>
 			<p id="fleet_status"></p>
 			<table id="fleet_units_table" style="display: none">
 				<thead>
@@ -96,5 +96,10 @@
 				
 			</div>
 		</div>
+		<div id="profile_iframe_container" style="display: none">
+			<p id="profile_iframe_header">Profile</p>
+			<iframe id="profile_iframe"></iframe>
+		</div>
+		<div id="iframe_overlay" style="display: none"></div>
 	</body>
 </html>

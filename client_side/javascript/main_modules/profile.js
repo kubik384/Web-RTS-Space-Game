@@ -31,16 +31,28 @@ function display_profile_data(profile_data) {
 	}
 }
 
+function init() {
+	let send_message_el = document.getElementById('send_message');
+	send_message_el.setAttribute('href', '/game/messages?username=' + username);
+	if (page.inIframe()) {
+		document.getElementById('navbar').style.display = 'none';
+	}
+	send_message_el.addEventListener('click', e => {
+		e.preventDefault();
+		window.top.location.href = e.currentTarget.getAttribute('href');
+	});
+	socket.on('new_report', page.add_new_report_counter);
+	if (profile_details !== undefined) {
+		display_profile_data(profile_details);
+	}
+	loaded_page = true;
+}
+
 
 
 
 if (document.readyState !== 'loading') {
-		socket.on('new_report', page.add_new_report_counter);
-		if (profile_details !== undefined) {
-			display_profile_data(profile_details);
-		}
-		loaded_page = true;
-		document.getElementById('send_message').setAttribute('href', '/game/messages?username=' + username);
+	init();
 } else {
-	document.addEventListener("DOMContentLoaded", start);
+	document.addEventListener("DOMContentLoaded", init);
 }

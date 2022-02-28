@@ -41,9 +41,10 @@ class Game extends Base_Page {
                 let subject_p = document.createElement('p');
                 subject_p.append(conversations[i].subject);
                 subject_p.dataset.conversation_id = conversations[i].conversation_id;
-                subject_p.addEventListener('click', function(e) {
+                subject_p.classList.add('clickable');
+                subject_p.addEventListener('click', e => {
                     this.load_conversation(e.currentTarget.dataset.conversation_id);
-                }.bind(this));
+                });
                 subject_cell.append(subject_p);
                 /*
                 if (!conversations[i].gotDisplayed) {
@@ -54,9 +55,21 @@ class Game extends Base_Page {
                 }
                 */
                 let sender_cell = row.insertCell();
-                sender_cell.append(conversations[i].sender_username);
+                let sender_p = document.createElement('p');
+                sender_p.append(conversations[i].sender_username);
+                sender_p.classList.add('clickable');
+                sender_p.addEventListener('click', e => {
+                    this.open_profile_iframe(e.currentTarget.textContent);
+                });
+                sender_cell.append(sender_p);
                 let receiver_cell = row.insertCell();
-                receiver_cell.append(conversations[i].receiver_username);
+                let receiver_p = document.createElement('p');
+                receiver_p.append(conversations[i].receiver_username);
+                receiver_p.classList.add('clickable');
+                receiver_p.addEventListener('click', e => {
+                    this.open_profile_iframe(e.currentTarget.textContent);
+                });
+                receiver_cell.append(receiver_p);
                 let date_cell = row.insertCell();
                 let date = await utils.miliseconds_to_date(conversations[i].last_message_date * 1e3);
                 date_cell.append(date);

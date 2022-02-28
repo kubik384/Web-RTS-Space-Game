@@ -339,6 +339,9 @@ class Game extends Base_Page {
                     cursor.y = (e.clientY - this.yOffset - this.map_rect.top/* - this.map_canvas_border*/)/this.zoom;
                     let object = await this.check_position(cursor, true);
                     if (object !== undefined) {
+                        let object_owner_p = document.getElementById('object_owner');
+                        let object_owner_span = document.getElementById('object_owner_name');
+                        object_owner_span.classList.remove('clickable');
                         if (object.type == 'fleet') {
                             let mouse_pow_dist_travelled = Math.pow(this.dist_travelled.x, 2) + Math.pow(this.dist_travelled.y, 2);
                             if (mouse_pow_dist_travelled < 80) {
@@ -347,12 +350,15 @@ class Game extends Base_Page {
                                 let fleet = fleets[f_index];
                                 let fleet_name = document.getElementById('object_name');
                                 fleet_name.textContent = this.get_fleet_name(fleet.fleet_id);
-                                let object_owner_el = document.getElementById('object_owner');
-                                object_owner_el.style.display = '';
+                                object_owner_p.style.display = '';
                                 if (fleet.owner !== undefined) {
-                                    object_owner_el.textContent = 'Owner: ' + fleet.owner;
+                                    object_owner_span.textContent = fleet.owner;
+                                    object_owner_span.classList.add('clickable');
+                                    object_owner_span.addEventListener('click', e => {
+                                        this.open_profile_iframe(e.currentTarget.textContent);
+                                    });
                                 } else {
-                                    object_owner_el.textContent = 'Owner: None';
+                                    object_owner_span.textContent = 'None';
                                 }
                                 let unit_table = document.getElementById('fleet_units_table');
                                 unit_table.style.display = '';
