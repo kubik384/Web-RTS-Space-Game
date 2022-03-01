@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Mar 01, 2022 at 11:14 AM
+-- Generation Time: Mar 01, 2022 at 10:59 PM
 -- Server version: 10.4.17-MariaDB
 -- PHP Version: 8.0.0
 
@@ -40,6 +40,7 @@ CREATE TABLE `players` (
   `hydrogen` double(14,6) NOT NULL DEFAULT 0.000000,
   `uranium` double(14,6) NOT NULL DEFAULT 0.000000,
   `research` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '{"researched_techs": []}',
+  `allience_id` int(4) UNSIGNED DEFAULT NULL,
   `reg_timestamp` int(11) UNSIGNED NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
@@ -47,9 +48,22 @@ CREATE TABLE `players` (
 -- Dumping data for table `players`
 --
 
-INSERT INTO `players` (`player_id`, `username`, `password`, `system_id`, `space_object_id`, `res_last_update`, `reserved_pop`, `metal`, `kerosene`, `hydrogen`, `uranium`, `research`, `reg_timestamp`) VALUES
-(1, 'Newstory', '$2b$10$jqoTtwOPhOALYsS7VtZ90eOLuj0/HFlyLzlfWLsaSLaQDHZpcw3uG', 1, 2, 1646129194, 3.000000, 500.000000, 100.000000, 0.000000, 0.000000, '{\"researched_techs\":[]}', 1646129584),
-(2, 'Newstory2', '$2b$10$GnLP0TiKVWZPj/SxWaqWc.9ON02/eiXvBW.Q/JUlyQvvgtGbDgW5.', 1, 3, 1645611597, 1.000000, 500.000000, 100.000000, 0.000000, 0.000000, '{\"researched_techs\": []}', 1646139584);
+INSERT INTO `players` (`player_id`, `username`, `password`, `system_id`, `space_object_id`, `res_last_update`, `reserved_pop`, `metal`, `kerosene`, `hydrogen`, `uranium`, `research`, `allience_id`, `reg_timestamp`) VALUES
+(1, 'Newstory', '$2b$10$jqoTtwOPhOALYsS7VtZ90eOLuj0/HFlyLzlfWLsaSLaQDHZpcw3uG', 1, 2, 1646166787, 3.000000, 500.000000, 100.000000, 0.000000, 0.000000, '{\"researched_techs\":[]}', NULL, 1646129584),
+(2, 'Newstory2', '$2b$10$GnLP0TiKVWZPj/SxWaqWc.9ON02/eiXvBW.Q/JUlyQvvgtGbDgW5.', 1, 3, 1645611597, 1.000000, 500.000000, 100.000000, 0.000000, 0.000000, '{\"researched_techs\": []}', NULL, 1646139584);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `player_alliance`
+--
+
+CREATE TABLE `player_alliance` (
+  `alliance_id` int(5) UNSIGNED NOT NULL,
+  `name` varchar(12) NOT NULL,
+  `acronym` varchar(6) NOT NULL,
+  `description` varchar(512) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
 
@@ -102,7 +116,7 @@ CREATE TABLE `player_conversations` (
 --
 
 INSERT INTO `player_conversations` (`conversation_id`, `sender_player_id`, `receiver_player_id`, `subject`, `last_message_date`) VALUES
-(1, 1, 2, 'test', 1644769691),
+(1, 1, 2, 'test', 1645466344),
 (2, 2, 1, 'test', 1644769691);
 
 -- --------------------------------------------------------
@@ -210,6 +224,12 @@ ALTER TABLE `players`
   ADD UNIQUE KEY `username` (`username`);
 
 --
+-- Indexes for table `player_alliance`
+--
+ALTER TABLE `player_alliance`
+  ADD PRIMARY KEY (`alliance_id`);
+
+--
 -- Indexes for table `player_buildings`
 --
 ALTER TABLE `player_buildings`
@@ -248,6 +268,12 @@ ALTER TABLE `player_unit_ques`
 --
 ALTER TABLE `players`
   MODIFY `player_id` mediumint(9) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `player_alliance`
+--
+ALTER TABLE `player_alliance`
+  MODIFY `alliance_id` int(5) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `player_conversations`
