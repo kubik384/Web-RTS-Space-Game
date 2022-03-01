@@ -939,7 +939,7 @@ module.exports = class DbManager {
      * @param {Array} units Array of objects of all existing units without duplicates
      */
     async register_player(username, hash, so_id) {
-        var query = "INSERT INTO players (username, password, system_id, space_object_id, res_last_update) VALUES ( ? , ? , ? , ? , UNIX_TIMESTAMP())";
+        var query = "INSERT INTO players (username, password, system_id, space_object_id, res_last_update, reg_timestamp) VALUES ( ? , ? , ? , ? , UNIX_TIMESTAMP(), UNIX_TIMESTAMP)";
         var query_3 = `INSERT INTO player_buildings VALUES 
         (?, '1', '1', NULL, 0), 
         (?, '2', '1', NULL, 0)`;

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Feb 13, 2022 at 07:10 PM
+-- Generation Time: Mar 01, 2022 at 11:14 AM
 -- Server version: 10.4.17-MariaDB
 -- PHP Version: 8.0.0
 
@@ -39,16 +39,17 @@ CREATE TABLE `players` (
   `kerosene` double(14,6) NOT NULL DEFAULT 100.000000,
   `hydrogen` double(14,6) NOT NULL DEFAULT 0.000000,
   `uranium` double(14,6) NOT NULL DEFAULT 0.000000,
-  `research` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '{"researched_techs": []}'
+  `research` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '{"researched_techs": []}',
+  `reg_timestamp` int(11) UNSIGNED NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 --
 -- Dumping data for table `players`
 --
 
-INSERT INTO `players` (`player_id`, `username`, `password`, `system_id`, `space_object_id`, `res_last_update`, `reserved_pop`, `metal`, `kerosene`, `hydrogen`, `uranium`, `research`) VALUES
-(1, 'Newstory', '$2b$10$jqoTtwOPhOALYsS7VtZ90eOLuj0/HFlyLzlfWLsaSLaQDHZpcw3uG', 1, 2, 1644773238, 3.000000, 500.000000, 100.000000, 0.000000, 0.000000, '{\"researched_techs\":[\"1\",\"2\",\"3\"]}'),
-(2, 'Newstory2', '$2b$10$GnLP0TiKVWZPj/SxWaqWc.9ON02/eiXvBW.Q/JUlyQvvgtGbDgW5.', 1, 3, 1637663991, 0.000000, 500.000000, 100.000000, 0.000000, 0.000000, '{\"researched_techs\": []}');
+INSERT INTO `players` (`player_id`, `username`, `password`, `system_id`, `space_object_id`, `res_last_update`, `reserved_pop`, `metal`, `kerosene`, `hydrogen`, `uranium`, `research`, `reg_timestamp`) VALUES
+(1, 'Newstory', '$2b$10$jqoTtwOPhOALYsS7VtZ90eOLuj0/HFlyLzlfWLsaSLaQDHZpcw3uG', 1, 2, 1646129194, 3.000000, 500.000000, 100.000000, 0.000000, 0.000000, '{\"researched_techs\":[]}', 1646129584),
+(2, 'Newstory2', '$2b$10$GnLP0TiKVWZPj/SxWaqWc.9ON02/eiXvBW.Q/JUlyQvvgtGbDgW5.', 1, 3, 1645611597, 1.000000, 500.000000, 100.000000, 0.000000, 0.000000, '{\"researched_techs\": []}', 1646139584);
 
 -- --------------------------------------------------------
 
@@ -79,7 +80,8 @@ INSERT INTO `player_buildings` (`player_id`, `building_id`, `level`, `update_sta
 (2, 6, 1, NULL, 0),
 (2, 5, 1, NULL, 0),
 (1, 5, 1, NULL, 0),
-(2, 4, 2, NULL, 0);
+(2, 4, 2, NULL, 0),
+(2, 7, 1, NULL, 0);
 
 -- --------------------------------------------------------
 

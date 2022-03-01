@@ -204,26 +204,26 @@ class Base_Page {
     }
     
     open_profile_iframe(username) {
-        document.getElementById('profile_iframe_container').style.display = '';
         let profile_iframe = document.getElementById('profile_iframe')
         profile_iframe.setAttribute('src', '/game/profile?username=' + username);
-        let dialog_overlay = document.getElementById('iframe_overlay');
-        dialog_overlay.style.display = '';
-        dialog_overlay.addEventListener('contextmenu', function(event) {
-            event.preventDefault();
-            event.currentTarget.style.display = 'none';
-            let new_event = new event.constructor(event.type, event);
-            document.elementFromPoint(event.clientX, event.clientY).dispatchEvent(new_event);
-            event.currentTarget.style.display = '';
-        });
-        dialog_overlay.addEventListener('click', function() {
-            dialog_overlay.style.display = 'none';
-            document.getElementById('profile_iframe_container').style.display = 'none';
-        });
-
         profile_iframe.addEventListener('load', function(e) {
             if (!this.contentWindow.location.pathname.includes('profile')) {
                 window.top.location.reload();
+            } else {
+                let dialog_overlay = document.getElementById('iframe_overlay');
+                dialog_overlay.style.display = '';
+                dialog_overlay.addEventListener('contextmenu', function(event) {
+                    event.preventDefault();
+                    event.currentTarget.style.display = 'none';
+                    let new_event = new event.constructor(event.type, event);
+                    document.elementFromPoint(event.clientX, event.clientY).dispatchEvent(new_event);
+                    event.currentTarget.style.display = '';
+                });
+                dialog_overlay.addEventListener('click', function() {
+                    dialog_overlay.style.display = 'none';
+                    document.getElementById('profile_iframe_container').style.display = 'none';
+                });
+                document.getElementById('profile_iframe_container').style.display = '';
             }
         });
     }
