@@ -979,4 +979,9 @@ module.exports = class DbManager {
         WHERE player_id = ?`;
         return ((await this.execute_query(query, [player_id]))[0].username);
     }
+
+    async get_player_list() {
+        let query = 'SELECT username FROM players ORDER BY reg_timestamp ASC';
+        return this.execute_query(query);
+    }
 }

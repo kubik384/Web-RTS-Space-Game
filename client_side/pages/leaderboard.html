@@ -16,16 +16,28 @@
 			<a href="/game/reports" id="reports_tab">
 				Reports<span id="new_report_count" style="display: none">0</span>
 			</a>
+			<a href='/game/research'>Research</a>
 			<a href='/game/messages'>Messages</a>
 			<a href="/game/alliance">Alliance</a>
-			<a href='/game/research'>Research</a>
+			<a href="/game/leaderboard">Leaderboard</a>
 		</div>
-        <div id="profile_details_container">
-            <h3 id="player_name"></h3>
-            <p id="home_planet"></p>
-            <div id="options">
-                <a id="send_message" class="clickable">Send Message</p>
-            </div>
+        <div id="leaderboard_container">
+			<table id="leaderboard_table">
+				<tr>
+					<th id="rank_header_cell">Rank</th>
+					<th id="username_header_cell">Username</th>
+				</tr>
+			</table>
+			<form id="player_search_form">
+				<label for="player_search">Username</label>
+				<input id="player_search" type="text">
+				<input type="submit" value="Search">
+			</form>
         </div>
+		<div id="profile_iframe_container" style="display: none">
+			<p id="profile_iframe_header">Profile</p>
+			<iframe id="profile_iframe"></iframe>
+		</div>
+		<div id="iframe_overlay" style="display: none"></div>
 	</body>
 </html>

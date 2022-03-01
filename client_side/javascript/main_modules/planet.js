@@ -177,7 +177,7 @@ class Game extends Base_Page {
                         </tr>
                     </thead>
                     <tbody>`;
-            create_units_html += '<tr><td colspan="10" id="submit_unit_create_cell"><input type="submit" value="Build"></input></td></tr></tbody></table></form>';
+            create_units_html += '<tr><td colspan="10" id="submit_unit_create_cell"><input type="submit" value="Build"></td></tr></tbody></table></form>';
             document.getElementById('create_units_wrapper').innerHTML = create_units_html;
             document.getElementById('create_units_form').addEventListener('submit', event => { 
                 event.preventDefault();

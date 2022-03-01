@@ -29,6 +29,7 @@ const messageURL = gameURL + '/message';
 const allianceURL = gameURL + '/alliance';
 const researchURL = gameURL + '/research';
 const profileURL = gameURL + '/profile';
+const leaderboardURL = gameURL + '/leaderboard';
 var tokens = [];
 //switch to jwt token at some point for authentication?
 var token_timeouts = {};
@@ -271,6 +272,19 @@ app.get(profileURL, function(req,res) {
 	}
 });
 
+app.get(leaderboardURL, function(req,res) {
+	if (req.cookies !== undefined && req.cookies.token !== undefined) {
+		if (is_valid_token(req.cookies.token)) {
+			res.sendFile(path.join(root, 'pages/leaderboard.html'));
+		} else {
+			res.clearCookie('token');
+			res.redirect(303, '/');
+		}
+	} else {
+		res.redirect(303, '/');
+	}
+});
+
 app.listen(3000);
 
 app.use(function(req, res){
@@ -420,6 +434,10 @@ io.on('connection', socket => {
 
 	socket.on('request_profile_details', username => {
 		dbManager.get_basic_player_map_info(username).then(results => { socket.emit('profile_details', JSON.stringify(results[0])); });
+	});
+
+	socket.on('request_player_list', () => {
+		dbManager.get_player_list().then(player_list => { socket.emit('player_list', JSON.stringify(player_list)); });
 	});
 
 	socket.on('disconnect', () => {
