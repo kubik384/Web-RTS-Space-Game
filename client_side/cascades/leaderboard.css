@@ -24,16 +24,16 @@ div {
     color: tan;
 }
 
-#player_search_form {
+.search_form {
     padding-top: 40px;
 }
 
-#leaderboard_table {
+.leaderboard_table {
     text-align: left;
     border-collapse: collapse;
 }
 
-#leaderboard_table tr:first-of-type {
+.leaderboard_table tr:first-of-type {
     border-bottom: 1px solid black;
 }
 
@@ -42,7 +42,11 @@ div {
 }
 
 #username_header_cell {
-    width: 240px;
+    width: 300px;
+}
+
+#name_header_cell {
+    width: 150px;
 }
 
 #profile_iframe {
@@ -73,4 +77,22 @@ div {
     background-color: black;
     color: white;
 	font-size: 20px;
+}
+
+#leaderboard_toggle {
+    display: flex;
+    width: 400px;
+    gap: 0 20px;
+    justify-content: center;
+    padding-bottom: 30px;
+}
+
+#leaderboard_toggle:after {
+    content:"";
+    border-left: 2px solid black;
+    transform: translateX(-93px);
+}
+
+#leaderboard_toggle > p {
+    display: inline-block;
 }
