@@ -9,6 +9,7 @@ var buildings = require('./../game_properties/buildings.json');
 var units = require('./../game_properties/units.json');
 var unit_weapons = require('./../game_properties/unit_weapons.json');
 var technologies = require('./../game_properties/technologies.json');
+const { promise } = require('bcrypt/promises');
 var mysql_details = process.env.PORT !== undefined ? 
 mysql_details = {
     host: "j5zntocs2dn6c3fj.chr7pe7iynqr.eu-west-1.rds.amazonaws.com",
@@ -709,7 +710,7 @@ module.exports = class DbManager {
             query = `INSERT INTO player_unit_ques VALUES (NULL,?,?,?,UNIX_TIMESTAMP())`;
             promises.push(this.execute_query(query, [player_id, p_units[i].unit_id, p_units[i].count]));
         }
-        await Promise.all(promises);
+        return Promise.all(promises);
     }
 
     //certain information is being saved (e.g. fleets, space objects, etc.) in a file. This is however being saved only every x minutes. In case the server shut downs or something happens to the data, everything that happens before the last save will be rolled back. However, since reports are being saved on the db (since keeping them in RAM makes no sense), they are permanently saved immediately. Which can result in players keeping reports of actions that have been reverted and therefore haven't happened.
@@ -980,8 +981,13 @@ module.exports = class DbManager {
         return ((await this.execute_query(query, [player_id]))[0].username);
     }
 
-    async get_player_list() {
+    async get_leaderboard_datapack() {
         let query = 'SELECT username FROM players ORDER BY reg_timestamp ASC';
-        return this.execute_query(query);
+        let player_list = this.execute_query(query);
+        query = 'SELECT name, member_count FROM alliances ORDER BY created_timestamp ASC';
+        let alliance_list = this.execute_query(query);
+        let results = await Promise.all([player_list, alliance_list]);
+        let leaderboard_datapack = {player_list: results[0], p_starting_rank: 1, alliance_list: results[1], a_starting_rank: 1};
+        return leaderboard_datapack;
     }
 }

@@ -22,18 +22,38 @@
 			<a href="/game/leaderboard">Leaderboard</a>
 		</div>
         <div id="leaderboard_container">
-			<table id="leaderboard_table">
-				<tr>
-					<th id="rank_header_cell">Rank</th>
-					<th id="username_header_cell">Username</th>
-				</tr>
-			</table>
-			<form id="player_search_form">
-				<label for="player_search">Username</label>
-				<input id="player_search" type="text">
-				<input type="submit" value="Search">
-			</form>
+			<div id="leaderboard_toggle"><p id="player_toggle">Players</p><p id="alliance_toggle" class="clickable">Alliances</p></div>
+			<div id="player_leaderboard_container">
+				<table id="player_leaderboard_table" class="leaderboard_table">
+					<tr>
+						<th id="rank_header_cell">Rank</th>
+						<th id="username_header_cell">Username</th>
+					</tr>
+				</table>
+				<form id="player_search_form" class="search_form">
+					<label for="player_search">Username</label>
+					<input id="player_search" type="text">
+					<input type="submit" value="Search">
+				</form>
+			</div>
+
+			
+			<div id="alliance_leaderboard_container" style="display:none">
+				<table id="alliance_leaderboard_table" class="leaderboard_table">
+					<tr>
+						<th id="rank_header_cell">Rank</th>
+						<th id="name_header_cell">Name</th>
+						<th id="members_header_cell">Members</th>
+					</tr>
+				</table>
+				<form id="alliance_search_form" class="search_form">
+					<label for="alliance_search">Name</label>
+					<input id="alliance_search" type="text">
+					<input type="submit" value="Search">
+				</form>
+			</div>
         </div>
+
 		<div id="profile_iframe_container" style="display: none">
 			<p id="profile_iframe_header">Profile</p>
 			<iframe id="profile_iframe"></iframe>

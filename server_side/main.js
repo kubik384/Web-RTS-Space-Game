@@ -436,8 +436,8 @@ io.on('connection', socket => {
 		dbManager.get_basic_player_map_info(username).then(results => { socket.emit('profile_details', JSON.stringify(results[0])); });
 	});
 
-	socket.on('request_player_list', () => {
-		dbManager.get_player_list().then(player_list => { socket.emit('player_list', JSON.stringify(player_list)); });
+	socket.on('request_leaderboard_datapack', () => {
+		dbManager.get_leaderboard_datapack().then(leaderboard_datapack => { socket.emit('leaderboard_datapack', JSON.stringify(leaderboard_datapack)); });
 	});
 
 	socket.on('disconnect', () => {

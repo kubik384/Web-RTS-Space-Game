@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Mar 01, 2022 at 10:59 PM
+-- Generation Time: Mar 04, 2022 at 02:36 PM
 -- Server version: 10.4.17-MariaDB
 -- PHP Version: 8.0.0
 
@@ -20,6 +20,28 @@ SET time_zone = "+00:00";
 --
 -- Database: `improvisationaldb`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `alliances`
+--
+
+CREATE TABLE `alliances` (
+  `alliance_id` int(5) UNSIGNED NOT NULL,
+  `name` varchar(12) NOT NULL,
+  `acronym` varchar(6) NOT NULL,
+  `description` varchar(512) NOT NULL,
+  `member_count` int(1) UNSIGNED NOT NULL,
+  `created_timestamp` int(8) UNSIGNED NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Dumping data for table `alliances`
+--
+
+INSERT INTO `alliances` (`alliance_id`, `name`, `acronym`, `description`, `member_count`, `created_timestamp`) VALUES
+(1, 'Test', 'TT', 'Testing alliance implementation', 1, 0);
 
 -- --------------------------------------------------------
 
@@ -49,21 +71,8 @@ CREATE TABLE `players` (
 --
 
 INSERT INTO `players` (`player_id`, `username`, `password`, `system_id`, `space_object_id`, `res_last_update`, `reserved_pop`, `metal`, `kerosene`, `hydrogen`, `uranium`, `research`, `allience_id`, `reg_timestamp`) VALUES
-(1, 'Newstory', '$2b$10$jqoTtwOPhOALYsS7VtZ90eOLuj0/HFlyLzlfWLsaSLaQDHZpcw3uG', 1, 2, 1646166787, 3.000000, 500.000000, 100.000000, 0.000000, 0.000000, '{\"researched_techs\":[]}', NULL, 1646129584),
+(1, 'Newstory', '$2b$10$jqoTtwOPhOALYsS7VtZ90eOLuj0/HFlyLzlfWLsaSLaQDHZpcw3uG', 1, 2, 1646166787, 3.000000, 500.000000, 100.000000, 0.000000, 0.000000, '{\"researched_techs\":[]}', 1, 1646129584),
 (2, 'Newstory2', '$2b$10$GnLP0TiKVWZPj/SxWaqWc.9ON02/eiXvBW.Q/JUlyQvvgtGbDgW5.', 1, 3, 1645611597, 1.000000, 500.000000, 100.000000, 0.000000, 0.000000, '{\"researched_techs\": []}', NULL, 1646139584);
-
--- --------------------------------------------------------
-
---
--- Table structure for table `player_alliance`
---
-
-CREATE TABLE `player_alliance` (
-  `alliance_id` int(5) UNSIGNED NOT NULL,
-  `name` varchar(12) NOT NULL,
-  `acronym` varchar(6) NOT NULL,
-  `description` varchar(512) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
 
@@ -217,17 +226,17 @@ CREATE TABLE `player_unit_ques` (
 --
 
 --
+-- Indexes for table `alliances`
+--
+ALTER TABLE `alliances`
+  ADD PRIMARY KEY (`alliance_id`);
+
+--
 -- Indexes for table `players`
 --
 ALTER TABLE `players`
   ADD PRIMARY KEY (`player_id`),
   ADD UNIQUE KEY `username` (`username`);
-
---
--- Indexes for table `player_alliance`
---
-ALTER TABLE `player_alliance`
-  ADD PRIMARY KEY (`alliance_id`);
 
 --
 -- Indexes for table `player_buildings`
@@ -264,16 +273,16 @@ ALTER TABLE `player_unit_ques`
 --
 
 --
+-- AUTO_INCREMENT for table `alliances`
+--
+ALTER TABLE `alliances`
+  MODIFY `alliance_id` int(5) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
 -- AUTO_INCREMENT for table `players`
 --
 ALTER TABLE `players`
   MODIFY `player_id` mediumint(9) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
-
---
--- AUTO_INCREMENT for table `player_alliance`
---
-ALTER TABLE `player_alliance`
-  MODIFY `alliance_id` int(5) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `player_conversations`
