@@ -981,13 +981,59 @@ module.exports = class DbManager {
         return ((await this.execute_query(query, [player_id]))[0].username);
     }
 
-    async get_leaderboard_datapack() {
+    async get_profile_datapack(username) {
+        let profile_details = this.get_basic_player_map_info(username);
+        let new_reports_count =  this.get_new_reports_count(username);
+        let results = await Promise.all([profile_details, new_reports_count]);
+        return {profile_details: results[0][0], new_reports_count: results[1]};
+    }
+
+    async get_leaderboard_datapack(username) {
         let query = 'SELECT username FROM players ORDER BY reg_timestamp ASC';
         let player_list = this.execute_query(query);
         query = 'SELECT name, member_count FROM alliances ORDER BY created_timestamp ASC';
         let alliance_list = this.execute_query(query);
-        let results = await Promise.all([player_list, alliance_list]);
-        let leaderboard_datapack = {player_list: results[0], p_starting_rank: 1, alliance_list: results[1], a_starting_rank: 1};
+        let new_reports_count =  this.get_new_reports_count(username);
+        let results = await Promise.all([player_list, alliance_list, new_reports_count]);
+        let leaderboard_datapack = {player_list: results[0], p_starting_rank: 1, alliance_list: results[1], a_starting_rank: 1, new_reports_count: results[2]};
         return leaderboard_datapack;
+    }
+
+    async get_alliance_datapack(username) {
+        let promise_array = [];
+        promise_array.push(this.get_new_reports_count(username));
+        let alliance_id = await this.get_alliance_id(username);
+        if (alliance_id !== null) {
+            promise_array.push(this.get_alliance_details(alliance_id), this.get_alliance_members(alliance_id));
+        } else {
+            let empty_p = new Promise((resolve, reject) => resolve());
+            promise_array.push(empty_p, empty_p);
+        }
+        let results = await Promise.all(promise_array);
+        return {new_reports_count: results[0], alliance_details: results[1], members: results[2]};
+    }
+
+    async get_alliance_id(username) {
+        let query = 'SELECT alliance_id FROM players WHERE username = ?';
+        return (await this.execute_query(query, [username]))[0];
+    }
+
+    async get_alliance_details(alliance_id) {
+        let query = 'SELECT name, acronym, description, member_count FROM alliances WHERE alliance_id = ?';
+        return (await this.execute_query(query, [alliance_id]))[0];
+    }
+
+    async get_alliance_members(alliance_id) {
+        let query = 'SELECT username FROM players WHERE alliance_id = ? ORDER BY reg_timestamp ASC';
+        return this.execute_query(query, [alliance_id]);
+    }
+
+    async invite_player(inviter, invitee) {
+        let alliance_id = await this.get_alliance_id(username);
+        if (alliance_id !== null) {
+            
+        } else {
+            
+        }
     }
 }

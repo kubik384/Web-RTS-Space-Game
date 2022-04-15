@@ -24,29 +24,25 @@ div {
     color: tan;
 }
 
-.search_form {
+#alliance_search_form {
     padding-top: 40px;
 }
 
-.leaderboard_table {
+#leaderboard_table {
     text-align: left;
     border-collapse: collapse;
 }
 
-.leaderboard_table tr:first-of-type {
+#leaderboard_table tr:first-of-type {
     border-bottom: 1px solid black;
 }
 
 #rank_header_cell {
-    width: 60px;
-}
-
-#username_header_cell {
-    width: 300px;
+    width: 100px;
 }
 
 #name_header_cell {
-    width: 150px;
+    width: 120px;
 }
 
 #profile_iframe {
@@ -79,20 +75,32 @@ div {
 	font-size: 20px;
 }
 
-#leaderboard_toggle {
+#alliance_navbar {
     display: flex;
-    width: 400px;
     gap: 0 20px;
-    justify-content: center;
-    padding-bottom: 30px;
 }
 
-#leaderboard_toggle:after {
-    content:"";
-    border-left: 2px solid black;
-    transform: translateX(-93px);
-}
-
-#leaderboard_toggle > p {
+#alliance_navbar > p {
     display: inline-block;
+}
+
+#alliance_container {
+    padding-left: 15px;
+}
+
+#preview_container > p:first-of-type {
+    padding-top: 20px;
+}
+
+#members_table {
+    text-align: left;
+    padding-top: 30px;
+}
+
+#members_table tr > th:first-of-type {
+    width: 60px;
+}
+
+#members_table tr > th:nth-of-type(2) {
+    width: 300px;
 }

@@ -432,13 +432,22 @@ io.on('connection', socket => {
 		dbManager.research_technology(socket.username, tech_id);
 	});
 
-	socket.on('request_profile_details', username => {
-		dbManager.get_basic_player_map_info(username).then(results => { socket.emit('profile_details', JSON.stringify(results[0])); });
+	socket.on('request_profile_datapack', username => {
+		dbManager.get_profile_datapack(username).then(results => { socket.emit('profile_datapack', JSON.stringify(results)); });
 	});
 
 	socket.on('request_leaderboard_datapack', () => {
-		dbManager.get_leaderboard_datapack().then(leaderboard_datapack => { socket.emit('leaderboard_datapack', JSON.stringify(leaderboard_datapack)); });
+		dbManager.get_leaderboard_datapack(socket.username).then(leaderboard_datapack => { socket.emit('leaderboard_datapack', JSON.stringify(leaderboard_datapack)); });
 	});
+
+	socket.on('request_alliance_datapack', () => {
+		dbManager.get_alliance_datapack(socket.username).then(alliance_datapack => { socket.emit('alliance_datapack', JSON.stringify(alliance_datapack)); });
+	});
+
+	socket.on('invite_alliance', username => {
+		dbManager.invite_player(socket.username, username);
+	});
+	
 
 	socket.on('disconnect', () => {
 		//When the player is switching between pages (map, planet, etc.,), they got the set amount of time specified in the timeout to reconnect before getting logged out

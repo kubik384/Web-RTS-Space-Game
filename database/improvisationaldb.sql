@@ -62,7 +62,7 @@ CREATE TABLE `players` (
   `hydrogen` double(14,6) NOT NULL DEFAULT 0.000000,
   `uranium` double(14,6) NOT NULL DEFAULT 0.000000,
   `research` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '{"researched_techs": []}',
-  `allience_id` int(4) UNSIGNED DEFAULT NULL,
+  `alliance_id` int(4) UNSIGNED DEFAULT NULL,
   `reg_timestamp` int(11) UNSIGNED NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 

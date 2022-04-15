@@ -21,5 +21,42 @@
 			<a href="/game/alliance">Alliance</a>
 			<a href="/game/leaderboard">Leaderboard</a>
 		</div>
+		<div id="no_alliance_container" style="display:none">
+			<p>You are currently not in any alliance. See the alliance <a href="/game/leaderboard?toggle=alliance" class="clickable">Leaderboard</span></a></p>
+		</div>
+		<div id="alliance_container">
+			<div id="alliance_navbar" style="display:none">
+				<p id="preview">Preview</p>
+				<p id="members" class="clickable">Members</p>
+				<!--<p id="forum" class="clickable">Forum</p>-->
+			</div>
+			<div id="preview_container" style="display: none">
+				<p>Name: <span id="name"></span></p>
+				<p>Acronym: <span id="acronym"></span></p>
+				<p>Description: <span id="description"></span></p>
+				<p>Member count: <span id="member_count"></span></p>
+				<div id="invite_member_container">
+					<form id="invite_member_form">
+						<label for="invite_username"></label>
+						<input id="invite_username" type="text">
+						<input type="submit" value="Invite">
+					</form>
+				</div>
+			</div>
+			<div id="members_container" style="display: none">
+				<table id="members_table">
+					<tr>
+						<th>Rank</th>
+						<th>Username</th>
+					</tr>
+				</table>
+			</div>
+			<div id="forum_container" style="display: none"></div>
+		</div>
+		<div id="profile_iframe_container" style="display: none">
+			<p id="profile_iframe_header">Profile</p>
+			<iframe id="profile_iframe"></iframe>
+		</div>
+		<div id="iframe_overlay" style="display: none"></div>
 	</body>
 </html>

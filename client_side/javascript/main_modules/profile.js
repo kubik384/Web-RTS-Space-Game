@@ -7,21 +7,25 @@ var page = new Base_Page(socket);
 const query_string = window.location.search;
 const url_parameters = new URLSearchParams(query_string);
 let username = url_parameters.get('username');
-let profile_details;
+let profile_datapack;
 let loaded_page = false;
 
-socket.on('profile_details', load_profile_data);
-socket.emit('request_profile_details', username);
+socket.on('profile_datapack', load_profile_data);
+socket.emit('request_profile_datapack', username);
 
-function load_profile_data(profile_data) {
+function load_profile_data(p_profile_datapack) {
+	console.log(p_profile_datapack);
 	if (loaded_page) {
-		display_profile_data(JSON.parse(profile_data));
+		page.setup_page(JSON.parse(p_profile_datapack)).then(() => {;
+			display_profile_data(JSON.parse(p_profile_datapack));
+		});
 	} else {
-		profile_details = JSON.parse(profile_data);
+		profile_datapack = JSON.parse(p_profile_datapack);
 	}
 }
 
-function display_profile_data(profile_data) {
+function display_profile_data(profile_datapack) {
+	let profile_data = profile_datapack.profile_details;
 	if (profile_data !== null) {
 		document.getElementById('player_name').textContent = username;
 		document.getElementById('home_planet').textContent = 'Home planet: ' + page.get_object_name(profile_data.space_object_id);
@@ -42,8 +46,9 @@ function init() {
 		window.top.location.href = e.currentTarget.getAttribute('href');
 	});
 	socket.on('new_report', page.add_new_report_counter);
-	if (profile_details !== undefined) {
-		display_profile_data(profile_details);
+	if (profile_datapack !== undefined) {
+		display_profile_data(profile_datapack);
+		page.setup_page(profile_datapack);
 	}
 	loaded_page = true;
 }

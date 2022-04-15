@@ -7,6 +7,9 @@ var page = new Base_Page(socket);
 let leaderboard_datapack;
 let selected_lb_el = document.querySelector('#leaderboard_toggle > p:first-of-type');
 let page_loaded = false;
+const query_string = window.location.search;
+const url_parameters = new URLSearchParams(query_string);
+let leaderboard = url_parameters.get('toggle');
 
 socket.on('leaderboard_datapack', load_leaderboard_datapack);
 socket.emit('request_leaderboard_datapack');
@@ -15,6 +18,7 @@ function load_leaderboard_datapack(p_leaderboard_datapack) {
     console.log(p_leaderboard_datapack);
 	leaderboard_datapack = JSON.parse(p_leaderboard_datapack);
     if (page_loaded) {
+        page.setup_page(leaderboard_datapack);
         display_datapack(leaderboard_datapack);
     }
 }
@@ -32,6 +36,19 @@ function display_datapack(p_leaderboard_datapack) {
         list[i].rank = rank++;
     }
     table_add_alliances(list);
+    if (leaderboard !== null) {
+        if (leaderboard == 'alliance') {
+            document.getElementById('alliance_leaderboard_container').style.display = '';
+            selected_lb_el.classList.add('clickable');
+            selected_lb_el = document.getElementById('alliance_toggle');
+            selected_lb_el.classList.remove('clickable');
+        } else {
+            document.getElementById('player_leaderboard_container').style.display = '';
+        }
+    } else {
+        document.getElementById('player_leaderboard_container').style.display = '';
+    }
+    document.getElementById('leaderboard_toggle').style.display = '';
 }
 
 function init() {
@@ -93,9 +110,11 @@ function init() {
         table_add_alliances(found_alliances);
     });
     if (leaderboard_datapack !== undefined) {
+        page.setup_page(leaderboard_datapack);
         display_datapack(leaderboard_datapack);
+    } else {
+        page_loaded = true;
     }
-    page_loaded = true;
 }
 
 function table_add_players(player_list) {
