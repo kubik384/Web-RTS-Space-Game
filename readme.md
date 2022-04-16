@@ -3,8 +3,9 @@ In order to start a server, you need the following:
 Wamp server with MySQL
 Node with npm
 Installed all dependancies (use 'npm install' command)
-To start the server, start the MySQL server (wamp) (needs to be port 3306, user with username root without set password), then use script start ('npm start')
+To start the server, start the MySQL server (wamp) (needs to be port 3306, user with username root without set password)
 Import the database from the database folder
+Use script start ('npm start') to run the BE
 
 Use the following parameter order for passing command line arguments:
 1 - string: the path to the save file from the root directory (e.g. server_side/save_files/save.txt)
