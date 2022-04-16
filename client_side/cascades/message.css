@@ -1,4 +1,155 @@
 * {
-    margin:0px;
-    padding:0px;
+	margin: 0;
+	padding: 0;
+	border-spacing: 0;
+	font-size: 20px;
+}
+
+
+h1, h2, h3, h4, h5 {
+	font-size: revert;
+}
+
+div {
+	font-size: 0px;
+}
+
+#new_message_btn {
+    margin: 0 0 10px 0;
+}
+
+#conversation_table {
+    text-align: center;
+    border: 1px solid black;
+    border-collapse: collapse;
+}
+
+#conversation_table th {
+    padding-bottom: 10px;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 5px;
+    border-bottom: 1px solid black;
+}
+
+#conversation_table td {
+    padding: 4px 20px;
+}
+
+.clickable {
+    color:sienna;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.clickable:hover {
+    color: tan;
+}
+
+#conversation_table_container, #message_table_container, #new_message_container {
+    padding-left: 40px;
+}
+
+#message_table_container {
+    width: 600px;
+}
+
+#response_container {
+    margin-bottom: 50px;
+    text-align: center;
+}
+
+#response_container > textarea {
+    display: block;
+    width: 100%;
+    height: 100px;
+    margin-bottom: 10px;
+    font-size: 16px;
+}
+
+#message_table {
+    width: 100%;
+}
+
+#message_table td:nth-of-type(2) {
+    padding-left: 40px;
+}
+
+#message_table tr:nth-child(odd) td:last-of-type {
+    text-align: right;
+}
+
+#message_table tr:nth-child(even) td {
+    padding: 8px 0 20px 0;
+}
+
+#message_table tr:nth-child(even) p {
+    padding: 5px;
+    border: 1px solid black;
+}
+
+#new_message_container input {
+    display: block;
+}
+
+#new_message_container input:first-of-type {
+    margin-bottom: 10px;
+}
+
+#new_message_container input:nth-of-type(2) {
+    width: 220px;
+    margin-bottom: 40px;
+}
+
+#new_message_container input:first-of-type, #new_message_container input:nth-of-type(2), #new_message_container textarea {
+    width: 500px;
+}
+
+#new_message_container input:nth-of-type(3) {
+    margin-top: 10px;
+}
+
+#new_message_container textarea {
+    display: block;
+    height: 150px;
+}
+
+.security_warning {
+    font-size: 18px;
+    padding-bottom: 20px;
+}
+
+.security_warning > img {
+    padding-right: 6px;
+    margin-bottom: -3px;
+}
+
+#profile_iframe {
+    border: 0;
+}
+
+#profile_iframe_container {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 3;
+    border: 1px solid black;
+	background-color: white;
+}
+
+#iframe_overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	z-index: 2;
+	background-color: rgba(255, 255, 255, 0);
+}
+
+#profile_iframe_header {
+    background-color: black;
+    color: white;
+	font-size: 20px;
 }

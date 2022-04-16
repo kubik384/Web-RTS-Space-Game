@@ -12,6 +12,7 @@ async function start() {
 	game.display_reports();
 	socket.on('report_details', game.load_report.bind(game));
 	socket.on('new_report', game.add_new_report_counter);
+	socket.on('fr_availability', game.get_fr_status.bind(game));
 	document.removeEventListener('DOMContentLoaded', start);
 }
 

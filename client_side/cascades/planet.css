@@ -2,10 +2,20 @@
 	margin: 0;
 	padding: 0;
 	border-spacing: 0;
+	font-size: 24px;
 }
 
-button, html, input {
-	font-size: 24px;
+
+h1, h2, h3, h4, h5 {
+	font-size: revert;
+}
+
+div {
+	font-size: 0px;
+}
+
+#layout_table > tbody > tr > td:nth-child(2) {
+	width: 300px;
 }
 
 .upgrade_btn {
@@ -20,11 +30,39 @@ button, html, input {
 }
 
 #button_menu {
-	float: left;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 15px 30px;
 }
 
 #button_menu > div {
-	padding-bottom: 10px;
+	border: 2px solid black;
+	text-align: center;
+	width: 100px;
+}
+
+#button_menu > div > img:first-child:hover {
+	cursor: pointer;
+}
+
+#button_menu > div > div > div {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	flex-wrap: wrap;
+}
+
+#button_menu > div > div > div > img {
+	height: 20px;
+	padding: 2px 2px;
+}
+
+#button_menu > div > div > div > img:first-of-type {
+	align-self: flex-start;
+}
+
+#button_menu > div > div > div > p {
+	display: inline-block;
 }
 
 .button_image {
@@ -33,16 +71,12 @@ button, html, input {
 }
 
 .cancel {
-	align-self: flex-end;
-	height: 20px;
-	margin-left: auto;
-	margin-bottom: 4px;
+	height: 16px;
 	cursor: pointer;
 }
 
 .building_cell, .unit_cell {
 	display: flex;
-	width: 250px;
 }
 
 .building_update_button_wrapper {
@@ -59,6 +93,10 @@ button, html, input {
 	float: left;
 }
 
+#layout_table > tbody > tr:first-of-type > td:nth-child(1) {
+	width: calc(100% - 340px);
+}
+
 #layout_table > tbody > tr > td:nth-child(2) {
 	float: right;
 }
@@ -72,7 +110,26 @@ button, html, input {
 }
 
 .unit_create_count {
-	width: 100px;
+	width: 110px;
+}
+
+.unit_res_cost_container {
+	overflow-x: auto;
+	display: flex;
+	flex-direction: column;
+	width: 125px;
+}
+
+.unit_res_cost {
+	display: flex;
+	gap: 0 8px;
+	align-items: center;
+	margin: auto;
+}
+
+.unit_time_cost_container {
+	overflow-x: auto;
+	width: 85px;
 }
 
 #submit_unit_create_cell {
@@ -85,6 +142,7 @@ button, html, input {
 }
 
 #create_units_table {
+	display: table;
 	margin-top: 20px;
 }
 
@@ -109,10 +167,173 @@ button, html, input {
 	border-top: 1px solid black;
 }
 
+#create_units_table > tbody > tr > td > p {
+	user-select: none;
+	cursor: pointer;
+}
+
 #units_table img {
 	width: 20px;
 }
 
 #units_que_table > thead > tr:first-child > th {
 	border-bottom: 1px solid black;
+}
+
+/*
+#research_map_container {
+	height: calc(100%);
+}
+
+#planet_map {
+	background-color: rgb(88, 88, 88);
+	width: 100%;
+	height: 100%;
+}
+*/
+
+.dialog_div {
+	display: flex;
+	flex-wrap: wrap;
+	position: fixed;
+	font-size: 22px;
+	text-align: center;
+	transform: translateX(-50%);
+	top: 8%;
+	left: 50%;
+	right: 0;
+	background-color: rgb(155, 155, 155);
+	z-index: 3;
+	padding: 10px;
+	max-width: 60%;
+	min-width: 350px;
+	max-height: 80%;
+	border: 2px solid black;
+	box-shadow: 2px 2px 10px black;
+	gap: 10px 0;
+}
+
+.dialog_div > * {
+	width: 100%;
+}
+
+#building_dialog_buttons > button {
+	padding: 6px 12px;
+	background-color: rgba(255, 255, 255, 1);
+	cursor: pointer;
+}
+
+#building_dialog_buttons > button > span:nth-of-type(2) {
+	margin-left: -10px;
+}
+
+.dialog_cancel_img {
+	width: 30px;
+}
+
+.dialog_arrow_img {
+	width: 24px;
+}
+
+#dialog_div > div:first-of-type {
+	font-weight: bold;
+}
+
+.dialog_overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	z-index: 2;
+	background-color: rgba(255, 255, 255, 0);
+}
+
+#description {
+	text-align: left;
+	font-size: 24px;
+}
+
+#resource_cost {
+	padding-top: 20px;
+}
+
+#resource_cost, #building_requirements, #technology_requirements {
+	display: flex;
+	flex-wrap: wrap;
+	font-size: 24px;
+	gap: 4px 10px;
+}
+
+#resource_cost > h4, #building_requirements > h4, #technology_requirements > h4 {
+	width: 100%;
+	text-align: left;
+}
+
+#resource_cost > div:first-of-type > img {
+	width: 140px;
+}
+
+#resource_cost img, #building_requirements img, #technology_requirements img {
+	width: 40px;
+}
+
+#building_dialog_buttons {
+	display: flex;
+	justify-content: center;
+	gap: 0 40px;
+}
+
+#building_dialog_buttons > button {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	height: 48px;
+	gap: 0 15px;
+}
+
+#upgrade_dialog_button {
+	width: 340px;
+}
+
+#cancel_dialog_button {
+	width: 460px;
+}
+
+#building_dialog_buttons > button:nth-child(2) {
+	width: 190px;
+}
+
+.building_timer_container {
+	display: flex;
+	width: 100%;
+	gap: 0 5px;
+	justify-content: center;
+	align-items: center;
+}
+
+.building_timer_container > * {
+	font-size: 18px;
+	display: inline-block;
+}
+
+.building_timer_container > p {
+	word-break: break-all;
+}
+
+.missing_requirement {
+	color: red;
+	font-weight: bold;
+}
+
+.unit_preview_container {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 0 10px;
+	cursor: pointer;
+}
+
+.unit_preview_container > img {
+	width: 100px;
 }

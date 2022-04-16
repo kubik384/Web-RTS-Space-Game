@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Unfinished project #219</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+		<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+		<link rel="stylesheet" type="text/css" href="/client_side/cascades/leaderboard.css">
+		<link rel="stylesheet" type="text/css" href="/client_side/cascades/navbar.css">
+		<script src="/socket.io/socket.io.js"></script>
+		<script type="module" src="/client_side/javascript/main_modules/leaderboard.js"></script>
+	</head>
+	<body>
+		<div id='navbar'>
+			<a href='/game/planet'>Planet</a>
+			<a href="/game/map">Map</a>
+			<a href="/game/reports" id="reports_tab">
+				Reports<span id="new_report_count" style="display: none">0</span>
+			</a>
+			<a href='/game/research'>Research</a>
+			<a href='/game/messages'>Messages</a>
+			<a href="/game/alliance">Alliance</a>
+			<a href="/game/leaderboard">Leaderboard</a>
+		</div>
+        <div id="leaderboard_container">
+			<div id="leaderboard_toggle" style="display: none"><p id="player_toggle">Players</p><p id="alliance_toggle" class="clickable">Alliances</p></div>
+			<div id="player_leaderboard_container" style="display:none">
+				<table id="player_leaderboard_table" class="leaderboard_table">
+					<tr>
+						<th id="rank_header_cell">Rank</th>
+						<th id="username_header_cell">Username</th>
+					</tr>
+				</table>
+				<form id="player_search_form" class="search_form">
+					<label for="player_search">Username</label>
+					<input id="player_search" type="text">
+					<input type="submit" value="Search">
+				</form>
+			</div>
+
+			
+			<div id="alliance_leaderboard_container" style="display:none">
+				<table id="alliance_leaderboard_table" class="leaderboard_table">
+					<tr>
+						<th id="rank_header_cell">Rank</th>
+						<th id="name_header_cell">Name</th>
+						<th id="members_header_cell">Members</th>
+					</tr>
+				</table>
+				<form id="alliance_search_form" class="search_form">
+					<label for="alliance_search">Name</label>
+					<input id="alliance_search" type="text">
+					<input type="submit" value="Search">
+				</form>
+			</div>
+        </div>
+
+		<div id="profile_iframe_container" style="display: none">
+			<p id="profile_iframe_header">Profile</p>
+			<iframe id="profile_iframe"></iframe>
+		</div>
+		<div id="iframe_overlay" style="display: none"></div>
+	</body>
+</html>

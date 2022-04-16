@@ -1,0 +1,98 @@
+* {
+	margin: 0;
+	padding: 0;
+	border-spacing: 0;
+    font-size: 16px;
+}
+
+
+h3 {
+	font-size: 24px;
+}
+
+div {
+	font-size: 0px;
+}
+
+.clickable {
+    color:sienna;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.clickable:hover {
+    color: tan;
+}
+
+.search_form {
+    padding-top: 40px;
+}
+
+.leaderboard_table {
+    text-align: left;
+    border-collapse: collapse;
+}
+
+.leaderboard_table tr:first-of-type {
+    border-bottom: 1px solid black;
+}
+
+#rank_header_cell {
+    width: 60px;
+}
+
+#username_header_cell {
+    width: 300px;
+}
+
+#name_header_cell {
+    width: 150px;
+}
+
+#profile_iframe {
+    border: 0;
+}
+
+#profile_iframe_container {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 3;
+    border: 1px solid black;
+	background-color: white;
+}
+
+#iframe_overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	z-index: 2;
+	background-color: rgba(255, 255, 255, 0);
+}
+
+#profile_iframe_header {
+    background-color: black;
+    color: white;
+	font-size: 20px;
+}
+
+#leaderboard_toggle {
+    display: flex;
+    width: 400px;
+    gap: 0 20px;
+    justify-content: center;
+    padding-bottom: 30px;
+}
+
+#leaderboard_toggle:after {
+    content:"";
+    border-left: 2px solid black;
+    transform: translateX(-93px);
+}
+
+#leaderboard_toggle > p {
+    display: inline-block;
+}

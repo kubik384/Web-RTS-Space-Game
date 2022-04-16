@@ -9,6 +9,10 @@ var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser');
 var bcrypt = require('bcrypt');
 var io = require('socket.io')(server, {pingInterval: 1500});
+var fs = require('fs');
+var fsPromises = fs.promises;
+var Utils = require('./misc_modules/utils.js');
+var utils = new Utils();
 
 const DbManager = require('./main_modules/dbManager.js');
 const Game = require('./main_modules/game.js');
@@ -18,18 +22,26 @@ const saltRounds = 10;
 const gameURL = '/game';
 const planetURL = gameURL + '/planet';
 const mapURL = gameURL + '/map';
+const reportsURL = gameURL + '/reports';
 const reportURL = gameURL + '/report';
+const messagesURL = gameURL + '/messages';
 const messageURL = gameURL + '/message';
+const allianceURL = gameURL + '/alliance';
 const researchURL = gameURL + '/research';
+const profileURL = gameURL + '/profile';
+const leaderboardURL = gameURL + '/leaderboard';
 var tokens = [];
 //switch to jwt token at some point for authentication?
 var token_timeouts = {};
 var dbManager = new DbManager();
 var game = new Game(dbManager, io);
 const root = path.resolve('client_side');
+const game_properties = path.resolve('server_side/game_properties');
+const conversation_dir = path.resolve('server_side/player_conversations');
 
 app.set('port', process.env.PORT || PORT);
 app.use('/client_side', express.static(root));// Routing
+app.use('/client_side', express.static(game_properties));
 
 app.use(bodyParser.urlencoded({ extended: false }));
 
@@ -39,28 +51,29 @@ app.get('/', function(req, res) {
 	res.sendFile(path.join(root, 'pages/index.html'));
 });
 
-app.post('/register', function(req, res) {
+app.post('/register', async function(req, res) {
 	var { username, password } = req.body;
 	
 	if (password != '' && username != '') {
-		var query = "SELECT password FROM players WHERE username = ?";
-		dbManager.execute_query(query, [username]).then(results => {
+		var query = "SELECT player_id FROM players WHERE username = ?";
+		var results = await dbManager.execute_query(query, [username]);
+		var player_count = await dbManager.get_player_count();
+		if (player_count < 50) {
 			if (results.length == 1) {
-				res.sendStatus(401);
+				res.status(401).send("Entered username already exists, please select a different username");
 			} else {
-				bcrypt.hash(password, saltRounds, function(err, hash) {
+				bcrypt.hash(password, saltRounds, async function(err, hash) {
 					if (err) {
 						throw err;
 					}
-					query = "INSERT INTO players (username, password, system_id, space_object_id, res_last_update) VALUES ( ? , ? , ? , ? , UNIX_TIMESTAMP())";
-					dbManager.execute_query(query, [username, hash, 1, 2]).then(() => {
-						res.sendStatus(200);
-					}).catch(err => { throw err });
+					var so_id = await game.get_player_so();
+					await dbManager.register_player(username, hash, so_id);
+					res.sendStatus(200);
 				});
 			}
-		}).catch(err => {
-			throw err;
-		});
+		} else {
+			res.status(401).send("The maximum number of players has been reached");
+		}
 	}
 });
 
@@ -120,7 +133,7 @@ app.get(mapURL, function(req,res) {
 	}
 });
 
-app.get(messageURL, function(req,res) {
+app.get(messagesURL, function(req,res) {
 	if (req.cookies !== undefined && req.cookies.token !== undefined) {
 		if (is_valid_token(req.cookies.token)) {
 			res.sendFile(path.join(root, 'pages/message.html'));
@@ -132,6 +145,39 @@ app.get(messageURL, function(req,res) {
 		res.redirect(303, '/');
 	}
 });
+
+app.get(messageURL, async function(req,res) {
+	if (req.cookies !== undefined && req.cookies.token !== undefined) {
+		if (is_valid_token(req.cookies.token)) {
+			let conversation_id = req.query.id;
+			let conversation_file = path.join(conversation_dir, `conversation_${conversation_id}.txt`);
+			let readstream = fs.createReadStream(conversation_file);
+			readstream.pipe(res);
+			readstream.on('error', (err) => {
+				if (err.code == 'ENOENT') {
+					console.log('Error: Conversation file was not found');
+					res.status(409).send();
+				} else {
+					console.log('Error occured when reading report file: ' + err);
+					res.status(500).send();
+				}
+			});
+			res.on('error', (err) => {
+				console.log('Error occured when writing out report file: ' + err);
+				res.status(500).send();
+			});
+			readstream.on('finish', () => {
+				res.status(200).send();
+			});
+		} else {
+			res.clearCookie('token');
+			res.redirect(303, '/');
+		}
+	} else {
+		res.redirect(303, '/');
+	}
+});
+
 
 app.get(researchURL, function(req,res) {
 	if (req.cookies !== undefined && req.cookies.token !== undefined) {
@@ -146,7 +192,7 @@ app.get(researchURL, function(req,res) {
 	}
 });
 
-app.get(reportURL, function(req,res) {
+app.get(reportsURL, function(req,res) {
 	if (req.cookies !== undefined && req.cookies.token !== undefined) {
 		if (is_valid_token(req.cookies.token)) {
 			res.sendFile(path.join(root, 'pages/report.html'));
@@ -158,6 +204,88 @@ app.get(reportURL, function(req,res) {
 		res.redirect(303, '/');
 	}
 });
+
+app.get(reportURL, async function(req,res) {
+	if (req.cookies !== undefined && req.cookies.token !== undefined) {
+		if (is_valid_token(req.cookies.token)) {
+			var username = req.cookies.token;
+			var report_id = req.query.id;
+			var report_details = await dbManager.get_report_details(report_id, username);
+			if (report_details !== undefined) {
+				if (report_details.file_id !== null) {
+					var readstream = await game.get_fr(report_details.file_id);
+					readstream.pipe(res);
+					readstream.on('error', (err) => {
+						if (err.code == 'ENOENT') {
+							console.log('Error: Fight Record was not found despite remaining in "available" state');
+							res.status(409).send();
+						} else {
+							console.log('Error occured when reading report file: ' + err);
+							res.status(500).send();
+						}
+					});
+					res.on('error', (err) => {
+						console.log('Error occured when writing out report file: ' + err);
+						res.status(500).send();
+					});
+					readstream.on('finish', () => {
+						res.status(200).send();
+					});
+				} else {
+					res.status(404).send();
+				}
+			} else {
+				res.status(400).send();
+			}
+		} else {
+			res.clearCookie('token');
+			res.redirect(303, '/');
+		}
+	} else {
+		res.redirect(303, '/');
+	}
+});
+
+app.get(allianceURL, function(req,res) {
+	if (req.cookies !== undefined && req.cookies.token !== undefined) {
+		if (is_valid_token(req.cookies.token)) {
+			res.sendFile(path.join(root, 'pages/alliance.html'));
+		} else {
+			res.clearCookie('token');
+			res.redirect(303, '/');
+		}
+	} else {
+		res.redirect(303, '/');
+	}
+});
+
+app.get(profileURL, function(req,res) {
+	if (req.cookies !== undefined && req.cookies.token !== undefined) {
+		if (is_valid_token(req.cookies.token)) {
+			res.sendFile(path.join(root, 'pages/profile.html'));
+		} else {
+			res.clearCookie('token');
+			res.redirect(303, '/');
+		}
+	} else {
+		res.redirect(303, '/');
+	}
+});
+
+app.get(leaderboardURL, function(req,res) {
+	if (req.cookies !== undefined && req.cookies.token !== undefined) {
+		if (is_valid_token(req.cookies.token)) {
+			res.sendFile(path.join(root, 'pages/leaderboard.html'));
+		} else {
+			res.clearCookie('token');
+			res.redirect(303, '/');
+		}
+	} else {
+		res.redirect(303, '/');
+	}
+});
+
+app.listen(3000);
 
 app.use(function(req, res){
 	res.redirect('/');
@@ -182,33 +310,30 @@ io.use((socket, next) => {
 // Add the WebSocket handlers
 io.on('connection', socket => {
 	socket.on('planet_datapack_request', () => {
-		dbManager.get_starter_datapack(socket.username).then(datapack => { socket.emit('starter_datapack', JSON.stringify(datapack)); });
+		dbManager.get_planet_datapack(socket.username).then(datapack => { socket.emit('starter_datapack', JSON.stringify(datapack)); });
 	});
 
-	socket.on('upgrade_building', building => {
-		dbManager.upgrade_building(socket.username, building).catch(e => {
-			if (e != 'Not enough resources to upgrade building') {
-				throw e;
-			}
-		});
+	socket.on('update_building', (building_id, downgrade) => {
+		if (downgrade == 1) {
+			dbManager.downgrade_building(socket.username, building_id);
+		} else {
+			dbManager.upgrade_building(socket.username, building_id).catch(e => {
+				if (e != 'Not enough resources to upgrade building') {
+					throw e;
+				}
+			});
+		}
 	});
 
-	socket.on('fetch_building_details', data => {
-		dbManager.get_building_details(data).then(results => { socket.emit('building_fetch_result', results[0]);});
-	});
 
 	socket.on('cancel_building_update', building => {
 		dbManager.cancel_building_update(socket.username, building);
 	});
 
-	socket.on('downgrade_building', building => {
-		dbManager.downgrade_building(socket.username, building);
-	});
-
-	socket.on('map_datapack_request', (layout) => {
+	socket.on('map_datapack_request', () => {
 		game.addPlayer(socket, socket.username).then(() => {
 			socket.gameAdded = true;
-			game.get_map_datapack(layout, socket.username).then(result => {socket.emit('map_datapack', JSON.stringify(result))});
+			game.get_map_datapack(socket.username).then(result => {socket.emit('map_datapack', JSON.stringify(result))});
 		});
 	});
 
@@ -224,7 +349,9 @@ io.on('connection', socket => {
 		var request_id = args[0];
 		var passed_args = args.slice(1);
 		if (request_id === 'restart') {
-			restart_server(socket, passed_args[0]);
+			if (socket.username == 'Newstory') {
+				restart_server(socket, passed_args[0]);
+			}
 		} else {
 			game.process_request(socket.username, request_id, passed_args);
 		}
@@ -247,7 +374,7 @@ io.on('connection', socket => {
 	});
 
 	socket.on('load_report', report_id => {
-		dbManager.get_report_details(report_id).then(report_details => { socket.emit('report_details', JSON.stringify(report_details)); });
+		game.get_report_details(report_id).then(report_details => { socket.emit('report_details', JSON.stringify(report_details)); });
 	});
 
 	socket.on('reports_displayed', timestamp => {
@@ -258,6 +385,45 @@ io.on('connection', socket => {
 		dbManager.mark_report_displayed(report_id);
 	});
 
+	socket.on('get_fr_status', async (report_id) => {
+		var report_details = await dbManager.get_report_details(report_id, username);
+		socket.emit('fr_availability', (report_details !== undefined && report_details.file_id !== null));
+	});
+
+	socket.on('message_datapack_request', () => {
+		dbManager.get_message_datapack(socket.username).then(datapack => {socket.emit('message_datapack', JSON.stringify(datapack));});
+	});
+
+	socket.on('create_conversation', async (username, subject, text, confirmation_timestamp) => {
+		let timestamp = await utils.get_timestamp();
+		let conversation_id = (await dbManager.create_conversation(socket.username, username, subject, timestamp)).insertId;
+		socket.emit('conversation_created', socket.username, conversation_id, timestamp, confirmation_timestamp);
+		let file_path = path.join(conversation_dir, `conversation_${conversation_id}.txt`);
+		let file_handle = await fsPromises.open(file_path, 'a+');
+		let file = file_handle.createWriteStream();
+		file.on('error', (err) => {
+			throw (err);
+		});
+		text.replace(/>/g, "&gt;").replace(/</g, "&lt;");
+		file.write(`<${timestamp}_${socket.username}>\n${text}`);
+		file.end();
+	});
+
+	socket.on('write_message', async (conversation_id, text, confirmation_timestamp) => {
+		let timestamp = await utils.get_timestamp();
+		socket.emit('message_received', socket.username, timestamp, confirmation_timestamp);
+		await dbManager.update_conversation_timestamp(conversation_id, timestamp);
+		let file_path = path.join(conversation_dir, `conversation_${conversation_id}.txt`);
+		let file_handle = await fsPromises.open(file_path, 'a+');
+		let file = file_handle.createWriteStream();
+		file.on('error', (err) => {
+			throw (err);
+		});
+		text.replace(/>/g, "&gt;").replace(/</g, "&lt;");
+		file.write(`\n<${timestamp}_${socket.username}>\n${text}`);
+		file.end();
+	});
+
 	socket.on('research_datapack_request', () => {
 		dbManager.get_research_datapack(socket.username).then(datapack => { socket.emit('research_datapack', JSON.stringify(datapack)); });
 	});
@@ -265,6 +431,23 @@ io.on('connection', socket => {
 	socket.on('research_technology', tech_id => {
 		dbManager.research_technology(socket.username, tech_id);
 	});
+
+	socket.on('request_profile_datapack', username => {
+		dbManager.get_profile_datapack(username).then(results => { socket.emit('profile_datapack', JSON.stringify(results)); });
+	});
+
+	socket.on('request_leaderboard_datapack', () => {
+		dbManager.get_leaderboard_datapack(socket.username).then(leaderboard_datapack => { socket.emit('leaderboard_datapack', JSON.stringify(leaderboard_datapack)); });
+	});
+
+	socket.on('request_alliance_datapack', () => {
+		dbManager.get_alliance_datapack(socket.username).then(alliance_datapack => { socket.emit('alliance_datapack', JSON.stringify(alliance_datapack)); });
+	});
+
+	socket.on('invite_alliance', username => {
+		dbManager.invite_player(socket.username, username);
+	});
+	
 
 	socket.on('disconnect', () => {
 		//When the player is switching between pages (map, planet, etc.,), they got the set amount of time specified in the timeout to reconnect before getting logged out
@@ -277,15 +460,15 @@ io.on('connection', socket => {
 });
 
 //does not refresh the cache of the code for main.js -> any changes in main.js will not be loaded when restarting through FE
-function restart_server(socket, layout) {
+function restart_server(socket) {
 	var token;
 	if (socket !== undefined) {
 		token = socket.token;
 	}
-	delete require.cache[require.resolve('./server_side/main_modules/Game.js')];
-	delete require.cache[require.resolve('./server_side/main_modules/dbManager.js')];
-	const DbManager = require('./server_side/main_modules/dbManager.js');
-	const Game = require('./server_side/main_modules/Game.js');
+	delete require.cache[require.resolve('./main_modules/game.js')];
+	delete require.cache[require.resolve('./main_modules/dbManager.js')];
+	const DbManager = require('./main_modules/dbManager.js');
+	const Game = require('./main_modules/game.js');
 	dbManager = new DbManager();
 	game.stop();
 	game = new Game(dbManager, io);
@@ -293,7 +476,7 @@ function restart_server(socket, layout) {
 		if (socket !== undefined) {
 			game.addPlayer(socket, token).then(() => {
 				socket.gameAdded = true;
-				game.get_map_datapack(layout, socket.username).then(result => {socket.emit('map_datapack', JSON.stringify(result))});
+				game.get_map_datapack(socket.username).then(result => {socket.emit('map_datapack', JSON.stringify(result))});
 			});
 		}
 	});

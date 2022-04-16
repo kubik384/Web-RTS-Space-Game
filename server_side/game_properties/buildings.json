@@ -2,140 +2,276 @@
     {
         "building_id": 1,
         "name": "Administration Building",
+        "description": "Description",
         "level_details": [
             {
                 "level": 0,
                 "upgrade_cost": {
-                    "timber": 1
+                    "metal": 1,
+                    "pop": 1
                 },
                 "upgrade_time": 10
             },
             {
                 "level": 1,
                 "upgrade_cost": {
-                    "timber": 1
+                    "metal": 2,
+                    "pop": 1
                 },
                 "upgrade_time": 10
             },
             {
                 "level": 2,
                 "upgrade_cost": {
-                    "timber": 1
+                    "metal": 4,
+                    "pop": 1
                 },
                 "upgrade_time": 10
             },
             {
                 "level": 3,
-                "upgrade_cost": {
-                    "timber": 1
-                },
+                "upgrade_cost": {},
                 "upgrade_time": -1
             }
         ]
     },
     {
         "building_id": 2,
-        "name": "Resource Generator",
+        "name": "Mines",
+        "description": "Description",
         "level_details": [
             {
                 "level": 0,
                 "upgrade_cost": {
-                    "timber": 1
+                    "metal": 1,
+                    "pop": 1
                 },
                 "upgrade_time": 10,
-                "production": {"timber": 0.00015}
+                "production": {"metal": 0.00015, "kerosene": 0, "hydrogen": 0, "uranium": 0},
+                "req_buildings": [{"building_id":1,"level":1}]
             },
             {
                 "level": 1,
                 "upgrade_cost": {
-                    "timber": 1
+                    "metal": 2,
+                    "pop": 1
                 },
                 "upgrade_time": 10,
-                "production": {"timber": 0.0003}
+                "production": {"metal": 0.0003, "kerosene": 0, "hydrogen": 0, "uranium": 0},
+                "req_buildings": [{"building_id":1,"level":1}]
             },
             {
                 "level": 2,
                 "upgrade_cost": {
-                    "timber": 1
+                    "metal": 3,
+                    "pop": 1
                 },
                 "upgrade_time": 10,
-                "production": {"timber": 0.00045}
+                "production": {"metal": 0.00045, "kerosene": 0, "hydrogen": 0, "uranium": 0},
+                "req_buildings": [{"building_id":1,"level":1}]
             },
             {
                 "level": 3,
-                "upgrade_cost": {
-                    "timber": 1
-                },
+                "upgrade_cost": {},
                 "upgrade_time": -1,
-                "production": {"timber": 0.00060}
+                "production": {"metal": 0.00060, "kerosene": 0, "hydrogen": 0, "uranium": 0}
             }
         ]
     }, 
     {
         "building_id": 3,
-        "name": "Space Station",
+        "name": "Space Dock",
+        "description": "Description",
         "level_details": [
             {
                 "level": 0,
                 "upgrade_cost": {
-                    "timber": 1
+                    "metal": 2,
+                    "pop": 1
                 },
                 "upgrade_time": 10,
-                "defense_bonus": 10
+                "req_buildings": [{"building_id":1,"level":2}]
             },
             {
                 "level": 1,
                 "upgrade_cost": {
-                    "timber": 1
+                    "metal": 4,
+                    "pop": 1
                 },
                 "upgrade_time": 10,
-                "defense_bonus": 25
+                "req_buildings": [{"building_id":1,"level":2}]
             },
             {
                 "level": 2,
                 "upgrade_cost": {
-                    "timber": 1
+                    "metal": 16,
+                    "pop": 1
                 },
-                "upgrade_time": 10,
-                "defense_bonus": 30
+                "upgrade_time": 30,
+                "req_buildings": [{"building_id":1,"level":2}]
             },
             {
                 "level": 3,
-                "upgrade_cost": {
-                    "timber": 1
-                },
-                "upgrade_time": -1,
-                "defense_bonus": 32
+                "upgrade_cost": {},
+                "upgrade_time": -1
             }
         ]
-    }, 
+    },
     {
         "building_id": 4,
-        "name": "Space Dock",
+        "name": "Resource Storage",
+        "description": "Description",
         "level_details": [
             {
                 "level": 0,
                 "upgrade_cost": {
-                    "timber": 2
+                    "metal": 1
                 },
                 "upgrade_time": 10,
-                "units": []
+                "storage": {"metal": 100, "kerosene": 100, "hydrogen": 0, "uranium": 0},
+                "req_buildings": [{"building_id":1,"level":1}]
             },
             {
                 "level": 1,
                 "upgrade_cost": {
-                    "timber": 2
+                    "metal": 2
                 },
                 "upgrade_time": 10,
-                "units": [1]
+                "storage": {"metal": 200, "kerosene": 100, "hydrogen": 0, "uranium": 0},
+                "req_buildings": [{"building_id":1,"level":1}]
             },
             {
                 "level": 2,
                 "upgrade_cost": {
-                    "timber": 2
+                    "metal": 3
                 },
+                "upgrade_time": 10,
+                "storage": {"metal": 500, "kerosene": 200, "hydrogen": 0, "uranium": 0},
+                "req_buildings": [{"building_id":1,"level":1}]
+            },
+            {
+                "level": 3,
+                "upgrade_cost": {},
                 "upgrade_time": -1,
-                "units": [1,2]
+                "storage": {"metal": 1000, "kerosene": 300, "hydrogen": 0, "uranium": 0}
+            }
+        ]
+    },
+    {
+        "building_id": 5,
+        "name": "Apartments",
+        "description": "Description",
+        "level_details": [
+            {
+                "level": 0,
+                "upgrade_cost": {
+                    "metal": 1
+                },
+                "upgrade_time": 10,
+                "production": {"pop": 100},
+                "req_buildings": [{"building_id":1,"level":1},{"building_id":6,"level":1}]
+            },
+            {
+                "level": 1,
+                "upgrade_cost": {
+                    "metal": 2
+                },
+                "upgrade_time": 10,
+                "production": {"pop": 200},
+                "req_buildings": [{"building_id":1,"level":1},{"building_id":6,"level":2}]
+            },
+            {
+                "level": 2,
+                "upgrade_cost": {
+                    "metal": 3
+                },
+                "upgrade_time": 10,
+                "production": {"pop": 500},
+                "req_buildings": [{"building_id":1,"level":1},{"building_id":6,"level":3}]
+            },
+            {
+                "level": 3,
+                "upgrade_cost": {},
+                "upgrade_time": -1,
+                "production": {"pop": 1000}
+            }
+        ]
+    },
+    {
+        "building_id": 6,
+        "name": "Farms",
+        "description": "Description",
+        "level_details": [
+            {
+                "level": 0,
+                "upgrade_cost": {
+                    "metal": 1,
+                    "pop": 1
+                },
+                "upgrade_time": 10,
+                "req_buildings": [{"building_id":1,"level":1}]
+            },
+            {
+                "level": 1,
+                "upgrade_cost": {
+                    "metal": 2,
+                    "pop": 1
+                },
+                "upgrade_time": 10,
+                "req_buildings": [{"building_id":1,"level":1}]
+            },
+            {
+                "level": 2,
+                "upgrade_cost": {
+                    "metal": 3,
+                    "pop": 1
+                },
+                "upgrade_time": 10,
+                "req_buildings": [{"building_id":1,"level":1}]
+            },
+            {
+                "level": 3,
+                "upgrade_cost": {},
+                "upgrade_time": -1
+            }
+        ]
+    },
+    {
+        "building_id": 7,
+        "name": "Laboratory",
+        "description": "Description",
+        "level_details": [
+            {
+                "level": 0,
+                "upgrade_cost": {
+                    "metal": 1,
+                    "pop": 1
+                },
+                "upgrade_time": 10,
+                "req_buildings": [{"building_id":1,"level":1}]
+            },
+            {
+                "level": 1,
+                "upgrade_cost": {
+                    "metal": 2,
+                    "pop": 2
+                },
+                "upgrade_time": 10,
+                "req_buildings": [{"building_id":1,"level":1}]
+            },
+            {
+                "level": 2,
+                "upgrade_cost": {
+                    "metal": 3,
+                    "pop": 2
+                },
+                "upgrade_time": 10,
+                "req_buildings": [{"building_id":1,"level":1}]
+            },
+            {
+                "level": 3,
+                "upgrade_cost": {},
+                "upgrade_time": -1
             }
         ]
     }

@@ -1,6 +1,22 @@
 * {
-    margin:0px;
-    padding:0px;
+	margin: 0;
+	padding: 0;
+	border-spacing: 0;
+	font-size: 24px;
+}
+
+
+h1, h2, h3, h4, h5 {
+	font-size: revert;
+}
+
+div {
+	font-size: 0px;
+}
+
+body {
+    background-image: url("../images/login/login_background.jpg");
+    background-size: cover;
 }
 
 div {
@@ -54,8 +70,19 @@ button:hover {
     opacity: 0.8;
 }
 
-.container {
+#container {
     padding: 16px 16px 0px 16px;
+}
+
+#container > p {
+    font-size: 18px;
+    color: red;
+    font-weight: bold;
+}
+
+#container > p > img {
+    padding-right: 3px;
+    margin-bottom: -3px;
 }
 
 span.reg {
@@ -80,7 +107,7 @@ span.reg {
 }
 
 #backArrow {
-    float: left;
+    float: right;
     background-color: black;
     padding: 10px 0 10px 0;
 }
@@ -90,6 +117,6 @@ span.reg {
 }
 
 #repeatPassword {
-    transition: all .45s ease-out;
+    /*transition: all .45s ease-out;*/
     overflow: hidden;
 }

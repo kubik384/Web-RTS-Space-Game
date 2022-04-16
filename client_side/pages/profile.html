@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Unfinished project #219</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+		<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+		<link rel="stylesheet" type="text/css" href="/client_side/cascades/profile.css">
+		<link rel="stylesheet" type="text/css" href="/client_side/cascades/navbar.css">
+		<script src="/socket.io/socket.io.js"></script>
+		<script type="module" src="/client_side/javascript/main_modules/profile.js"></script>
+	</head>
+	<body>
+		<div id='navbar'>
+			<a href='/game/planet'>Planet</a>
+			<a href="/game/map">Map</a>
+			<a href="/game/reports" id="reports_tab">
+				Reports<span id="new_report_count" style="display: none">0</span>
+			</a>
+			<a href='/game/research'>Research</a>
+			<a href='/game/messages'>Messages</a>
+			<a href="/game/alliance">Alliance</a>
+			<a href="/game/leaderboard">Leaderboard</a>
+		</div>
+        <div id="profile_details_container">
+            <h3 id="player_name"></h3>
+            <p id="home_planet"></p>
+            <div id="options">
+                <a id="send_message" class="clickable">Send Message</p>
+            </div>
+        </div>
+	</body>
+</html>

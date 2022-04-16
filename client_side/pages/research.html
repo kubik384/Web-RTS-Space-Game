@@ -11,61 +11,42 @@
 	</head>
 	<body>
 		<div id="image_holder">
-			<img src="/client_side/images/research/rocket_preview.png" id="rocket_preview"></img>
+			<img src="/client_side/images/research/Combustion Drive_preview.png" id="Combustion Drive_preview"></img>
+			<img src="/client_side/images/research/Impulse Drive_preview.png" id="Impulse Drive_preview"></img>
 		</div>
 		<div id="container">
 			<div id="navbar">
 				<a href='/game/planet'>Planet</a>
-				<div id="dropdown_select">
-					<button id="dropdown_btn">Map</button>
-					<div id="dropdown_menu">
-						<a href='/game/map?layout=system'>System</a>
-						<a href='/game/map?layout=galaxy'>Galaxy</a>
-					</div>
-				</div>
-				<a href="/game/report" id="reports_tab">
+				<a href="/game/map">Map</a>
+				<a href="/game/reports" id="reports_tab">
 					Reports<span id="new_report_count" style="display: none">0</span>
 				</a>
-				<a href='/game/message'>Messages</a>
 				<a href='/game/research'>Research</a>
+				<a href='/game/messages'>Messages</a>
+				<a href="/game/alliance">Alliance</a>
+				<a href="/game/leaderboard">Leaderboard</a>
 			</div>
 			<div id="research_map_container">
 				<canvas id="research_map"></canvas>
 			</div>
 			<div id="research_info_panel" style="display: none">
 				<img src="/client_side/images/ui/cancel.png" id="close_button">
+				<h1>Title</h1>
 				<div id="res_img_wrapper">
-					<img src="/client_side/images/research/rocket.png" id="research_image">
+					<img id="research_image">
 				</div>
-				<span id="cost"></span>
+				<p id="description"></p>
+				<div id="resource_cost">
+					<h4>Resource cost:</h4>
+				</div>
+				<div id="building_requirements">
+					<h4>Building Requirements:</h4>
+				</div>
 				<span id="timer" style="display: none"></span>
-				<p id="research_description"></p>
 				<div id="res_btn_wrapper" class="res_btn">
 					<img src="/client_side/images/ui/research_button.png" id="research_button">
 				</div>
 			</div>
 		</div>
-		<!--
-			<div id="research_options_wrapper">
-				<table>
-					<tr></tr>
-				<div>
-					<img src="/client_side/images/research/rocket.png"></img>
-					<h2>Space Rocket</h2><-- = first research, allows to build rockets (whill will be needed to send spacecrafts, )
-				</div>
-				<div>
-					<img src="/client_side/images/research/rocket.png"></img>
-					<h2>Spacecraft</h2>
-				</div>
-				<div>
-					<img src="/client_side/images/research/rocket.png"></img>
-					<h2>Space Rocket</h2>
-				</div>
-				<-- = space shuttle - costs 60% of a rocket?
-				<-- = spacecraft - satellites, mining devices, attack probe, spy probe? (maybe also add 5th option - railgun as a defence against the attack probes? Or maybe that's in the next column of research to give aggressive players time to try and make some plays with the attack probes?) Divide it into different research options?
-				<-- = Straship - improved Space Rocket?
-				</table>
-			</div>
-		-->
 	</body>
 </html>

@@ -24,7 +24,6 @@ class Game extends Base_Page {
         this.xOffset = 0;
         this.yOffset = 0;
         this.dragging = false;
-        this.image = document.getElementById('rocket_preview');
     }
 
     async request_data() {
@@ -32,11 +31,14 @@ class Game extends Base_Page {
     }
 
     async setup_game(p_datapack) {
+        this.image = document.getElementById('Combustion Drive_preview');
         var datapack = JSON.parse(p_datapack);
         console.log(datapack);
         super.setup_page(datapack);
         this.technologies = datapack.technologies;
         this.research_details = datapack.research_details;
+        this.resources = datapack.resources;
+        this.buildings = datapack.buildings;
         for (var i = 0; i < this.technologies.length; i++) {
             if (this.research_details.inResearch !== undefined && this.research_details.inResearch == this.technologies[i].technology_id) {
                 this.researching_tech = this.technologies[i];
@@ -268,18 +270,18 @@ class Game extends Base_Page {
     }
 
     async display_tech_description(tech) {
+        let disable_upgrade = false;
         var panel = document.getElementById('research_info_panel');
-        panel.style.removeProperty("display");
+        panel.style.display = '';
+        panel.querySelector(':scope > h1').textContent = tech.name;
         document.getElementById('research_image').setAttribute("src", "/client_side/images/research/" + tech.name + ".png");
-        document.getElementById('research_description').textContent = tech.description;
-        document.getElementById('cost').textContent = tech.research_time + ' ' + tech.cost.timber;
+        document.getElementById('description').textContent = tech.description;
         var res_btn_wrapper = document.getElementById('res_btn_wrapper');
         res_btn_wrapper.setAttribute('data-id', tech.technology_id);
         if (this.researching_tech === undefined) {
-            console.log(this.research_details);
             var tech_researched = this.research_details.researched_techs.find(tech_id => tech_id == tech.technology_id);
             if (tech_researched !== undefined) {
-                this.disable_reseach_button(res_btn_wrapper);
+                disable_upgrade = true;
             } else {
                 res_btn_wrapper.classList.add('res_btn');
                 res_btn_wrapper.removeAttribute('style');
@@ -294,12 +296,140 @@ class Game extends Base_Page {
             } else {
                 this.remove_research_timer();
             }
-            this.disable_reseach_button(res_btn_wrapper);
+            disable_upgrade = true;
+        }
+
+        let research_cost_container = document.getElementById('resource_cost');
+        let resource_containers = research_cost_container.querySelectorAll(':scope > div');
+        let container_array = [];
+        resource_containers.forEach(res_cr => container_array.push(res_cr));
+
+        let update_resource_container = async function(resource) {
+            let resource_container = document.getElementById(`bld_${resource}_cost`);
+            let resource_cost;
+            if (resource != 'time') {
+                resource_cost = tech.cost[resource];
+            } else {
+                resource_cost = await utils.seconds_to_time(tech.research_time, false, true);
+            }
+            let resource_cost_el;
+            if (resource_container === null) {
+                resource_container = document.createElement('div');
+                resource_container.setAttribute('id', `bld_${resource}_cost`);
+                let resource_img = document.createElement('img');
+                resource_img.setAttribute('src', `/client_side/images/resources/${resource}.png`);
+                resource_img.setAttribute('title', resource);
+                resource_cost_el = document.createElement('p');
+                resource_container.append(resource_img, resource_cost_el);
+                research_cost_container.append(resource_container);
+            } else {
+                resource_cost_el = resource_container.getElementsByTagName('p')[0];
+            }
+            resource_cost_el.textContent = resource_cost;
+            /*if (resource == 'pop') {
+                let pop_building = this.buildings.find(building => building.building_id == 5);
+                let available_pop = (await this.get_bld_lvl_dts(await this.get_bld_details(pop_building.building_id), pop_building.level)).production['pop'];
+                let res_type = 'reserved_' + resource;
+                if (this.resources[res_type] + resource_cost > available_pop) {
+                    if (!resource_cost_el.classList.contains('missing_requirement')) {
+                        resource_cost_el.classList.add('missing_requirement');
+                    }
+                    disable_upgrade = true;
+                } else if (resource_cost_el.classList.contains('missing_requirement')) {
+                    resource_cost_el.classList.remove('missing_requirement');
+                }
+            } else*/
+            if (resource != 'time') {
+                if (resource_cost > this.resources[resource]) {
+                    if (!resource_cost_el.classList.contains('missing_requirement')) {
+                        resource_cost_el.classList.add('missing_requirement');
+                    }
+                    disable_upgrade = true;
+                } else if (resource_cost_el.classList.contains('missing_requirement')) {
+                    resource_cost_el.classList.remove('missing_requirement');
+                }
+            }
+            return resource_container.id;
+        }.bind(this);
+        let time_res_con_id = await update_resource_container('time');
+        for (let i = container_array.length - 1; i >= 0; i--) {
+            if (container_array[i].id == time_res_con_id) {
+                container_array.splice(i,1);
+                break;
+            }
+        }
+        for (let resource in tech.cost) {
+            let resource_container_id = await update_resource_container(resource);
+            for (let i = container_array.length - 1; i >= 0; i--) {
+                if (container_array[i].id == resource_container_id) {
+                    container_array.splice(i,1);
+                    break;
+                }
+            }
+        }
+        for (let i = container_array.length - 1; i >= 0; i--) {
+            container_array[i].remove();
+        }
+        container_array = [];
+        let req_buildings_container = document.getElementById('building_requirements');
+        let req_building_containers = req_buildings_container.querySelectorAll(':scope > div');
+        req_building_containers.forEach(req_bld_cr => container_array.push(req_bld_cr));
+        if (tech.req_buildings !== undefined) {
+            if (req_buildings_container.style.display == 'none') {
+                req_buildings_container.style.display = '';
+            }
+            for (let i = 0; i < tech.req_buildings.length; i++) {
+                let req_bld_lvl_el;
+                let req_bld = tech.req_buildings[i];
+                let req_bld_container = document.getElementById(`bld_${req_bld.building_id}_req`);
+                if (req_bld_container == null) {
+                    let req_bld_container = document.createElement('div');
+                    req_bld_container.setAttribute('id', `bld_${req_bld.building_id}_req`);
+                    let req_building_img = document.createElement('img');
+                    let req_bld_details = await this.get_bld_details(req_bld.building_id);
+                    req_building_img.setAttribute('src', `/client_side/images/buildings/${req_bld_details.name}.png`);
+                    req_building_img.setAttribute('title', req_bld_details.name);
+                    req_bld_lvl_el = document.createElement('p');
+                    req_bld_container.append(req_building_img, req_bld_lvl_el);
+                    req_buildings_container.append(req_bld_container);
+                } else {
+                    req_bld_lvl_el = req_bld_container.getElementsByTagName('p')[0];
+                }
+                let req_building = this.buildings.find(building => building.building_id == req_bld.building_id);
+                if (req_building === undefined) {
+                    req_building = {level: 0};
+                }
+                req_bld_lvl_el.textContent = req_bld.level;
+                if (req_building.level < req_bld.level) {
+                    if (req_bld_lvl_el.classList.length == 0) {
+                        req_bld_lvl_el.classList.add('missing_requirement');
+                    }
+                    disable_upgrade = true;
+                } else if (req_bld_lvl_el.classList.length == 1) {
+                    req_bld_lvl_el.classList.remove('missing_requirement');
+                }
+                for (let i = container_array.length - 1; i >= 0; i--) {
+                    if (container_array[i].id == req_bld_container.id) {
+                        container_array.splice(i,1);
+                        break;
+                    }
+                }
+            }
+        } else if (req_buildings_container.style.display == '') {
+            req_buildings_container.style.display = 'none';
+        }
+        for (let i = container_array.length - 1; i >= 0; i--) {
+            container_array[i].remove();
+        }
+
+        if (disable_upgrade) {
+            //this.disable_reseach_button(res_btn_wrapper);
         }
     }
 
     disable_reseach_button(btn_wrapper) {
         btn_wrapper.setAttribute('style', 'background-color: rgba(0,0,0,0.6)');
+        btn_wrapper.classList.remove('res_btn_clicked');
         btn_wrapper.classList.remove('res_btn');
     }
 

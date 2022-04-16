@@ -1,0 +1,78 @@
+[
+    {
+        "weapon_id": 1,
+        "name": "low-energy laser",
+        "damage": 15,
+        "range": 250,
+        "velocity": 0.50,
+        "cooldown": 300
+    },
+    {
+        "weapon_id": 2,
+        "name": "medium-energy laser",
+        "damage": 30,
+        "range": 365,
+        "velocity": 0.62,
+        "cooldown": 600
+    },
+    {
+        "weapon_id": 3,
+        "name": "high-energy laser",
+        "damage": 85,
+        "range": 515,
+        "velocity": 0.74,
+        "cooldown": 900
+    },
+    {
+        "weapon_id": 4,
+        "name": "Ion cannon",
+        "shield_damage": 85,
+        "range": 630,
+        "velocity": 426,
+        "cooldown": 600
+    },
+    {
+        "weapon_id": 5,
+        "name": "Beam cannon",
+        "damage": 85,
+        "range": 670,
+        "velocity": 382,
+        "cooldown": 1200
+    },
+    {
+        "weapon_id": 6,
+        "name": "Gauss cannon",
+        "damage": 220,
+        "range": 780,
+        "velocity": 0.82,
+        "cooldown": 1500
+    },
+    {
+        "weapon_id": 7,
+        "name": "Plasma cannon",
+        "damage": 480,
+        "range": 980,
+        "velocity": 1.07,
+        "cooldown": 3000
+    },
+    {
+        "weapon_id": 8,
+        "name": "Neutron cannon",
+        "damage": 800,
+        "range": 1395,
+        "velocity": 1.75,
+        "cooldown": 6000
+    },
+    {
+        "weapon_id": 9,
+        "name": "Explosive charge",
+        "damage": 85,
+        "cooldown": 0
+    },
+    {
+        "weapon_id": 9,
+        "name": "Heavy explosive charge",
+        "damage": 85,
+        "cooldown": 0
+    }
+]

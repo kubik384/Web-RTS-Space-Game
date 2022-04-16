@@ -17,26 +17,24 @@
 			<img src="/client_side/images/canvas/galaxy1.png" id="galaxy1"></img>
 		</div>
 		<div id="navbar">
-			<a href="/game/planet">Planet</a>
-			<div id="dropdown_select">
-				<button id="dropdown_btn">Map</button>
-				<div id="dropdown_menu">
-					<a href="/game/map?layout=system">System</a>
-					<a href="/game/map?layout=galaxy">Galaxy</a>
-				</div>
-			</div>
-			<a href="/game/report" id="reports_tab">
+			<a href='/game/planet'>Planet</a>
+			<a href="/game/map">Map</a>
+			<a href="/game/reports" id="reports_tab">
 				Reports<span id="new_report_count" style="display: none">0</span>
 			</a>
-			<a href="/game/message">Messages</a>
-			<a href="/game/research">Research</a>
+			<a href='/game/research'>Research</a>
+			<a href='/game/messages'>Messages</a>
+			<a href="/game/alliance">Alliance</a>
+			<a href="/game/leaderboard">Leaderboard</a>
 		</div>
-		<div id="fleet_details" class="side_panel">
+		<div id="space_object_details" class="side_panel">
 			<div id="close_button_wrapper">
 				<img src="/client_side/images/ui/cancel.png" id="fd_close_button" class="ui_button">
 			</div>
-			<h3 id="fleet_name"></h3>
-			<table id="fleet_units_table">
+			<h3 id="object_name"></h3>
+			<p id="object_owner" style="display:none">Owner <span id="object_owner_name"></span></p>
+			<p id="fleet_status"></p>
+			<table id="fleet_units_table" style="display: none">
 				<thead>
 					<tr>
 						<td></td>
@@ -45,9 +43,20 @@
 					</tr>
 				</thead>
 				<tbody>
-					
 				</tbody>
 			</table>
+			<table id="resource_table" style="display: none">
+				<thead>
+					<tr>
+						<td></td>
+						<td id="fleet_type_cell">Resource</td>
+						<td id="fleet_number_cell">Amount</td>
+					</tr>
+				</thead>
+				<tbody>
+				</tbody>
+			</table>
+			<p id="fleet_capacity"></p>
 		</div>
 		<div id="map_container">
 			<canvas id="map"></canvas>
@@ -64,24 +73,34 @@
 					</table>
 				</div>
 			</div>
-			<p>-----Debugging tools-----</p>
-			<div>
-				<p>Time flow</p>
-				<button id="+">Increase</button>
-				<button id="-">Decrease</button>
-				<button id="=">Restart</button>
-				<p>Move point</p>
-				<button id="cancel">Cancel</button>
-				<p>Switch</p>
-				<label for="space_object_id">Space Object ID to switch to </label>
-				<input type="number" id="space_object_id" name="space_object_id"></input>
-				<button id="switch_space_object">Space Object ID</button>
-				<p>Generate</p>
-				<button id="generate_system">System</button>
-				<button id="generate_asteroid">Asteroid</button>
-				<p>Restart</p>
-				<button id="restart">Server</button>
+			<div id="debugging_ui" style="display: none">
+				<p>-----Debugging tools-----</p>
+				<div>
+					<p>Time flow</p>
+					<button id="+">Increase</button>
+					<button id="-">Decrease</button>
+					<button id="=">Restart</button>
+					<p>Move point</p>
+					<button id="cancel">Cancel</button>
+					<p>Switch</p>
+					<label for="space_object_id">Space Object ID to switch to </label>
+					<input type="number" id="space_object_id" name="space_object_id">
+					<button id="switch_space_object">Space Object ID</button>
+					<p>Generate</p>
+					<button id="generate_system">System</button>
+					<button id="generate_asteroid">Asteroid</button>
+					<p>Restart</p>
+					<button id="restart">Server</button>
+				</div>
+			</div>
+			<div id="expand_debug">
+				
 			</div>
 		</div>
+		<div id="profile_iframe_container" style="display: none">
+			<p id="profile_iframe_header">Profile</p>
+			<iframe id="profile_iframe"></iframe>
+		</div>
+		<div id="iframe_overlay" style="display: none"></div>
 	</body>
 </html>

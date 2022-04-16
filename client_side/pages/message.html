@@ -6,26 +6,63 @@
 		<meta http-equiv="content-type" content="text/html; charset=utf-8" />
 		<link rel="stylesheet" type="text/css" href="/client_side/cascades/message.css">
 		<link rel="stylesheet" type="text/css" href="/client_side/cascades/navbar.css">
+		<script src="/socket.io/socket.io.js"></script>
+		<script type="module" src="/client_side/javascript/message_init.js"></script>
 	</head>
 	<body>
 		<div id='navbar'>
 			<a href='/game/planet'>Planet</a>
-			<div id="dropdown_select">
-				<button id="dropdown_btn">Map</button>
-				<div id="dropdown_menu">
-					<a href='/game/map?layout=system'>System</a>
-					<a href='/game/map?layout=galaxy'>Galaxy</a>
-				</div>
-			</div>
-			<a href="/game/report" id="reports_tab">
+			<a href="/game/map">Map</a>
+			<a href="/game/reports" id="reports_tab">
 				Reports<span id="new_report_count" style="display: none">0</span>
 			</a>
-			<a href='/game/message'>Messages</a>
-			<a href="/game/research">Research</a>
+			<a href='/game/research'>Research</a>
+			<a href='/game/messages'>Messages</a>
+			<a href="/game/alliance">Alliance</a>
+			<a href="/game/leaderboard">Leaderboard</a>
 		</div>
-		<div id='resource_building_ui'>
+		<div id="conversation_table_container">
+			<button id="new_message_btn">New Message</button>
+			<table id="conversation_table">
+				<thead>
+					<tr>
+						<th>Subject</th>
+						<th>Sender</th>
+						<th>Receiver</th>
+						<th>Date</th>
+					</tr>
+				</thead>
+				<tbody>
+				</tbody>
+			</table>
 		</div>
-		<div id='button_menu'>
+		<div id="message_table_container" style="display: none">
+			<p class='security_warning'><image src="/client_side/images/ui/warning_triangle.png"></image>Due to limited security implementations and a high chance of a security breach occuring, it is highly advised to not share any sensitive/personal information</p>
+			<div id="response_container">
+				<textarea></textarea>
+				<button>Respond</button>
+			</div>
+			<table id="message_table">
+				<tbody>
+				</tbody>
+			</table>
 		</div>
+		<div id="new_message_container" style="display: none">
+			<p class='security_warning'><image src="/client_side/images/ui/warning_triangle.png"></image>Due to limited security implementations and a high chance of a security breach occuring, it's highly advised to not share any sensitive/personal information</p>
+			<form id="new_message_form">
+				<label>Subject</label>
+				<input type="text">
+				<label>Username</label>
+				<input type="text">
+				<label>Message</label>
+				<textarea></textarea>
+				<input type="submit">
+			</form>
+		</div>
+		<div id="profile_iframe_container" style="display: none">
+			<p id="profile_iframe_header">Profile</p>
+			<iframe id="profile_iframe"></iframe>
+		</div>
+		<div id="iframe_overlay" style="display: none"></div>
 	</body>
 </html>
