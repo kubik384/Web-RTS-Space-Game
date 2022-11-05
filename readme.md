@@ -20,4 +20,4 @@ Use the following parameter order for passing command line arguments:
 For documentation refer to documentation/documentantion.html (outdated, no longer the case)
 
 
-I've given up on this project due to lack of time to work on it further. Unfortunately, I've been planning a huge code optimization and refactor for a long time, but never got to do it. And with the lack of comments, reading the code is likely very difficult. If you've somehow managed to find this project and for some reason wish to understand or utilize any of the code, feel free to add me on discord and ask away - Newstory#1476
+I've given up on this project due to lack of time to work on it further. Unfortunately, I've been planning a huge code optimization and refactor for a long time, but never got to do it.
