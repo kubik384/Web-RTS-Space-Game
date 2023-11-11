@@ -1,6 +1,6 @@
 "use strict";
 
-import { Game } from './main_modules/alliance.js';
+import { Game } from './alliance.js';
 
 var socket = io({ auth: { token: document.cookie.split('token=')[1] }} );
 var game = new Game(socket);

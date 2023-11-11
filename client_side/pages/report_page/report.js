@@ -1,8 +1,8 @@
 "use strict"
 
-import { Canvas } from '../misc_modules/canvas.js';
-import { Utils } from '../misc_modules/utils.js';
-import { Vector } from '../misc_modules/vector.js';
+import { Canvas } from '../javascript/misc_modules/canvas.js';
+import { Utils } from '../javascript/misc_modules/utils.js';
+import { Vector } from '../javascript/misc_modules/vector.js';
 import { Base_Page } from './base_page.js';
 var utils = new Utils();
 

@@ -1,6 +1,6 @@
 "use strict";
 
-import { Game } from './main_modules/report.js';
+import { Game } from './report.js';
 
 var socket = io({ auth: { token: document.cookie.split('token=')[1] }} );
 var game = new Game(socket);

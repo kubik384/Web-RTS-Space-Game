@@ -1,7 +1,7 @@
 "use strict"
 
-import { Utils } from '../misc_modules/utils.js';
-import { Base_Page } from './base_page.js';
+import { Utils } from '../javascript/misc_modules/utils.js';
+import { Base_Page } from '../base_page/base_page.js';
 let utils = new Utils();
 
 class Game extends Base_Page {

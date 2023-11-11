@@ -1,8 +1,8 @@
 "use strict"
 
-import { Utils } from '../misc_modules/utils.js';
-import { Vector } from '../misc_modules/vector.js';
-import { Base_Page } from './base_page.js';
+import { Utils } from '../message_page/misc_modules/utils.js';
+import { Vector } from '../message_page/misc_modules/vector.js';
+import { Base_Page } from '../base_page/base_page.js';
 var utils = new Utils();
 
 class Game extends Base_Page {

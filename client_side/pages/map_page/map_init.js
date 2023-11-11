@@ -1,6 +1,6 @@
 "use strict";
 
-import { Game } from './main_modules/map.js';
+import { Game } from './map.js';
 
 var game;
 var socket = io({ auth: { token: document.cookie.split('token=')[1] }} );
