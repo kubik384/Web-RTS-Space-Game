@@ -1,6 +1,6 @@
 "use strict"
 
-import { Utils } from '../misc_modules/utils.js';
+import { Utils } from '../javascript/misc_modules/utils.js';
 import { Base_Page } from './base_page.js';
 var utils = new Utils();
 

@@ -77,7 +77,7 @@ app.post('/register', async function(req, res) {
 	}
 });
 
-app.post('/login', function(req, res) {
+app.post('/login_page/login', function(req, res) {
 	var { username, password } = req.body;
 	
 	var query = "SELECT password FROM players WHERE username = ?";

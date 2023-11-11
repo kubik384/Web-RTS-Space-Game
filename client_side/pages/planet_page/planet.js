@@ -1,7 +1,7 @@
 "use strict"
 
 import { Utils } from '../misc_modules/utils.js';
-import { Base_Page } from './base_page.js';
+import { Base_Page } from '../base_page/base_page.js';
 let utils = new Utils();
 const building_dialog_id = 'building_dialog_div';
 const unit_dialog_id = 'unit_dialog_div';
